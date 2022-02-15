@@ -24,7 +24,8 @@ uses
   Z.ZDB.ObjectData_LIB, Z.ZDB, Z.ZDB.Engine, Z.ZDB.LocalManager,
   Z.ZDB.FileIndexPackage_LIB, Z.ZDB.FilePackage_LIB, Z.ZDB.ItemStream_LIB, Z.ZDB.HashField_LIB, Z.ZDB.HashItem_LIB,
   Z.ZDB2.Custom, Z.ZDB2, Z.ZDB2.DFE, Z.ZDB2.HS, Z.ZDB2.HV, Z.ZDB2.Json, Z.ZDB2.MS64, Z.ZDB2.NM, Z.ZDB2.TE, Z.ZDB2.FileEncoder,
-  Z.Net.C4, Z.Net.C4_UserDB, Z.Net.C4_Var, Z.Net.C4_FS, Z.Net.C4_RandSeed, Z.Net.C4_Log_DB, Z.Net.C4_XNAT,
+  Z.Net.C4, Z.Net.C4_UserDB, Z.Net.C4_Var, Z.Net.C4_FS, Z.Net.C4_RandSeed, Z.Net.C4_Log_DB, Z.Net.C4_XNAT, Z.Net.C4_Alias,
+  Z.Net.C4_FS2, Z.Net.C4_PascalRewrite_Client, Z.Net.C4_PascalRewrite_Service,
   Z.Net.PhysicsIO;
 
 type
@@ -41,7 +42,7 @@ type
     BuildDependNetButton: TButton;
     resetDependButton: TButton;
     DependEdit: TLabeledEdit;
-    RependNetListView: TListView;
+    DependNetListView: TListView;
     DependPanel: TPanel;
     servicePanel: TPanel;
     net_Top_Splitter: TSplitter;
@@ -87,12 +88,13 @@ type
     Pas_RadioButton: TRadioButton;
     c_RadioButton: TRadioButton;
     ServIPEdit: TLabeledEdit;
+    Generate_Console_CmdLineButton: TButton;
     procedure netTimerTimer(Sender: TObject);
     procedure UpdateStateTimerTimer(Sender: TObject);
     procedure FormClose(Sender: TObject; var CloseAction: TCloseAction);
     procedure DependEditChange(Sender: TObject);
     procedure DependEditExit(Sender: TObject);
-    procedure RependNetListViewChange(Sender: TObject; Item: TListItem; Change: TItemChange);
+    procedure DependNetListViewChange(Sender: TObject; Item: TListItem; Change: TItemChange);
     procedure BuildDependNetButtonClick(Sender: TObject);
     procedure resetDependButtonClick(Sender: TObject);
     procedure ServiceDependEditChange(Sender: TObject);
@@ -107,6 +109,7 @@ type
     procedure TunnelInfoPhyAddrListBoxClick(Sender: TObject);
     procedure SaaS_Info_TreeViewKeyUp(Sender: TObject; var Key: Word; Shift: TShiftState);
     procedure GenerateCmdLineButtonClick(Sender: TObject);
+    procedure Generate_Console_CmdLineButtonClick(Sender: TObject);
   private
     procedure DoStatus_backcall(Text_: SystemString; const ID: Integer);
     procedure ReadConfig;
@@ -312,11 +315,11 @@ var
   arry: TC40_DependNetworkInfoArray;
   found_: Boolean;
 begin
-  RependNetListView.OnChange := nil;
+  DependNetListView.OnChange := nil;
   arry := ExtractDependInfo(DependEdit.Text);
-  for i := 0 to RependNetListView.Items.Count - 1 do
+  for i := 0 to DependNetListView.Items.Count - 1 do
     begin
-      p := RependNetListView.Items[i].Data;
+      p := DependNetListView.Items[i].Data;
       found_ := False;
       for j := Low(arry) to high(arry) do
         if arry[j].Typ.Same(@p^.ServiceTyp) then
@@ -324,9 +327,9 @@ begin
             found_ := True;
             break;
           end;
-      RependNetListView.Items[i].Checked := found_;
+      DependNetListView.Items[i].Checked := found_;
     end;
-  RependNetListView.OnChange := RependNetListViewChange;
+  DependNetListView.OnChange := DependNetListViewChange;
 end;
 
 procedure TC40AppTempletForm.DependEditExit(Sender: TObject);
@@ -336,7 +339,7 @@ begin
   DependEdit.OnChange := DependEditChange;
 end;
 
-procedure TC40AppTempletForm.RependNetListViewChange(Sender: TObject; Item: TListItem; Change: TItemChange);
+procedure TC40AppTempletForm.DependNetListViewChange(Sender: TObject; Item: TListItem; Change: TItemChange);
 begin
   DependEdit.OnChange := nil;
   DependEdit.Text := RebuildDependInfo(DependEdit.Text);
@@ -345,7 +348,7 @@ end;
 
 procedure TC40AppTempletForm.BuildDependNetButtonClick(Sender: TObject);
 begin
-  Z.Net.C4.C40_PhysicsTunnelPool.GetOrCreatePhysicsTunnel(JoinHostEdit.Text, EStrToInt(JoinPortEdit.Text, 0), DependEdit.Text, On_C40_PhysicsTunnel_Event);
+  Z.Net.C4.C40_PhysicsTunnelPool.SearchServiceAndBuildConnection(JoinHostEdit.Text, EStrToInt(JoinPortEdit.Text, 0), False, DependEdit.Text, On_C40_PhysicsTunnel_Event);
 end;
 
 procedure TC40AppTempletForm.resetDependButtonClick(Sender: TObject);
@@ -396,6 +399,7 @@ begin
   with Z.Net.C4.TC40_PhysicsService.Create(ServListeningIPEdit.Text,
     ServIPEdit.Text, EStrToInt(ServPortEdit.Text, 0), Z.Net.PhysicsIO.TPhysicsServer.Create) do
     begin
+      AutoFreePhysicsTunnel:=True;
       BuildDependNetwork(ServiceDependEdit.Text);
       OnEvent := On_C40_PhysicsService_Event;
       StartService;
@@ -517,6 +521,58 @@ begin
   disposeObject(param);
 end;
 
+procedure TC40AppTempletForm.Generate_Console_CmdLineButtonClick(Sender: TObject);
+  function conv_(sour: SystemString): SystemString;
+  begin
+    if Pas_RadioButton.Checked then
+        Result := TTextParsing.TranslateTextToPascalDecl(sour)
+    else if c_RadioButton.Checked then
+        Result := TTextParsing.TranslateTextToC_Decl(sour)
+    else
+        Result := sour;
+  end;
+
+var
+  HS: THashStringList;
+  param: TPascalStringList;
+  final_param: U_String;
+  i: Integer;
+begin
+  HS := THashStringList.Create;
+  Z.Net.C4.C40WriteConfig(HS);
+
+  param := TPascalStringList.Create;
+
+  param.Add(Format('Password(%s)', [conv_(Z.Net.C4.C40_Password)]));
+
+  HS.ProgressP(procedure(Sender: THashStringList; Name_: PSystemString; const V: SystemString)
+    begin
+      if C40_DefaultConfig.GetDefaultValue(Name_^, V) <> V then
+          param.Add(Format('%s(%s)', [Name_^, V]));
+    end);
+
+  if (ServIPEdit.Text <> '') and (ServPortEdit.Text <> '') and (ServiceDependEdit.Text <> '') then
+      param.Add(Format('Service(%s,%s,%s,%s)', [conv_(ServListeningIPEdit.Text), conv_(ServIPEdit.Text), conv_(ServPortEdit.Text), conv_(ServiceDependEdit.Text)]));
+
+  if (JoinHostEdit.Text <> '') and (JoinPortEdit.Text <> '') and (DependEdit.Text <> '') then
+      param.Add(Format('Tunnel(%s,%s,%s)', [conv_(JoinHostEdit.Text), conv_(JoinPortEdit.Text), conv_(DependEdit.Text)]));
+
+  final_param := '';
+  ArryParamMemo.Clear;
+  for i := 0 to param.Count - 1 do
+    begin
+      if i > 0 then
+          final_param.Append(',');
+      final_param.Append(param[i]);
+      ArryParamMemo.Lines.Add(conv_(param[i]) + if_(i < param.Count - 1, ',', ''));
+    end;
+  cmdLineParamEdit.Text := '"' + final_param + '"';
+  codeParamEdit.Text := conv_(final_param);
+
+  disposeObject(HS);
+  disposeObject(param);
+end;
+
 procedure TC40AppTempletForm.DoStatus_backcall(Text_: SystemString; const ID: Integer);
 begin
   if logMemo.Lines.Count > 2000 then
@@ -589,10 +645,10 @@ begin
   sourNet := ExtractDependInfoToL(sour);
   destNet := TC40_DependNetworkInfoList.Create;
 
-  for i := 0 to RependNetListView.Items.Count - 1 do
-    if RependNetListView.Items[i].Checked then
+  for i := 0 to DependNetListView.Items.Count - 1 do
+    if DependNetListView.Items[i].Checked then
       begin
-        p := RependNetListView.Items[i].Data;
+        p := DependNetListView.Items[i].Data;
         info.Typ := p^.ServiceTyp;
         for j := 0 to sourNet.Count - 1 do
           if sourNet[j].Typ.Same(@info.Typ) then
@@ -662,13 +718,13 @@ var
   p: PC40_RegistedData;
   arry: TC40_DependNetworkInfoArray;
 begin
-  RependNetListView.Items.BeginUpdate;
-  RependNetListView.Items.Clear;
+  DependNetListView.Items.BeginUpdate;
+  DependNetListView.Items.Clear;
   for i := 0 to Z.Net.C4.C40_Registed.Count - 1 do
     begin
       p := Z.Net.C4.C40_Registed[i];
       if p^.ClientClass <> nil then
-        with RependNetListView.Items.Add do
+        with DependNetListView.Items.Add do
           begin
             Caption := p^.ServiceTyp;
             SubItems.Add(p^.ClientClass.ClassName);
@@ -676,16 +732,16 @@ begin
             Data := p;
           end;
     end;
-  RependNetListView.Items.EndUpdate;
+  DependNetListView.Items.EndUpdate;
 
   arry := ExtractDependInfo(info);
-  for i := 0 to RependNetListView.Items.Count - 1 do
+  for i := 0 to DependNetListView.Items.Count - 1 do
     begin
-      p := RependNetListView.Items[i].Data;
+      p := DependNetListView.Items[i].Data;
       for j := Low(arry) to high(arry) do
         if arry[j].Typ.Same(@p^.ServiceTyp) then
           begin
-            RependNetListView.Items[i].Checked := True;
+            DependNetListView.Items[i].Checked := True;
             break;
           end;
     end;
@@ -1006,7 +1062,7 @@ begin
 
   SysProgress.PostP1(procedure
     begin
-      RependNetListView.Height := RependNetListView.Height - 1;
+      DependNetListView.Height := DependNetListView.Height - 1;
       ServiceListView.Height := ServiceListView.Height - 1;
     end);
 end;
@@ -1183,6 +1239,7 @@ end;
 initialization
 
 SetLength(C40AppParam, 0);
+C40AppParsingTextStyle := TTextStyle.tsPascal;
 On_C40_PhysicsTunnel_Event := nil;
 On_C40_PhysicsService_Event := nil;
 

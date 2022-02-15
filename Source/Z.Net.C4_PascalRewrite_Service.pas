@@ -23,8 +23,8 @@ uses Variants, SysUtils,
 type
   TUnitRewriteService_IO_Define_ = class(TPeerClientUserDefineForRecvTunnel_NoAuth)
   public
-    UnitRewriteProcessor: TUProcessorDataList;
-    SymbolRewriteProcessor: TUProcessorDataList;
+    UnitRewriteProcessor: TSourceProcessorDataPool;
+    SymbolRewriteProcessor: TSourceProcessorDataPool;
     constructor Create(Owner_: TPeerIO); override;
     destructor Destroy; override;
   end;
@@ -50,8 +50,8 @@ implementation
 constructor TUnitRewriteService_IO_Define_.Create(Owner_: TPeerIO);
 begin
   inherited Create(Owner_);
-  UnitRewriteProcessor := TUProcessorDataList.Create;
-  SymbolRewriteProcessor := TUProcessorDataList.Create;
+  UnitRewriteProcessor := TSourceProcessorDataPool.Create;
+  SymbolRewriteProcessor := TSourceProcessorDataPool.Create;
 end;
 
 destructor TUnitRewriteService_IO_Define_.Destroy;
@@ -162,6 +162,7 @@ var
     IO_Def.UnitRewriteProcessor.Build_uHash(uHash);
     symHash := THashStringList.CustomCreate($FFFF);
     IO_Def.SymbolRewriteProcessor.Build_uHash(symHash);
+    Current_Status := TPascalStringList.Create;
   end;
 
   procedure fpc_rewrite_status(const Fmt: SystemString; const Args: array of const);

@@ -527,7 +527,7 @@ var
   destBuff: PByte;
   phy_io: TPeerIO;
 begin
-  FillBuff(InData, DataSize, remote_id, local_id, destSiz, destBuff);
+  ExtractBuff(InData, DataSize, remote_id, local_id, destSiz, destBuff);
   phy_io := Protocol.PeerIO[local_id];
 
   if phy_io <> nil then
@@ -963,6 +963,9 @@ begin
   shLt.XServerTunnel := Self;
   shLt.TimeOut := TimeOut;
   ShareListenList.Add(shLt);
+
+  if Activted and (PhysicsEngine is TZNet_Server) then
+      shLt.Open;
 end;
 
 procedure TXNATService.AddNoDistributedMapping(const ListenAddr, ListenPort, Mapping: TPascalString; TimeOut: TTimeTick);
@@ -984,6 +987,8 @@ begin
   shLt.XServerTunnel := Self;
   shLt.TimeOut := TimeOut;
   ShareListenList.Add(shLt);
+  if Activted and (PhysicsEngine is TZNet_Server) then
+      shLt.Open;
 end;
 
 procedure TXNATService.OpenTunnel(MODEL: TXNAT_PHYSICS_MODEL);

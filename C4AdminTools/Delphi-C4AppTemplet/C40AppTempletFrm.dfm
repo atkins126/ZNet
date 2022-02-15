@@ -153,7 +153,7 @@ object C40AppTempletForm: TC40AppTempletForm
             OnExit = DependEditExit
           end
         end
-        object RependNetListView: TListView
+        object DependNetListView: TListView
           Left = 0
           Top = 32
           Width = 676
@@ -182,7 +182,7 @@ object C40AppTempletForm: TC40AppTempletForm
           RowSelect = True
           TabOrder = 1
           ViewStyle = vsReport
-          OnChange = RependNetListViewChange
+          OnChange = DependNetListViewChange
         end
       end
       object servicePanel: TPanel
@@ -304,7 +304,6 @@ object C40AppTempletForm: TC40AppTempletForm
           TabOrder = 1
           ViewStyle = vsReport
           OnChange = ServiceListViewChange
-          ExplicitTop = 28
         end
       end
     end
@@ -656,6 +655,15 @@ object C40AppTempletForm: TC40AppTempletForm
         DoubleBuffered = True
         ParentDoubleBuffered = False
         TabOrder = 5
+      end
+      object Generate_Console_CmdLineButton: TButton
+        Left = 189
+        Top = 268
+        Width = 113
+        Height = 25
+        Caption = 'Generate Console '
+        TabOrder = 9
+        OnClick = Generate_Console_CmdLineButtonClick
       end
     end
   end

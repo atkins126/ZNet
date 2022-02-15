@@ -34,27 +34,27 @@ type
     function GetSeedGroup(Name_: U_String): TUInt32HashPointerList;
   end;
 
-  TC40_RandSeed_Client = class(TC40_Base_NoAuth_Client)
-  public type
-    TON_MakeSeedC = procedure(sender: TC40_RandSeed_Client; Seed_: UInt32);
-    TON_MakeSeedM = procedure(sender: TC40_RandSeed_Client; Seed_: UInt32) of object;
+  TON_MakeSeedC = procedure(sender: TC40_RandSeed_Client; Seed_: UInt32);
+  TON_MakeSeedM = procedure(sender: TC40_RandSeed_Client; Seed_: UInt32) of object;
 {$IFDEF FPC}
-    TON_MakeSeedP = procedure(sender: TC40_RandSeed_Client; Seed_: UInt32) is nested;
+  TON_MakeSeedP = procedure(sender: TC40_RandSeed_Client; Seed_: UInt32) is nested;
 {$ELSE FPC}
-    TON_MakeSeedP = reference to procedure(sender: TC40_RandSeed_Client; Seed_: UInt32);
+  TON_MakeSeedP = reference to procedure(sender: TC40_RandSeed_Client; Seed_: UInt32);
 {$ENDIF FPC}
 
-    TON_MakeSeed = class(TOnResultBridge)
-    public
-      Client: TC40_RandSeed_Client;
-      OnResultC: TON_MakeSeedC;
-      OnResultM: TON_MakeSeedM;
-      OnResultP: TON_MakeSeedP;
-      constructor Create; override;
-      procedure DoStreamEvent(sender: TPeerIO; Result_: TDFE); override;
-    end;
+  TON_MakeSeed = class(TOnResultBridge)
   public
-    constructor Create(source_: TC40_Info; Param_: U_String); override;
+    Client: TC40_RandSeed_Client;
+    OnResultC: TON_MakeSeedC;
+    OnResultM: TON_MakeSeedM;
+    OnResultP: TON_MakeSeedP;
+    constructor Create; override;
+    procedure DoStreamEvent(sender: TPeerIO; Result_: TDFE); override;
+  end;
+
+  TC40_RandSeed_Client = class(TC40_Base_NoAuth_Client)
+  public
+    constructor Create(PhysicsTunnel_: TC40_PhysicsTunnel; source_: TC40_Info; Param_: U_String); override;
     destructor Destroy; override;
 
     procedure MakeSeed_C(Group_: U_String; Min_, Max_: UInt32; OnResult: TON_MakeSeedC);
@@ -110,8 +110,11 @@ begin
   // is only instance
   ServiceInfo.OnlyInstance := True;
   UpdateToGlobalDispatch;
+  ParamList.SetDefaultValue('OnlyInstance', if_(ServiceInfo.OnlyInstance, 'True', 'False'));
 
-  BigSeedPool := TBigSeedPool.Create(True, 1024 * 1024, nil);
+  BigSeedPool := TBigSeedPool.Create(True,
+    EStrToInt64(ParamList.GetDefaultValue('Seed_HashPool', '4*1024*1024'), 4 * 1024 * 1024),
+    nil);
 end;
 
 destructor TC40_RandSeed_Service.Destroy;
@@ -137,7 +140,7 @@ begin
     end;
 end;
 
-constructor TC40_RandSeed_Client.TON_MakeSeed.Create;
+constructor TON_MakeSeed.Create;
 begin
   inherited Create;
   Client := nil;
@@ -146,7 +149,7 @@ begin
   OnResultP := nil;
 end;
 
-procedure TC40_RandSeed_Client.TON_MakeSeed.DoStreamEvent(sender: TPeerIO; Result_: TDFE);
+procedure TON_MakeSeed.DoStreamEvent(sender: TPeerIO; Result_: TDFE);
 var
   Seed_: UInt32;
 begin
@@ -164,9 +167,9 @@ begin
   DelayFreeObject(1.0, self);
 end;
 
-constructor TC40_RandSeed_Client.Create(source_: TC40_Info; Param_: U_String);
+constructor TC40_RandSeed_Client.Create(PhysicsTunnel_: TC40_PhysicsTunnel; source_: TC40_Info; Param_: U_String);
 begin
-  inherited Create(source_, Param_);
+  inherited Create(PhysicsTunnel_, source_, Param_);
 end;
 
 destructor TC40_RandSeed_Client.Destroy;

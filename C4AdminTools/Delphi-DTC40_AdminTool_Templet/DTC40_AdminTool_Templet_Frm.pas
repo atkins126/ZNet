@@ -76,8 +76,13 @@ begin
 end;
 
 procedure TDTC40_AdminTool_Templet_Form.BuildDependNetButtonClick(Sender: TObject);
+var
+  info: TC40_Info;
 begin
-  Z.Net.C4.C40_PhysicsTunnelPool.GetOrCreatePhysicsTunnel(JoinHostEdit.Text, EStrToInt(JoinPortEdit.Text, 0), 'Pascal_Rewrite', self);
+  if serviceComboBox.ItemIndex < 0 then
+      exit;
+  info := TC40_Info(serviceComboBox.Items.Objects[serviceComboBox.ItemIndex]);
+  Z.Net.C4.C40_PhysicsTunnelPool.GetOrCreatePhysicsTunnel(info, info.ServiceTyp, self);
 end;
 
 procedure TDTC40_AdminTool_Templet_Form.queryButtonClick(Sender: TObject);
@@ -136,6 +141,7 @@ var
   arry: TC40_Info_Array;
   i: Integer;
 begin
+  ValidService.Clear;
   arry := L.SearchService(ExtractDependInfo(DependEdit.Text));
   for i := low(arry) to high(arry) do
       ValidService.Add(arry[i].Clone);
@@ -155,6 +161,7 @@ end;
 
 procedure TDTC40_AdminTool_Templet_Form.C40_PhysicsTunnel_Disconnect(Sender: TC40_PhysicsTunnel);
 begin
+  serviceComboBox.Clear;
   ValidService.Clear;
   MyClient := nil;
 end;
@@ -178,8 +185,7 @@ var
 begin
   inherited Create(AOwner);
   AddDoStatusHook(self, DoStatus_backcall);
-  Z.Net.C4.C40_Password := 'Z.Net.C4@ZSERVER';
-  Z.Net.C4.C40_QuietMode := True;
+  Z.Net.C4.C40_QuietMode := False;
   ValidService := TC40_InfoList.Create(True);
 
   ReadConfig;

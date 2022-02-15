@@ -18,18 +18,20 @@ uses
   Z.Net, Z.Net.PhysicsIO, Z.Net.DoubleTunnelIO.NoAuth, Z.Net.C4;
 
 type
-  TC40_Log_DB_Service = class(TC40_Base_NoAuth_Service)
-  private type
-    TC40_ZDB2_List_HashString = class(TZDB2_List_HashString)
-    protected
-      Name: U_String;
-      LastActivtTime: TTimeTick;
-      LastPostTime: TDateTime;
-      FileName: U_String;
-    end;
+  TC40_Log_DB_Service = class;
 
-    TLog_DB_Pool = {$IFDEF FPC}specialize {$ENDIF FPC}TGenericHashList<TC40_ZDB2_List_HashString>;
-    TLog_DB_List = {$IFDEF FPC}specialize {$ENDIF FPC}TGenericsList<TC40_ZDB2_List_HashString>;
+  TC40_ZDB2_List_HashString = class(TZDB2_List_HashString)
+  protected
+    Name: U_String;
+    LastActivtTime: TTimeTick;
+    LastPostTime: TDateTime;
+    FileName: U_String;
+  end;
+
+  TLog_DB_Pool = {$IFDEF FPC}specialize {$ENDIF FPC}TGenericHashList<TC40_ZDB2_List_HashString>;
+  TLog_DB_List = {$IFDEF FPC}specialize {$ENDIF FPC}TGenericsList<TC40_ZDB2_List_HashString>;
+
+  TC40_Log_DB_Service = class(TC40_Base_NoAuth_Service)
   private
     procedure cmd_PostLog(Sender: TPeerIO; InData: TDFE);
     procedure cmd_QueryLog(Sender: TPeerIO; InData, OutData: TDFE);
@@ -93,49 +95,49 @@ type
     procedure SortByTime();
   end;
 
-  TC40_Log_DB_Client = class(TC40_Base_NoAuth_Client)
-  public type
+  TC40_Log_DB_Client = class;
 
-    TON_QueryLogC = procedure(Sender: TC40_Log_DB_Client; LogDB: SystemString; arry: TArrayLogData);
-    TON_QueryLogM = procedure(Sender: TC40_Log_DB_Client; LogDB: SystemString; arry: TArrayLogData) of object;
+  TON_QueryLogC = procedure(Sender: TC40_Log_DB_Client; LogDB: SystemString; arry: TArrayLogData);
+  TON_QueryLogM = procedure(Sender: TC40_Log_DB_Client; LogDB: SystemString; arry: TArrayLogData) of object;
 {$IFDEF FPC}
-    TON_QueryLogP = procedure(Sender: TC40_Log_DB_Client; LogDB: SystemString; arry: TArrayLogData) is nested;
+  TON_QueryLogP = procedure(Sender: TC40_Log_DB_Client; LogDB: SystemString; arry: TArrayLogData) is nested;
 {$ELSE FPC}
-    TON_QueryLogP = reference to procedure(Sender: TC40_Log_DB_Client; LogDB: SystemString; arry: TArrayLogData);
+  TON_QueryLogP = reference to procedure(Sender: TC40_Log_DB_Client; LogDB: SystemString; arry: TArrayLogData);
 {$ENDIF FPC}
 
-    TON_QueryLog = class(TOnResultBridge)
-    public
-      Client: TC40_Log_DB_Client;
-      LogDB: SystemString;
-      OnResultC: TON_QueryLogC;
-      OnResultM: TON_QueryLogM;
-      OnResultP: TON_QueryLogP;
-      constructor Create; override;
-      procedure DoStreamEvent(Sender: TPeerIO; Result_: TDFE); override;
-    end;
-
-    TON_GetLogDBC = procedure(Sender: TC40_Log_DB_Client; arry: U_StringArray);
-    TON_GetLogDBM = procedure(Sender: TC40_Log_DB_Client; arry: U_StringArray) of object;
-{$IFDEF FPC}
-    TON_GetLogDBP = procedure(Sender: TC40_Log_DB_Client; arry: U_StringArray) is nested;
-{$ELSE FPC}
-    TON_GetLogDBP = reference to procedure(Sender: TC40_Log_DB_Client; arry: U_StringArray);
-{$ENDIF FPC}
-
-    TON_GetLogDB = class(TOnResultBridge)
-    public
-      Client: TC40_Log_DB_Client;
-      OnResultC: TON_GetLogDBC;
-      OnResultM: TON_GetLogDBM;
-      OnResultP: TON_GetLogDBP;
-      constructor Create; override;
-      procedure DoStreamEvent(Sender: TPeerIO; Result_: TDFE); override;
-    end;
+  TON_QueryLog = class(TOnResultBridge)
   public
-    constructor Create(source_: TC40_Info; Param_: U_String); override;
-    destructor Destroy; override;
+    Client: TC40_Log_DB_Client;
+    LogDB: SystemString;
+    OnResultC: TON_QueryLogC;
+    OnResultM: TON_QueryLogM;
+    OnResultP: TON_QueryLogP;
+    constructor Create; override;
+    procedure DoStreamEvent(Sender: TPeerIO; Result_: TDFE); override;
+  end;
 
+  TON_GetLogDBC = procedure(Sender: TC40_Log_DB_Client; arry: U_StringArray);
+  TON_GetLogDBM = procedure(Sender: TC40_Log_DB_Client; arry: U_StringArray) of object;
+{$IFDEF FPC}
+  TON_GetLogDBP = procedure(Sender: TC40_Log_DB_Client; arry: U_StringArray) is nested;
+{$ELSE FPC}
+  TON_GetLogDBP = reference to procedure(Sender: TC40_Log_DB_Client; arry: U_StringArray);
+{$ENDIF FPC}
+
+  TON_GetLogDB = class(TOnResultBridge)
+  public
+    Client: TC40_Log_DB_Client;
+    OnResultC: TON_GetLogDBC;
+    OnResultM: TON_GetLogDBM;
+    OnResultP: TON_GetLogDBP;
+    constructor Create; override;
+    procedure DoStreamEvent(Sender: TPeerIO; Result_: TDFE); override;
+  end;
+
+  TC40_Log_DB_Client = class(TC40_Base_NoAuth_Client)
+  public
+    constructor Create(PhysicsTunnel_: TC40_PhysicsTunnel; source_: TC40_Info; Param_: U_String); override;
+    destructor Destroy; override;
     procedure PostLog(LogDB, Log1_, Log2_: SystemString); overload;
     procedure PostLog(LogDB, Log_: SystemString); overload;
     procedure QueryLogC(LogDB: SystemString; bTime, eTime: TDateTime; filter1, filter2: U_String; OnResult: TON_QueryLogC); overload;
@@ -402,11 +404,16 @@ begin
   // is only instance
   ServiceInfo.OnlyInstance := true;
   UpdateToGlobalDispatch;
+  ParamList.SetDefaultValue('OnlyInstance', if_(ServiceInfo.OnlyInstance, 'True', 'False'));
 
   WaitFreeList := TLog_DB_List.Create;
   C40_DB_Directory := umlCombinePath(DTNoAuthService.PublicFileDirectory, PFormat('DTC40_%s', [ServiceInfo.ServiceTyp.Text]));
   umlCreateDirectory(C40_DB_Directory);
-  DB_Pool := TLog_DB_Pool.Create(true, 4 * 1024 * 1024, nil);
+
+  DB_Pool := TLog_DB_Pool.Create(true,
+    EStrToInt64(ParamList.GetDefaultValue('Log_DB_HashPool', '1024*1024'), 1024 * 1024),
+    nil);
+
   LogDBRecycleMemoryTimeOut := EStrToInt64(ParamList.GetDefaultValue('LogDBRecycleMemory', '60*1000'), 60 * 1000);
   ZDB2RecycleMemoryTimeOut := EStrToInt64(ParamList.GetDefaultValue('RecycleMemory', '5*1000'), 5 * 1000);
   ZDB2DeltaSpace := EStrToInt64(ParamList.GetDefaultValue('DeltaSpace', '1*1024*1024'), 1 * 1024 * 1024);
@@ -424,6 +431,7 @@ destructor TC40_Log_DB_Service.Destroy;
 begin
   disposeObject(WaitFreeList);
   disposeObject(DB_Pool);
+  DisposeObjectAndNil(ZDB2Cipher);
   inherited Destroy;
 end;
 
@@ -469,7 +477,7 @@ begin
     begin
       fn := umlCombineFileName(C40_DB_Directory, LogDB_.Text + '.Log_ZDB2');
       try
-        if umlFileExists(fn) then
+        if EStrToBool(ParamList.GetDefaultValue('ForeverSave', 'True'), True) and umlFileExists(fn) then
             fs := TCore_FileStream.Create(fn, fmOpenReadWrite)
         else
             fs := TCore_FileStream.Create(fn, fmCreate);
@@ -616,7 +624,7 @@ begin
       fastSort_(0, Count - 1);
 end;
 
-constructor TC40_Log_DB_Client.TON_QueryLog.Create;
+constructor TON_QueryLog.Create;
 begin
   inherited Create;
   Client := nil;
@@ -626,7 +634,7 @@ begin
   OnResultP := nil;
 end;
 
-procedure TC40_Log_DB_Client.TON_QueryLog.DoStreamEvent(Sender: TPeerIO; Result_: TDFE);
+procedure TON_QueryLog.DoStreamEvent(Sender: TPeerIO; Result_: TDFE);
 var
   arry: TArrayLogData;
   i: Integer;
@@ -659,7 +667,7 @@ begin
   DelayFreeObject(1.0, self);
 end;
 
-constructor TC40_Log_DB_Client.TON_GetLogDB.Create;
+constructor TON_GetLogDB.Create;
 begin
   inherited Create;
   Client := nil;
@@ -668,7 +676,7 @@ begin
   OnResultP := nil;
 end;
 
-procedure TC40_Log_DB_Client.TON_GetLogDB.DoStreamEvent(Sender: TPeerIO; Result_: TDFE);
+procedure TON_GetLogDB.DoStreamEvent(Sender: TPeerIO; Result_: TDFE);
 var
   arry: U_StringArray;
   i: Integer;
@@ -690,9 +698,9 @@ begin
   DelayFreeObject(1.0, self);
 end;
 
-constructor TC40_Log_DB_Client.Create(source_: TC40_Info; Param_: U_String);
+constructor TC40_Log_DB_Client.Create(PhysicsTunnel_: TC40_PhysicsTunnel; source_: TC40_Info; Param_: U_String);
 begin
-  inherited Create(source_, Param_);
+  inherited Create(PhysicsTunnel_, source_, Param_);
   Client.QuietMode := true;
 end;
 

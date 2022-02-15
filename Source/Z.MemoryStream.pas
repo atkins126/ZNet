@@ -48,6 +48,7 @@ type
     procedure SwapInstance(source: TMS64); overload;
     procedure SwapInstance(source: TMem64); overload;
     function ToBytes: TBytes;
+    function ToMD5: TMD5;
 
     property Delta: NativeInt read FDelta write FDelta;
     procedure SetPointerWithProtectedMode(buffPtr: Pointer; const BuffSize: Int64);
@@ -223,6 +224,7 @@ type
     procedure SwapInstance(source: TMS64); overload;
     procedure SwapInstance(source: TMem64); overload;
     function ToBytes: TBytes;
+    function ToMD5: TMD5;
 
     property Delta: NativeInt read GetDelta write SetDelta;
     property Memory: Pointer read GetMemory_;
@@ -569,6 +571,11 @@ begin
   SetLength(Result, Size);
   if Size > 0 then
       CopyPtr(Memory, @Result[0], Size);
+end;
+
+function TMS64.ToMD5: TMD5;
+begin
+  Result := umlMD5(Memory, Size);
 end;
 
 procedure TMS64.SetPointerWithProtectedMode(buffPtr: Pointer; const BuffSize: Int64);
@@ -1122,14 +1129,18 @@ var
   L: Cardinal;
   b: TBytes;
 begin
-  L := ReadUInt32;
-  if L > 0 then
-    begin
-      SetLength(b, L);
-      ReadPtr(@b[0], L);
-      Result.Bytes := b;
-      SetLength(b, 0);
-    end;
+  try
+    L := ReadUInt32;
+    if L > 0 then
+      begin
+        SetLength(b, L);
+        ReadPtr(@b[0], L);
+        Result.Bytes := b;
+        SetLength(b, 0);
+      end;
+  except
+      Result := '';
+  end;
 end;
 
 function TMS64.ReadANSI(L: Integer): TPascalString;
@@ -1503,6 +1514,11 @@ begin
   SetLength(Result, Size);
   if Size > 0 then
       CopyPtr(Memory, @Result[0], Size);
+end;
+
+function TMem64.ToMD5: TMD5;
+begin
+  Result := umlMD5(Memory, Size);
 end;
 
 procedure TMem64.SetPointerWithProtectedMode(buffPtr: Pointer; const BuffSize: Int64);
@@ -2691,14 +2707,18 @@ var
   L: Cardinal;
   b: TBytes;
 begin
-  L := StreamReadUInt32(stream);
-  if L > 0 then
-    begin
-      SetLength(b, L);
-      stream.read(b[0], L);
-      Result.Bytes := b;
-      SetLength(b, 0);
-    end;
+  try
+    L := StreamReadUInt32(stream);
+    if L > 0 then
+      begin
+        SetLength(b, L);
+        stream.read(b[0], L);
+        Result.Bytes := b;
+        SetLength(b, 0);
+      end;
+  except
+      Result := '';
+  end;
 end;
 
 function StreamReadMD5(const stream: TCore_Stream): TMD5;

@@ -34,7 +34,7 @@ type
     procedure cmd_SetDefaultModel(Sender: TPeerIO; InData: TDFE);
     procedure cmd_UpdateModel(Sender: TPeerIO; InData: TDFE);
 
-    procedure Do_Sync_Rewrite_Status(Sender: TNPostExecute);
+    procedure Do_Sync_Rewrite_Status(Sender: TN_Post_Execute);
     procedure Do_RewritePascal_HPC(ThSender: THPC_Stream; ThInData, ThOutData: TDFE);
     procedure cmd_RewritePascal(Sender: TPeerIO; InData, OutData: TDFE);
   public
@@ -129,7 +129,7 @@ begin
   end;
 end;
 
-procedure TC40_Pascal_Rewrite_Service.Do_Sync_Rewrite_Status(Sender: TNPostExecute);
+procedure TC40_Pascal_Rewrite_Service.Do_Sync_Rewrite_Status(Sender: TN_Post_Execute);
 var
   id: Cardinal;
   info: SystemString;
@@ -203,9 +203,9 @@ begin
         fn := ThInData.R.ReadString;
         ThInData.R.ReadStrings(Code);
 {$IFDEF FPC}
-        RewritePascal_Process_Code(Code, uHash, symHash, @fpc_rewrite_status);
+        RewritePascal_Process_Code(Code, uHash, symHash, '', @fpc_rewrite_status);
 {$ELSE FPC}
-        RewritePascal_Process_Code(Code, uHash, symHash, procedure(const Fmt: SystemString; const Args: array of const)
+        RewritePascal_Process_Code(Code, uHash, symHash, '', procedure(const Fmt: SystemString; const Args: array of const)
           begin
             Current_Status.Add(TimeToStr(Now) + ' ' + PFormat(Fmt, Args));
             with DTNoAuth.PostProgress.PostExecuteM(0, Do_Sync_Rewrite_Status) do

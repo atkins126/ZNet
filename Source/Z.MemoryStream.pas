@@ -117,6 +117,8 @@ type
     function ReadCurrency: Currency;
     function PrepareReadString: Boolean;
     function ReadString: TPascalString;
+    function ReadStringAsBuff: TBytes;
+    procedure IgnoreReadString;
     function ReadANSI(L: Integer): TPascalString;
     function ReadMD5: TMD5;
   end;
@@ -288,6 +290,8 @@ type
     function ReadCurrency: Currency;
     function PrepareReadString: Boolean;
     function ReadString: TPascalString;
+    function ReadStringAsBuff: TBytes;
+    procedure IgnoreReadString;
     function ReadANSI(L: Integer): TPascalString;
     function ReadMD5: TMD5;
   end;
@@ -343,7 +347,7 @@ procedure ParallelDecompressFile(const sour, dest: SystemString);
 function CompressUTF8(const sour_: TBytes): TBytes;
 function DecompressUTF8(const sour_: TBytes): TBytes;
 
-// Serialized api
+// Serialized write
 procedure StreamWriteBool(const stream: TCore_Stream; const buff: Boolean);
 procedure StreamWriteInt8(const stream: TCore_Stream; const buff: ShortInt);
 procedure StreamWriteInt16(const stream: TCore_Stream; const buff: SmallInt);
@@ -359,6 +363,8 @@ procedure StreamWriteCurrency(const stream: TCore_Stream; const buff: Currency);
 procedure StreamWriteString(const stream: TCore_Stream; const buff: TPascalString);
 function ComputeStreamWriteStringSize(buff: TPascalString): Integer;
 procedure StreamWriteMD5(const stream: TCore_Stream; const buff: TMD5);
+
+// Serialized read
 function StreamReadBool(const stream: TCore_Stream): Boolean;
 function StreamReadInt8(const stream: TCore_Stream): ShortInt;
 function StreamReadInt16(const stream: TCore_Stream): SmallInt;
@@ -372,6 +378,8 @@ function StreamReadSingle(const stream: TCore_Stream): Single;
 function StreamReadDouble(const stream: TCore_Stream): Double;
 function StreamReadCurrency(const stream: TCore_Stream): Currency;
 function StreamReadString(const stream: TCore_Stream): TPascalString;
+function StreamReadStringAsBuff(const stream: TCore_Stream): TBytes;
+procedure StreamIgnoreReadString(const stream: TCore_Stream);
 function StreamReadMD5(const stream: TCore_Stream): TMD5;
 
 procedure DoStatus(const v: TMS64); overload;
@@ -430,7 +438,7 @@ end;
 constructor TMS64.CustomCreate(const customDelta: NativeInt);
 begin
   inherited Create;
-  FDelta := customDelta;
+  FDelta := umlMax(64, customDelta);
   FMemory := nil;
   FSize := 0;
   FPosition := 0;
@@ -604,12 +612,12 @@ end;
 
 function TMS64.PositionAsPtr(const Position_: Int64): Pointer;
 begin
-  Result := Pointer(NativeUInt(FMemory) + Position_);
+  Result := GetOffset(FMemory, Position_);
 end;
 
 function TMS64.PositionAsPtr: Pointer;
 begin
-  Result := Pointer(NativeUInt(FMemory) + FPosition);
+  Result := GetOffset(FMemory, FPosition);
 end;
 
 function TMS64.PosAsPtr(const Position_: Int64): Pointer;
@@ -659,14 +667,14 @@ begin
           for j := 0 to Num - 1 do
             begin
               stream.ReadBuffer(p^, ChunkSize);
-              p := Pointer(NativeUInt(p) + ChunkSize);
+              p := GetOffset(p, ChunkSize);
             end;
 
           { Process remaining bytes }
           if Rest > 0 then
             begin
               stream.ReadBuffer(p^, Rest);
-              p := Pointer(NativeUInt(p) + Rest);
+              p := GetOffset(p, Rest);
             end;
         end
       else
@@ -718,14 +726,14 @@ begin
           for j := 0 to Num - 1 do
             begin
               stream.WriteBuffer(p^, ChunkSize);
-              p := Pointer(NativeUInt(p) + ChunkSize);
+              p := GetOffset(p, ChunkSize);
             end;
 
           { Process remaining bytes }
           if Rest > 0 then
             begin
               stream.WriteBuffer(p^, Rest);
-              p := Pointer(NativeUInt(p) + Rest);
+              p := GetOffset(p, Rest);
             end;
         end
       else
@@ -785,7 +793,7 @@ begin
                   SetCapacity(p);
               FSize := p;
             end;
-          CopyPtr(@buffer, PByte(NativeUInt(FMemory) + FPosition), Count);
+          CopyPtr(@buffer, GetOffset(FMemory, FPosition), Count);
           FPosition := p;
           Result := Count;
           Exit;
@@ -828,7 +836,7 @@ begin
                   SetCapacity(p);
               FSize := p;
             end;
-          CopyPtr(@buffer[Offset], PByte(NativeUInt(FMemory) + FPosition), Count);
+          CopyPtr(@buffer[Offset], GetOffset(FMemory, FPosition), Count);
           FPosition := p;
           Result := Count;
           Exit;
@@ -855,7 +863,7 @@ begin
         begin
           if Result > Count then
               Result := Count;
-          CopyPtr(PByte(NativeUInt(FMemory) + FPosition), @buffer, Result);
+          CopyPtr(GetOffset(FMemory, FPosition), @buffer, Result);
           inc(FPosition, Result);
           Exit;
         end;
@@ -889,7 +897,7 @@ begin
           if p > Count then
               p := Count;
 
-          CopyPtr(PByte(NativeUInt(FMemory) + FPosition), @buffer[Offset], p);
+          CopyPtr(GetOffset(FMemory, FPosition), @buffer[Offset], p);
           inc(FPosition, p);
           Result := p;
           Exit;
@@ -948,8 +956,10 @@ begin
             n := BufSize
         else
             n := Count;
-        source.read(buffer^, n);
-        WritePtr(buffer, n);
+        if source.read(buffer^, n) <> n then
+            RaiseInfo('stream read error.');
+        if WritePtr(buffer, n) <> n then
+            RaiseInfo('stream write error.');
         dec(Count, n);
       end;
   finally
@@ -1140,6 +1150,41 @@ begin
       end;
   except
       Result := '';
+  end;
+end;
+
+function TMS64.ReadStringAsBuff: TBytes;
+var
+  L: Cardinal;
+begin
+  try
+    L := ReadUInt32;
+    if L > 0 then
+      begin
+        SetLength(Result, L);
+        ReadPtr(@Result[0], L);
+      end
+    else
+        SetLength(Result, 0);
+  except
+      SetLength(Result, 0);
+  end;
+end;
+
+procedure TMS64.IgnoreReadString;
+var
+  L: Cardinal;
+  b: TBytes;
+begin
+  try
+    L := ReadUInt32;
+    if L > 0 then
+      begin
+        SetLength(b, L);
+        ReadPtr(@b[0], L);
+        SetLength(b, 0);
+      end;
+  except
   end;
 end;
 
@@ -1373,7 +1418,7 @@ end;
 constructor TMem64.CustomCreate(const customDelta: NativeInt);
 begin
   inherited Create;
-  FDelta := customDelta;
+  FDelta := umlMax(64, customDelta);
   FMemory := nil;
   FSize := 0;
   FPosition := 0;
@@ -1970,10 +2015,49 @@ begin
   L := ReadUInt32;
   if L > 0 then
     begin
-      SetLength(b, L);
-      ReadPtr(@b[0], L);
-      Result.Bytes := b;
-      SetLength(b, 0);
+      try
+        SetLength(b, L);
+        ReadPtr(@b[0], L);
+        Result.Bytes := b;
+        SetLength(b, 0);
+      except
+          Result := '';
+      end;
+    end;
+end;
+
+function TMem64.ReadStringAsBuff: TBytes;
+var
+  L: Cardinal;
+begin
+  try
+    L := ReadUInt32;
+    if L > 0 then
+      begin
+        SetLength(Result, L);
+        ReadPtr(@Result[0], L);
+      end
+    else
+        SetLength(Result, 0);
+  except
+      SetLength(Result, 0);
+  end;
+end;
+
+procedure TMem64.IgnoreReadString;
+var
+  L: Cardinal;
+  b: TBytes;
+begin
+  L := ReadUInt32;
+  if L > 0 then
+    begin
+      try
+        SetLength(b, L);
+        ReadPtr(@b[0], L);
+        SetLength(b, 0);
+      except
+      end;
     end;
 end;
 
@@ -2226,7 +2310,7 @@ var
     SelectCompressStream(scm, sourStrips[pass], StripArry[pass]);
   end;
 {$ENDIF FPC}
-{$ELSE Parallel}
+{$ENDIF Parallel}
   procedure DoFor;
   var
     pass: Integer;
@@ -2236,7 +2320,6 @@ var
         SelectCompressStream(scm, sourStrips[pass], StripArry[pass]);
       end;
   end;
-{$ENDIF Parallel}
   procedure BuildBuff;
   var
     strip_siz, strip_m: Int64;
@@ -2305,18 +2388,25 @@ begin
       StripNum := StripNum_;
   BuildBuff;
 
+  if sour.Size < 16 * 1024 then
+    begin
+      DoFor;
+    end
+  else
+    begin
 {$IFDEF Parallel}
 {$IFDEF FPC}
-  FPCParallelFor(@Nested_ParallelFor, 0, Length(StripArry) - 1);
+      FPCParallelFor(@Nested_ParallelFor, 0, Length(StripArry) - 1);
 {$ELSE FPC}
-  DelphiParallelFor(0, Length(StripArry) - 1, procedure(pass: Integer)
-    begin
-      SelectCompressStream(scm, sourStrips[pass], StripArry[pass]);
-    end);
+      DelphiParallelFor(0, Length(StripArry) - 1, procedure(pass: Integer)
+        begin
+          SelectCompressStream(scm, sourStrips[pass], StripArry[pass]);
+        end);
 {$ENDIF FPC}
 {$ELSE Parallel}
-  DoFor;
+      DoFor;
 {$ENDIF Parallel}
+    end;
   BuildOutput;
   FreeBuff;
 end;
@@ -2349,6 +2439,7 @@ var
   end;
 {$ENDIF FPC}
 {$ELSE Parallel}
+{$ENDIF Parallel}
   procedure DoFor;
   var
     pass: Integer;
@@ -2358,7 +2449,6 @@ var
         SelectDecompressStream(StripArry[pass].sour, StripArry[pass].dest);
       end;
   end;
-{$ENDIF Parallel}
   function BuildBuff_Stream64(stream: TMS64): Boolean;
   var
     strip_num: Integer;
@@ -2451,18 +2541,25 @@ begin
       Exit;
     end;
 
+  if Length(StripArry) < 10 then
+    begin
+      DoFor;
+    end
+  else
+    begin
 {$IFDEF Parallel}
 {$IFDEF FPC}
-  FPCParallelFor(@Nested_ParallelFor, 0, Length(StripArry) - 1);
+      FPCParallelFor(@Nested_ParallelFor, 0, Length(StripArry) - 1);
 {$ELSE FPC}
-  DelphiParallelFor(0, Length(StripArry) - 1, procedure(pass: Integer)
-    begin
-      SelectDecompressStream(StripArry[pass].sour, StripArry[pass].dest);
-    end);
+      DelphiParallelFor(0, Length(StripArry) - 1, procedure(pass: Integer)
+        begin
+          SelectDecompressStream(StripArry[pass].sour, StripArry[pass].dest);
+        end);
 {$ENDIF FPC}
 {$ELSE Parallel}
-  DoFor;
+      DoFor;
 {$ENDIF Parallel}
+    end;
   BuildOutput;
   FreeBuff;
 end;
@@ -2718,6 +2815,41 @@ begin
       end;
   except
       Result := '';
+  end;
+end;
+
+function StreamReadStringAsBuff(const stream: TCore_Stream): TBytes;
+var
+  L: Cardinal;
+begin
+  try
+    L := StreamReadUInt32(stream);
+    if L > 0 then
+      begin
+        SetLength(Result, L);
+        stream.read(Result[0], L);
+      end
+    else
+        SetLength(Result, 0);
+  except
+      SetLength(Result, 0);
+  end;
+end;
+
+procedure StreamIgnoreReadString(const stream: TCore_Stream);
+var
+  L: Cardinal;
+  b: TBytes;
+begin
+  try
+    L := StreamReadUInt32(stream);
+    if L > 0 then
+      begin
+        SetLength(b, L);
+        stream.read(b[0], L);
+        SetLength(b, 0);
+      end;
+  except
   end;
 end;
 

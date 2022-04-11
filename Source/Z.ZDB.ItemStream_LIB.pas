@@ -8,7 +8,8 @@ unit Z.ZDB.ItemStream_LIB;
 
 interface
 
-uses SysUtils, Z.Core, Classes, Z.UnicodeMixedLib, Z.ZDB.ObjectData_LIB, Z.ZDB, Z.PascalStrings, Z.UPascalStrings;
+uses SysUtils, Z.Core, Classes, Z.UnicodeMixedLib, Z.ZDB.ObjectData_LIB, Z.ZDB, Z.MemoryStream,
+  Z.PascalStrings, Z.UPascalStrings;
 
 type
   TItemStream = class(TCore_Stream)
@@ -43,6 +44,18 @@ type
     function UpdateHandle: Boolean;
     function CloseHandle: Boolean;
     property Hnd: PItemHandle read ItemHnd_Ptr;
+  end;
+
+  TMS64_Helper__ = class helper for TMS64
+  public
+    procedure LoadFrom_ZDB_File(eng_: TObjectDataManager; FileName: SystemString);
+    procedure SaveTo_ZDB_File(eng_: TObjectDataManager; FileName: SystemString);
+  end;
+
+  TMem64_Helper__ = class helper for TMem64
+  public
+    procedure LoadFrom_ZDB_File(eng_: TObjectDataManager; FileName: SystemString);
+    procedure SaveTo_ZDB_File(eng_: TObjectDataManager; FileName: SystemString);
   end;
 
 implementation
@@ -198,13 +211,20 @@ const
   MaxBufSize = $F000;
 var
   BufSize, N: Int64;
-  buffer: PByte;
+  buffer: Pointer;
 begin
   if Count <= 0 then
     begin
       Source.Position := 0;
       Count := Source.Size;
     end;
+
+  if Source is TMS64 then
+    begin
+      Result := Write64(TMS64(Source).Memory^, Count);
+      exit;
+    end;
+
   Result := Count;
   if Count > MaxBufSize then
       BufSize := MaxBufSize
@@ -218,12 +238,14 @@ begin
             N := BufSize
         else
             N := Count;
-        Source.ReadBuffer(buffer^, N);
-        WriteBuffer(buffer^, N);
+        if Source.Read(buffer^, N) <> N then
+            RaiseInfo('item read error.');
+        if Write64(buffer^, N) <> N then
+            RaiseInfo('item write error.');
         Dec(Count, N);
       end;
   finally
-      System.FreeMem(buffer);
+      System.FreeMemory(buffer);
   end;
 end;
 
@@ -248,6 +270,61 @@ end;
 function TItemStream.CloseHandle: Boolean;
 begin
   Result := DB_Engine.ItemClose(ItemHnd_Ptr^);
+end;
+
+procedure TMS64_Helper__.LoadFrom_ZDB_File(eng_: TObjectDataManager; FileName: SystemString);
+var
+  field_path_, item_name_: U_String;
+  Hnd: TItemHandle;
+begin
+  clear;
+  field_path_ := umlGetUnixFilePath(FileName);
+  item_name_ := umlGetUnixFileName(FileName);
+
+  if eng_.ItemOpen(field_path_, item_name_, Hnd) then
+    begin
+      eng_.ItemReadToStream(Hnd, Self);
+      eng_.ItemClose(Hnd);
+    end
+  else
+      RaiseInfo('no found %s', [FileName]);
+end;
+
+procedure TMS64_Helper__.SaveTo_ZDB_File(eng_: TObjectDataManager; FileName: SystemString);
+var
+  field_path_, item_name_: U_String;
+begin
+  field_path_ := umlGetUnixFilePath(FileName);
+  item_name_ := umlGetUnixFileName(FileName);
+  eng_.ItemWriteFromStream(field_path_, item_name_, Self);
+end;
+
+procedure TMem64_Helper__.LoadFrom_ZDB_File(eng_: TObjectDataManager; FileName: SystemString);
+var
+  field_path_, item_name_: U_String;
+  Hnd: TItemHandle;
+begin
+  field_path_ := umlGetUnixFilePath(FileName);
+  item_name_ := umlGetUnixFileName(FileName);
+
+  if eng_.ItemOpen(field_path_, item_name_, Hnd) then
+    begin
+      Size := Hnd.Item.Size;
+      eng_.ItemRead(Hnd, Size, Memory^);
+      eng_.ItemClose(Hnd);
+    end
+  else
+      RaiseInfo('no found %s', [FileName]);
+end;
+
+procedure TMem64_Helper__.SaveTo_ZDB_File(eng_: TObjectDataManager; FileName: SystemString);
+var
+  field_path_, item_name_: U_String;
+  Hnd: TItemHandle;
+begin
+  field_path_ := umlGetUnixFilePath(FileName);
+  item_name_ := umlGetUnixFileName(FileName);
+  eng_.ItemWriteFromStream(field_path_, item_name_, Self.Stream64);
 end;
 
 end.

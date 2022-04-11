@@ -49,7 +49,7 @@ type
     procedure RecvTunnel_ConnectResult(const cState: Boolean);
 
     procedure RequestListen_Result(Sender: TPeerIO; Result_: TDFE);
-    procedure delay_RequestListen(Sender: TNPostExecute);
+    procedure delay_RequestListen(Sender: TN_Post_Execute);
 
     procedure Open;
 
@@ -197,7 +197,7 @@ begin
       DoStatus('failed: remote host:%s port:%s listen error!', [XClientTunnel.Host.Text, Remote_ListenPort.Text]);
 end;
 
-procedure TXClientMapping.delay_RequestListen(Sender: TNPostExecute);
+procedure TXClientMapping.delay_RequestListen(Sender: TN_Post_Execute);
 var
   de: TDFE;
 begin

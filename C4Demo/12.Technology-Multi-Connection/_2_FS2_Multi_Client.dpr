@@ -16,7 +16,8 @@ uses
   Z.Net,
   Z.Net.PhysicsIO,
   Z.Net.C4,
-  Z.Net.C4_FS2;
+  Z.Net.C4_FS2,
+  Z.Net.C4_Console_APP;
 
 var
   exit_signal: Boolean;
@@ -24,11 +25,15 @@ var
 procedure Do_Check_On_Exit;
 var
   n: string;
+  cH: TC40_Console_Help;
 begin
+  cH := TC40_Console_Help.Create;
   repeat
     TCompute.Sleep(100);
     Readln(n);
-  until umlMultipleMatch(['exit', 'close'], n);
+    cH.Run_HelpCmd(n);
+  until cH.IsExit;
+  disposeObject(cH);
   exit_signal := True;
 end;
 
@@ -86,7 +91,7 @@ begin
   PoolFrag_Num := 0;
   for i := low(arry_fs2_tunnel) to high(arry_fs2_tunnel) do
     begin
-      TC40_FS2_Client(arry_fs2_tunnel[i]).FS2_PoolFragP(0, 10000, procedure(Sender: TC40_FS2_Client; arry: TFS2_PoolFragInfo_Array)
+      TC40_FS2_Client(arry_fs2_tunnel[i]).FS2_PoolFragP(procedure(Sender: TC40_FS2_Client; arry: TFS2_PoolFragInfo_Array)
         var
           info: TFS2_PoolFragInfo;
         begin
@@ -100,13 +105,13 @@ begin
   while PoolFrag_Num > 0 do
       Z.Net.C4.C40Progress;
 
-  DoStatus('input exit or close do exit.');
-
-  // 信号循环模型，console里面输入exit关闭
+  // 主循环
+  StatusThreadID := False;
   exit_signal := False;
   TCompute.RunC_NP(@Do_Check_On_Exit);
   while not exit_signal do
       Z.Net.C4.C40Progress;
+
   Z.Net.C4.C40Clean;
 
 end.

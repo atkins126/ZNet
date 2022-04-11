@@ -63,6 +63,7 @@ type
     procedure cmd_Usr_RequestAddFriend(Sender: TPeerIO; InData: TDFE);
     procedure cmd_Usr_ReponseAddFriend(Sender: TPeerIO; InData: TDFE);
     procedure cmd_Usr_OnlineNum(Sender: TPeerIO; InData, OutData: TDFE);
+    procedure cmd_Usr_OnlineList(Sender: TPeerIO; InData, OutData: TDFE);
     procedure cmd_Usr_Kick(Sender: TPeerIO; InData: TDFE);
     procedure cmd_Usr_Enabled(Sender: TPeerIO; InData: TDFE);
     procedure cmd_Usr_Disable(Sender: TPeerIO; InData: TDFE);
@@ -95,7 +96,7 @@ type
     destructor Destroy; override;
     procedure SafeCheck; override;
     procedure Progress; override;
-    function RegUser(UserName_, passwd_: U_String): Boolean;
+    function RegUser(UserName_, passwd_: U_String): TZDB2_Json;
     procedure SendMsg(FromUserName_, ToUserName_, Msg_: U_String);
   end;
 
@@ -125,7 +126,7 @@ type
     OnResultC: TON_Usr_IsOpenC;
     OnResultM: TON_Usr_IsOpenM;
     OnResultP: TON_Usr_IsOpenP;
-    constructor Create; override;
+    constructor Create;
     procedure DoStreamParamEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData, Result_: TDFE); override;
     procedure DoStreamFailedEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData: TDFE); override;
   end;
@@ -144,7 +145,7 @@ type
     OnResultC: TON_Usr_GetFriendsC;
     OnResultM: TON_Usr_GetFriendsM;
     OnResultP: TON_Usr_GetFriendsP;
-    constructor Create; override;
+    constructor Create;
     procedure DoStreamParamEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData, Result_: TDFE); override;
     procedure DoStreamFailedEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData: TDFE); override;
   end;
@@ -163,7 +164,26 @@ type
     OnResultC: TON_Usr_OnlineNumC;
     OnResultM: TON_Usr_OnlineNumM;
     OnResultP: TON_Usr_OnlineNumP;
-    constructor Create; override;
+    constructor Create;
+    procedure DoStreamParamEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData, Result_: TDFE); override;
+    procedure DoStreamFailedEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData: TDFE); override;
+  end;
+
+  TON_Usr_OnlineListC = procedure(Sender: TC40_UserDB_Client; arry: U_StringArray);
+  TON_Usr_OnlineListM = procedure(Sender: TC40_UserDB_Client; arry: U_StringArray) of object;
+{$IFDEF FPC}
+  TON_Usr_OnlineListP = procedure(Sender: TC40_UserDB_Client; arry: U_StringArray) is nested;
+{$ELSE FPC}
+  TON_Usr_OnlineListP = reference to procedure(Sender: TC40_UserDB_Client; arry: U_StringArray);
+{$ENDIF FPC}
+
+  TON_Usr_OnlineList = class(TOnResultBridge)
+  public
+    Client: TC40_UserDB_Client;
+    OnResultC: TON_Usr_OnlineListC;
+    OnResultM: TON_Usr_OnlineListM;
+    OnResultP: TON_Usr_OnlineListP;
+    constructor Create;
     procedure DoStreamParamEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData, Result_: TDFE); override;
     procedure DoStreamFailedEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData: TDFE); override;
   end;
@@ -182,7 +202,7 @@ type
     OnResultC: TON_Usr_RegC;
     OnResultM: TON_Usr_RegM;
     OnResultP: TON_Usr_RegP;
-    constructor Create; override;
+    constructor Create;
     procedure DoStreamParamEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData, Result_: TDFE); override;
     procedure DoStreamFailedEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData: TDFE); override;
   end;
@@ -201,7 +221,7 @@ type
     OnResultC: TON_Usr_ExistsC;
     OnResultM: TON_Usr_ExistsM;
     OnResultP: TON_Usr_ExistsP;
-    constructor Create; override;
+    constructor Create;
     procedure DoStreamParamEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData, Result_: TDFE); override;
     procedure DoStreamFailedEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData: TDFE); override;
   end;
@@ -220,7 +240,7 @@ type
     OnResultC: TON_Usr_AuthC;
     OnResultM: TON_Usr_AuthM;
     OnResultP: TON_Usr_AuthP;
-    constructor Create; override;
+    constructor Create;
     procedure DoStreamParamEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData, Result_: TDFE); override;
     procedure DoStreamFailedEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData: TDFE); override;
   end;
@@ -239,7 +259,7 @@ type
     OnResultC: TON_Usr_ChangePasswordC;
     OnResultM: TON_Usr_ChangePasswordM;
     OnResultP: TON_Usr_ChangePasswordP;
-    constructor Create; override;
+    constructor Create;
     procedure DoStreamParamEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData, Result_: TDFE); override;
     procedure DoStreamFailedEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData: TDFE); override;
   end;
@@ -258,7 +278,7 @@ type
     OnResultC: TON_Usr_NewIdentifierC;
     OnResultM: TON_Usr_NewIdentifierM;
     OnResultP: TON_Usr_NewIdentifierP;
-    constructor Create; override;
+    constructor Create;
     procedure DoStreamParamEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData, Result_: TDFE); override;
     procedure DoStreamFailedEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData: TDFE); override;
   end;
@@ -277,7 +297,7 @@ type
     OnResultC: TON_Usr_GetC;
     OnResultM: TON_Usr_GetM;
     OnResultP: TON_Usr_GetP;
-    constructor Create; override;
+    constructor Create;
     procedure DoStreamParamEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData, Result_: TDFE); override;
     procedure DoStreamFailedEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData: TDFE); override;
   end;
@@ -296,7 +316,7 @@ type
     OnResultC: TON_Usr_GetPrimaryIdentifierC;
     OnResultM: TON_Usr_GetPrimaryIdentifierM;
     OnResultP: TON_Usr_GetPrimaryIdentifierP;
-    constructor Create; override;
+    constructor Create;
     procedure DoStreamParamEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData, Result_: TDFE); override;
     procedure DoStreamFailedEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData: TDFE); override;
   end;
@@ -334,6 +354,9 @@ type
     procedure Usr_OnlineNumC(OnResult: TON_Usr_OnlineNumC);
     procedure Usr_OnlineNumM(OnResult: TON_Usr_OnlineNumM);
     procedure Usr_OnlineNumP(OnResult: TON_Usr_OnlineNumP);
+    procedure Usr_OnlineListC(Max_Num: Integer; OnResult: TON_Usr_OnlineListC);
+    procedure Usr_OnlineListM(Max_Num: Integer; OnResult: TON_Usr_OnlineListM);
+    procedure Usr_OnlineListP(Max_Num: Integer; OnResult: TON_Usr_OnlineListP);
     procedure Usr_Kick(UserName_: U_String);
     procedure Usr_Enabled(UserName_: U_String);
     procedure Usr_Disable(UserName_: U_String);
@@ -861,6 +884,50 @@ begin
   OutData.WriteInteger(UserIdentifierHash.Count);
 end;
 
+procedure TC40_UserDB_Service.cmd_Usr_OnlineList(Sender: TPeerIO; InData, OutData: TDFE);
+var
+  Max_Num: Integer;
+  Arry_: TIO_Array;
+  ID_: Cardinal;
+  IO_: TPeerIO;
+  Recv_IO_Def: TC40_UserDB_Service_RecvTunnel_NoAuth;
+{$IFDEF FPC}
+  procedure do_fpc_progress(const Name_: PSystemString; Obj_: TZDB2_Json);
+  begin
+    if OutData.Count < Max_Num then
+        OutData.WriteString(Obj_.Data.S['PrimaryIdentifier']);
+  end;
+{$ENDIF FPC}
+
+
+begin
+  Max_Num := InData.R.ReadInteger;
+
+  DTNoAuthService.RecvTunnel.GetIO_Array(Arry_);
+  for ID_ in Arry_ do
+    begin
+      IO_ := DTNoAuthService.RecvTunnel[ID_];
+      if (IO_ <> nil) and TC40_UserDB_Service_RecvTunnel_NoAuth(IO_.UserDefine).LinkOk then
+        begin
+          Recv_IO_Def := IO_.IODefine as TC40_UserDB_Service_RecvTunnel_NoAuth;
+
+          if OutData.Count < Max_Num then
+            begin
+{$IFDEF FPC}
+              Recv_IO_Def.OpenUserIdentifier.ProgressP(@do_fpc_progress);
+{$ELSE FPC}
+              Recv_IO_Def.OpenUserIdentifier.ProgressP(procedure(const Name_: PSystemString; Obj_: TZDB2_Json)
+                begin
+                  if OutData.Count < Max_Num then
+                      OutData.WriteString(Obj_.Data.S['PrimaryIdentifier']);
+                end);
+{$ENDIF FPC}
+            end;
+        end;
+    end;
+  SetLength(Arry_, 0);
+end;
+
 procedure TC40_UserDB_Service.cmd_Usr_Kick(Sender: TPeerIO; InData: TDFE);
 var
   UserName_: U_String;
@@ -929,6 +996,13 @@ begin
     begin
       OutData.WriteBool(False);
       OutData.WriteString('User name "%s" is too short', [UserName_.Text]);
+      exit;
+    end;
+
+  if UserName_.Exists([':', '/', '\', '?', '*', '"', '|', ',']) then
+    begin
+      OutData.WriteBool(False);
+      OutData.WriteString('User name "%s" illegal symbols', [UserName_.Text]);
       exit;
     end;
 
@@ -1065,6 +1139,13 @@ begin
     begin
       OutData.WriteBool(False);
       OutData.WriteString('New Identifier is too short');
+      exit;
+    end;
+
+  if NewIdentifier_.Exists([':', '/', '\', '?', '*', '"', '|', ',']) then
+    begin
+      OutData.WriteBool(False);
+      OutData.WriteString('New Identifier "%s" illegal symbols', [NewIdentifier_.Text]);
       exit;
     end;
 
@@ -1291,6 +1372,7 @@ begin
   DTNoAuthService.RecvTunnel.RegisterDirectStream('Usr_RequestAddFriend').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_Usr_RequestAddFriend;
   DTNoAuthService.RecvTunnel.RegisterDirectStream('Usr_ReponseAddFriend').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_Usr_ReponseAddFriend;
   DTNoAuthService.RecvTunnel.RegisterStream('Usr_OnlineNum').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_Usr_OnlineNum;
+  DTNoAuthService.RecvTunnel.RegisterStream('Usr_OnlineList').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_Usr_OnlineList;
   DTNoAuthService.RecvTunnel.RegisterDirectStream('Usr_Kick').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_Usr_Kick;
   DTNoAuthService.RecvTunnel.RegisterDirectStream('Usr_Enabled').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_Usr_Enabled;
   DTNoAuthService.RecvTunnel.RegisterDirectStream('Usr_Disable').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_Usr_Disable;
@@ -1347,8 +1429,12 @@ begin
       for i := 0 to identifier_arry.Count - 1 do
         begin
           if UserIdentifierHash.Exists(identifier_arry.S[i]) then
+            begin
               DoStatus('repeat user %s', [identifier_arry.S[i]]);
-          UserIdentifierHash.Add(identifier_arry.S[i], Json);
+              UserIdentifierHash.Add(identifier_arry.S[i], Json);
+            end
+          else
+              UserIdentifierHash.FastAdd(identifier_arry.S[i], Json);
         end;
       Json.RecycleMemory;
     end;
@@ -1376,13 +1462,13 @@ begin
   JsonDatabase.Progress;
 end;
 
-function TC40_UserDB_Service.RegUser(UserName_, passwd_: U_String): Boolean;
+function TC40_UserDB_Service.RegUser(UserName_, passwd_: U_String): TZDB2_Json;
 var
   Json: TZDB2_Json;
   arry: TZJArry;
   i: Integer;
 begin
-  Result := False;
+  Result := nil;
   if (length(UserName_.Bytes) < 4) then
     begin
       DoStatus('User name "%s" is too short', [UserName_.Text]);
@@ -1412,7 +1498,7 @@ begin
   for i := 0 to arry.Count - 1 do
       UserIdentifierHash.Add(arry.S[i], Json);
   DoStatus('user "%s" registration done.', [UserName_.Text]);
-  Result := True;
+  Result := Json;
 end;
 
 procedure TC40_UserDB_Service.SendMsg(FromUserName_, ToUserName_, Msg_: U_String);
@@ -1601,6 +1687,55 @@ begin
         OnResultM(Client, Online_Num, User_Num);
     if Assigned(OnResultP) then
         OnResultP(Client, Online_Num, User_Num);
+  except
+  end;
+  DelayFreeObject(1.0, self);
+end;
+
+constructor TON_Usr_OnlineList.Create;
+begin
+  inherited Create;
+  Client := nil;
+  OnResultC := nil;
+  OnResultM := nil;
+  OnResultP := nil;
+end;
+
+procedure TON_Usr_OnlineList.DoStreamParamEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData, Result_: TDFE);
+var
+  arry: U_StringArray;
+  i: Integer;
+begin
+  SetLength(arry, Result_.Count);
+  for i := 0 to Result_.Count - 1 do
+      arry[i] := Result_.ReadString(i);
+
+  try
+    if Assigned(OnResultC) then
+        OnResultC(Client, arry);
+    if Assigned(OnResultM) then
+        OnResultM(Client, arry);
+    if Assigned(OnResultP) then
+        OnResultP(Client, arry);
+  except
+  end;
+  SetLength(arry, 0);
+  DelayFreeObject(1.0, self);
+end;
+
+procedure TON_Usr_OnlineList.DoStreamFailedEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData: TDFE);
+var
+  arry: U_StringArray;
+begin
+  SetLength(arry, 0);
+
+  try
+    if Assigned(OnResultC) then
+        OnResultC(Client, arry);
+    if Assigned(OnResultM) then
+        OnResultM(Client, arry);
+    if Assigned(OnResultP) then
+        OnResultP(Client, arry);
   except
   end;
   DelayFreeObject(1.0, self);
@@ -2331,6 +2466,54 @@ begin
 
   D := TDFE.Create;
   DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_OnlineNum', D, nil, nil,
+{$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamParamEvent, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamFailedEvent);
+  DisposeObject(D);
+end;
+
+procedure TC40_UserDB_Client.Usr_OnlineListC(Max_Num: Integer; OnResult: TON_Usr_OnlineListC);
+var
+  tmp: TON_Usr_OnlineList;
+  D: TDFE;
+begin
+  tmp := TON_Usr_OnlineList.Create;
+  tmp.Client := self;
+  tmp.OnResultC := OnResult;
+
+  D := TDFE.Create;
+  D.WriteInteger(Max_Num);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_OnlineList', D, nil, nil,
+{$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamParamEvent, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamFailedEvent);
+  DisposeObject(D);
+end;
+
+procedure TC40_UserDB_Client.Usr_OnlineListM(Max_Num: Integer; OnResult: TON_Usr_OnlineListM);
+var
+  tmp: TON_Usr_OnlineList;
+  D: TDFE;
+begin
+  tmp := TON_Usr_OnlineList.Create;
+  tmp.Client := self;
+  tmp.OnResultM := OnResult;
+
+  D := TDFE.Create;
+  D.WriteInteger(Max_Num);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_OnlineList', D, nil, nil,
+{$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamParamEvent, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamFailedEvent);
+  DisposeObject(D);
+end;
+
+procedure TC40_UserDB_Client.Usr_OnlineListP(Max_Num: Integer; OnResult: TON_Usr_OnlineListP);
+var
+  tmp: TON_Usr_OnlineList;
+  D: TDFE;
+begin
+  tmp := TON_Usr_OnlineList.Create;
+  tmp.Client := self;
+  tmp.OnResultP := OnResult;
+
+  D := TDFE.Create;
+  D.WriteInteger(Max_Num);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_OnlineList', D, nil, nil,
 {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamParamEvent, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamFailedEvent);
   DisposeObject(D);
 end;

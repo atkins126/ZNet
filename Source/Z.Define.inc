@@ -182,6 +182,7 @@
     {$I-} { Input output checking }
     {$IF Defined(Android) or Defined(IOS)}
       {$O-} { close optimization }
+      {$UNDEF INLINE_ASM}
     {$ELSE}
       {$O+} { open optimization }
       {$INLINE AUTO} { inline }
@@ -201,6 +202,9 @@
   {$ELSEIF Defined(IOS)}
     {$DEFINE SMALL_RASTER_FONT_Build_In}
     {$DEFINE PhysicsIO_On_Indy}
+  {$ELSEIF Defined(OSX)}
+    {$DEFINE SMALL_RASTER_FONT_Build_In}
+    {$DEFINE PhysicsIO_On_Indy}
   {$ELSE}
     // PhysicsIO interface
     // {$DEFINE PhysicsIO_On_ICS}
@@ -214,8 +218,13 @@
   {$Z1} { Minimum enum size }
 {$ENDIF FPC}
 
-// Activate file system for ZNet-DoubleIO
-{$DEFINE DoubleIOFileSystem}
+{$IFDEF NO_FS}
+  // Disable file system for ZNet-DoubleIO
+  {$UNDEF DoubleIOFileSystem}
+{$ELSE NO_FS}
+  // Enabled file system for ZNet-DoubleIO
+  {$DEFINE DoubleIOFileSystem}
+{$ENDIF NO_FS}
 
 // Using fillchar replace of FillPtr
 // Maybe fillchar works on MMX / SSE2,
@@ -275,7 +284,7 @@
 {$A+} { Word Align Data }
 {$Q-} { Overflow checking }
 {$B-} { Complete boolean evaluation }
-{$J-} { Writeable typed constants }
+{$J+} { Writeable typed constants }
 
 (*
   Pointer math is simply treating any given typed pointer in some narrow,

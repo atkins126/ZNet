@@ -80,7 +80,7 @@ type
     FLoginUserList: THashVariantList;
     FLoginUserDefineIOList: THashObjectList;
     FCadencerEngine: TCadencer;
-    FProgressEngine: TNProgressPost;
+    FProgressEngine: TN_Progress_Tool;
     { event }
     FOnLinkSuccess: TOnLinkSuccess;
     FOnUserOut: TOnUserOut;
@@ -204,11 +204,11 @@ type
 
     property CadencerEngine: TCadencer read FCadencerEngine;
 
-    property ProgressEngine: TNProgressPost read FProgressEngine;
-    property ProgressPost: TNProgressPost read FProgressEngine;
-    property PostProgress: TNProgressPost read FProgressEngine;
-    property PostRun: TNProgressPost read FProgressEngine;
-    property PostExecute: TNProgressPost read FProgressEngine;
+    property ProgressEngine: TN_Progress_Tool read FProgressEngine;
+    property ProgressPost: TN_Progress_Tool read FProgressEngine;
+    property PostProgress: TN_Progress_Tool read FProgressEngine;
+    property PostRun: TN_Progress_Tool read FProgressEngine;
+    property PostExecute: TN_Progress_Tool read FProgressEngine;
 
     property RecvTunnel: TZNet_Server read FRecvTunnel;
     property SendTunnel: TZNet_Server read FSendTunnel;
@@ -294,7 +294,7 @@ type
     FLastCadencerTime: Double;
     FServerDelay: Double;
 
-    FProgressEngine: TNProgressPost;
+    FProgressEngine: TN_Progress_Tool;
   public
     { registed client command }
     procedure Command_FileInfo(Sender: TPeerIO; InData: TDFE); virtual;
@@ -567,11 +567,11 @@ type
     property CadencerEngine: TCadencer read FCadencerEngine;
     property ServerDelay: Double read FServerDelay;
 
-    property ProgressEngine: TNProgressPost read FProgressEngine;
-    property ProgressPost: TNProgressPost read FProgressEngine;
-    property PostProgress: TNProgressPost read FProgressEngine;
-    property PostRun: TNProgressPost read FProgressEngine;
-    property PostExecute: TNProgressPost read FProgressEngine;
+    property ProgressEngine: TN_Progress_Tool read FProgressEngine;
+    property ProgressPost: TN_Progress_Tool read FProgressEngine;
+    property PostProgress: TN_Progress_Tool read FProgressEngine;
+    property PostRun: TN_Progress_Tool read FProgressEngine;
+    property PostExecute: TN_Progress_Tool read FProgressEngine;
 
     property RecvTunnel: TZNet_Client read FRecvTunnel;
     property SendTunnel: TZNet_Client read FSendTunnel;
@@ -605,7 +605,9 @@ type
     property QuietMode: Boolean read GetQuietMode write SetQuietMode;
   end;
 
+  TDT_P2PVM_Client = class;
   TDT_P2PVM_ServicePool = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<TDT_P2PVM_Service>;
+  TOn_DT_P2PVM_Client_TunnelLink = procedure(Sender: TDT_P2PVM_Client) of object;
 
   TDT_P2PVM_Client = class(TCore_Object)
   private
@@ -628,6 +630,7 @@ type
     LastUser, LastPasswd: SystemString;
     RegisterUserAndLogin: Boolean;
     AutomatedConnection: Boolean;
+    OnTunnelLink: TOn_DT_P2PVM_Client_TunnelLink;
 
     constructor Create(ClientClass_: TDTClientClass);
     destructor Destroy; override;
@@ -2769,7 +2772,7 @@ begin
 
   FCadencerEngine := TCadencer.Create;
   FCadencerEngine.OnProgress := {$IFDEF FPC}@{$ENDIF FPC}CadencerProgress;
-  FProgressEngine := TNProgressPost.Create;
+  FProgressEngine := TN_Progress_Tool.Create;
 
   SwitchAsDefaultPerformance;
 
@@ -3990,7 +3993,7 @@ begin
   FLastCadencerTime := 0;
   FServerDelay := 0;
 
-  FProgressEngine := TNProgressPost.Create;
+  FProgressEngine := TN_Progress_Tool.Create;
 
   FAsyncConnectAddr := '';
   FAsyncConnRecvPort := 0;
@@ -6578,6 +6581,8 @@ begin
       RegisterUserAndLogin := False;
       if AutomatedConnection then
           Reconnection := True;
+      if Assigned(OnTunnelLink) then
+          OnTunnelLink(Self);
     end;
 end;
 
@@ -6625,6 +6630,7 @@ begin
 
   RegisterUserAndLogin := False;
   AutomatedConnection := True;
+  OnTunnelLink := nil;
 
   RecvTunnel.PrefixName := 'DT';
   RecvTunnel.Name := 'R';

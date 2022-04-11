@@ -17,7 +17,26 @@ uses
   Z.Net,
   Z.Net.PhysicsIO,
   Z.Net.C4,
-  Z.Net.C4_FS2;
+  Z.Net.C4_FS2,
+  Z.Net.C4_Console_APP;
+
+var
+  exit_signal: Boolean;
+
+procedure Do_Check_On_Exit;
+var
+  n: string;
+  cH: TC40_Console_Help;
+begin
+  cH := TC40_Console_Help.Create;
+  repeat
+    TCompute.Sleep(100);
+    Readln(n);
+    cH.Run_HelpCmd(n);
+  until cH.IsExit;
+  disposeObject(cH);
+  exit_signal := True;
+end;
 
 const
   // 调度服务器端口公网地址,可以是ipv4,ipv6,dns
@@ -96,7 +115,7 @@ begin
 
                       // FS2_PoolFrag方法可以实现对FS2.0的大规模远程遍历，对FS2.0的备份和同步，提供基础遍历支持功能
                       // 注意：FS2_PoolFrag的遍历机制必须分批进行
-                      GetMyFS_Client.FS2_PoolFragP(0, 100, procedure(Sender: TC40_FS2_Client; arry: TFS2_PoolFragInfo_Array)
+                      GetMyFS_Client.FS2_PoolFragP(procedure(Sender: TC40_FS2_Client; arry: TFS2_PoolFragInfo_Array)
                         var
                           i: integer;
                         begin
@@ -110,10 +129,12 @@ begin
     end);
 
   // 主循环
-  while True do
-    begin
+  StatusThreadID := False;
+  exit_signal := False;
+  TCompute.RunC_NP(@Do_Check_On_Exit);
+  while not exit_signal do
       Z.Net.C4.C40Progress;
-      TCompute.Sleep(1);
-    end;
+
+  Z.Net.C4.C40Clean;
 
 end.

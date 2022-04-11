@@ -46,9 +46,11 @@ type
 
     procedure Rebuild;
     procedure Clear;
-    procedure Delete(N_: SystemString);
+    procedure Delete(Section_: SystemString);
+    procedure DeleteKey(Section_, Key_: SystemString);
 
-    function Exists(N_: SystemString): Boolean;
+    function Exists(Section_: SystemString): Boolean;
+    function ExistsKey(Section_, Key_: SystemString): Boolean;
 
     function GetDefaultValue(const SectionName, KeyName: SystemString; const DefaultValue: Variant): Variant;
     procedure SetDefaultValue(const SectionName, KeyName: SystemString; const Value: Variant);
@@ -64,6 +66,7 @@ type
     procedure DataExport(TextList_: TCore_Strings); overload;
     procedure DataExport(TextList_: TListPascalString); overload;
 
+    procedure SwapInstance(sour: THashTextEngine);
     procedure Merge(sour: THashTextEngine);
     procedure Assign(sour: THashTextEngine);
     function Same(sour: THashTextEngine): Boolean;
@@ -74,9 +77,12 @@ type
     procedure LoadFromFile(FileName: SystemString);
     procedure SaveToFile(FileName: SystemString);
 
-    function TotalCount: NativeInt;
-    function MaxSectionNameLen: Integer;
-    function MinSectionNameLen: Integer;
+    function TotalCount: Integer;
+    property Count: Integer read TotalCount;
+    function MaxSectionNameSize: Integer;
+    property MaxSectionNameLen: Integer read MaxSectionNameSize;
+    function MinSectionNameSize: Integer;
+    property MinSectionNameLen: Integer read MinSectionNameSize;
 
     function GetAsText: SystemString;
     procedure SetAsText(const Value: SystemString);
@@ -310,7 +316,7 @@ end;
 
 constructor THashTextEngine.Create;
 begin
-  Create(10, 10);
+  Create(16, 16);
 end;
 
 constructor THashTextEngine.Create(SectionPoolSize_: Integer);
@@ -382,6 +388,7 @@ begin
     end;
 
   DisposeObject(tmpSecLst);
+  FIsChanged := True;
 end;
 
 procedure THashTextEngine.Clear;
@@ -390,18 +397,38 @@ begin
   FSectionHashVariantList.Clear;
   FSectionHashStringList.Clear;
   FComment.Clear;
+  FIsChanged := True;
 end;
 
-procedure THashTextEngine.Delete(N_: SystemString);
+procedure THashTextEngine.Delete(Section_: SystemString);
 begin
-  FSectionList.Delete(N_);
-  FSectionHashVariantList.Delete(N_);
-  FSectionHashStringList.Delete(N_);
+  FSectionList.Delete(Section_);
+  FSectionHashVariantList.Delete(Section_);
+  FSectionHashStringList.Delete(Section_);
+  FIsChanged := True;
 end;
 
-function THashTextEngine.Exists(N_: SystemString): Boolean;
+procedure THashTextEngine.DeleteKey(Section_, Key_: SystemString);
 begin
-  Result := FSectionList.Exists(N_) or FSectionHashVariantList.Exists(N_) or FSectionHashStringList.Exists(N_);
+  if FSectionHashVariantList.Exists(Section_) then
+      THashVariantList(FSectionHashVariantList[Section_]).Delete(Key_);
+  if FSectionHashStringList.Exists(Section_) then
+      THashStringList(FSectionHashStringList[Section_]).Delete(Key_);
+  FIsChanged := True;
+end;
+
+function THashTextEngine.Exists(Section_: SystemString): Boolean;
+begin
+  Result := FSectionList.Exists(Section_) or FSectionHashVariantList.Exists(Section_) or FSectionHashStringList.Exists(Section_);
+end;
+
+function THashTextEngine.ExistsKey(Section_, Key_: SystemString): Boolean;
+begin
+  Result := False;
+  if FSectionHashVariantList.Exists(Section_) then
+      Result := THashVariantList(FSectionHashVariantList[Section_]).Exists(Key_) or Result;
+  if FSectionHashStringList.Exists(Section_) then
+      Result := THashStringList(FSectionHashStringList[Section_]).Exists(Key_) or Result;
 end;
 
 function THashTextEngine.GetDefaultValue(const SectionName, KeyName: SystemString; const DefaultValue: Variant): Variant;
@@ -591,6 +618,41 @@ begin
   DisposeObject(tmpSecLst);
 end;
 
+procedure THashTextEngine.SwapInstance(sour: THashTextEngine);
+var
+  bak_FComment: TCore_Strings;
+  bak_FSectionList, bak_FSectionHashVariantList, bak_FSectionHashStringList: THashObjectList;
+  bak_FAutoUpdateDefaultValue: Boolean;
+  bak_FSectionPoolSize, bak_FListPoolSize: Integer;
+begin
+  bak_FComment := FComment;
+  bak_FSectionList := FSectionList;
+  bak_FSectionHashVariantList := FSectionHashVariantList;
+  bak_FSectionHashStringList := FSectionHashStringList;
+  bak_FAutoUpdateDefaultValue := FAutoUpdateDefaultValue;
+  bak_FSectionPoolSize := FSectionPoolSize;
+  bak_FListPoolSize := FListPoolSize;
+
+  FComment := sour.FComment;
+  FSectionList := sour.FSectionList;
+  FSectionHashVariantList := sour.FSectionHashVariantList;
+  FSectionHashStringList := sour.FSectionHashStringList;
+  FAutoUpdateDefaultValue := sour.FAutoUpdateDefaultValue;
+  FSectionPoolSize := sour.FSectionPoolSize;
+  FListPoolSize := sour.FListPoolSize;
+
+  sour.FComment := bak_FComment;
+  sour.FSectionList := bak_FSectionList;
+  sour.FSectionHashVariantList := bak_FSectionHashVariantList;
+  sour.FSectionHashStringList := bak_FSectionHashStringList;
+  sour.FAutoUpdateDefaultValue := bak_FAutoUpdateDefaultValue;
+  sour.FSectionPoolSize := bak_FSectionPoolSize;
+  sour.FListPoolSize := bak_FListPoolSize;
+
+  IsChanged := True;
+  sour.IsChanged := True;
+end;
+
 procedure THashTextEngine.Merge(sour: THashTextEngine);
 var
   ns: TCore_StringList;
@@ -716,7 +778,7 @@ begin
   end;
 end;
 
-function THashTextEngine.TotalCount: NativeInt;
+function THashTextEngine.TotalCount: Integer;
 var
   i: Integer;
   tmpSecLst: TListPascalString;
@@ -743,16 +805,16 @@ begin
   DisposeObject(tmpSecLst);
 end;
 
-function THashTextEngine.MaxSectionNameLen: Integer;
+function THashTextEngine.MaxSectionNameSize: Integer;
 begin
-  Result := umlMax(FSectionList.HashList.MaxNameLen,
-    umlMax(FSectionHashVariantList.HashList.MaxNameLen, FSectionHashStringList.HashList.MaxNameLen));
+  Result := umlMax(FSectionList.HashList.MaxNameSize,
+    umlMax(FSectionHashVariantList.HashList.MaxNameSize, FSectionHashStringList.HashList.MaxNameSize));
 end;
 
-function THashTextEngine.MinSectionNameLen: Integer;
+function THashTextEngine.MinSectionNameSize: Integer;
 begin
-  Result := umlMin(FSectionList.HashList.MinNameLen,
-    umlMin(FSectionHashVariantList.HashList.MinNameLen, FSectionHashStringList.HashList.MinNameLen));
+  Result := umlMin(FSectionList.HashList.MinNameSize,
+    umlMin(FSectionHashVariantList.HashList.MinNameSize, FSectionHashStringList.HashList.MinNameSize));
 end;
 
 function THashTextEngine.GetAsText: SystemString;

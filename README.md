@@ -61,7 +61,67 @@ PascalRewriteModel.dproj是prp的建模工具，都可以编译通过，本文�
 后续我会专门开个项目讲解PascalRewrite模型的建模方法
 ```
 
-**更新日志**
+**最新更新日志**
+
+**2022-4-8 兼容性更新**
+
+```
+感谢qq896616118,qq6192122,qq276678295, 提供无法编译信息，已修复兼容XE8及其以后版本，dcc+clang for OSX/ios/android未测试
+```
+
+
+**2022-4-6内核革命性大更**
+
+```
+本次大更全部集中于底层，对于上层应用群：大数据，AI，图像处理，网络，提供天然优化
+重做线程池调度机制，重做Post Thread机制，重做TCompute线程触发机制，优化Z.Notify机制
+Z.Core在内部新增一个支持64位地址段的泛型链表
+重做MT19937随机数与线程实例匹配机制
+DisposeObject调用不再会遍历互斥锁池，直接Free干掉
+互斥锁池机制改为：UnlockObject(Obj)里面回收Critical句柄，释放内存
+TCompute线程机制新增原子状态机变量：IsRuning，IsExit，完整兼容系统内核机制
+synchronization机制（流程易错，效率超低），以后用状态机轻松回避它
+新增ZDB2线程支持内核库：Z.ZDB2.Thread.pas
+```
+
+**过去的更新日志**
+
+- 2022-3-24，新的并网机制：不影响之前的DP入网机制，已测试通过.
+- 2022-3-24，新增网盘支持核心，已测试通过.
+- 2022-3-16，给ZDB1.0的数据引擎增加了cache测试单元，因为减懒不写test case，所以疏忽，导致产生深度性质的cache bug.
+- 2022-3-16，修复ZDB1.0的底层Cache：这个bug太难fixed了
+- 2022-3-13，机制更新：C4入网不会再产生无用的链接：例如Depend Network包含DP，而目标网络没有DP服务，则不会产生链接，此机制更新对现有应用群无影响
+- 2022-3-13，console app给出了help接口：当console启动时可以通过help查阅服务器和隧道的当前状态，另：所有的demo均使用console app模式
+- 2022-3-13，修复DocUserDBDemo的启动问题
+- 2022-3-13，优化DP接口：不再生成无用连接，即使生成链接，在默认5秒以后，也会kill掉无用的连接
+- 2022-3-13，下个版本的ZNet将会支持网盘，更新幅度应该较大（大家放心，C4不会改机制，不影响现有应用群），本次更新的所有demo和库都测试通过，属于稳定版本（已经提交Release包）
+
+3-13 机制更新说明: **GetOrCreatePhysicsTunnel/SearchServiceAndBuildConnection**
+```pascal
+// GetOrCreatePhysicsTunnel 入网以后不用再管了，有新服务器入网时它自动调度，离线也是自动处理
+// 该方法需要保证C4网络有DP
+C40_PhysicsTunnelPool.GetOrCreatePhysicsTunnel('127.0.0.1', 8888, 'dp|myService', nil);
+
+// SearchServiceAndBuildConnection优于GetOrCreatePhysicsTunnel
+// SearchServiceAndBuildConnection 是一次入网，不需要DP，不支持运行时调度
+// 该方法只要C4网络有服务器标识符，都能入网
+// SearchServiceAndBuildConnection 可以支持最优负载
+C40_PhysicsTunnelPool.SearchServiceAndBuildConnection('127.0.0.1', 8888, 'myService', nil);
+
+// 如果要支持运行时调度，只需要包含DP
+C40_PhysicsTunnelPool.SearchServiceAndBuildConnection('127.0.0.1', 8888, 'DP|myService', nil);
+```
+3-13更新C4入网的命令行脚本: **AutoTunnel/Tunnel**
+```
+// C4脚本系统中的入网脚本，AutoTunnel方式优于Tunnel
+// autoTunnel=SearchServiceAndBuildConnection方式入网，为一次性
+// AutoTunnel(地址,端口,标识符,从服务器群选择负载最小的为false表示连上标识符为myService的全部服务器)
+myClient "AutoTunnel('127.0.0.1',9188,'DP|myService',False)"
+
+// Tunnel=GetOrCreatePhysicsTunnel方式入网，为一次性
+// Tunnel(地址,端口,标识符最好带有DP，这样C4才可以有自动化机制)
+myClient "Tunnel('127.0.0.1','9188','DP|myService')"
+```
 
 - 2022-2-13，修复了一个ZDB2重大bug：flush cache一个变量疏忽，导致写入错误的问题
 - 2022-2-13，在AdvanceDemo中新增大文件备份演示
@@ -71,5 +131,4 @@ PascalRewriteModel.dproj是prp的建模工具，都可以编译通过，本文�
 **文档篇幅有限，项目挺忙，暂时就写这么多，空了再为大家继续完善文档**
 - by.qq600585
 - 2022-1-19
-
 

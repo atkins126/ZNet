@@ -95,9 +95,9 @@ type
   protected
     FRecvTunnel, FSendTunnel: TZNet_Server;
     FCadencerEngine: TCadencer;
-    FProgressEngine: TNProgressPost;
+    FProgressEngine: TN_Progress_Tool;
     FFileSystem: Boolean;
-    FFileReceiveDirectory: SystemString;
+    FFileShareDirectory: SystemString;
     { event }
     FOnUserAuth: TVirtualAuth_OnAuth;
     FOnUserReg: TVirtualAuth_OnReg;
@@ -164,15 +164,16 @@ type
 
     property CadencerEngine: TCadencer read FCadencerEngine;
 
-    property ProgressEngine: TNProgressPost read FProgressEngine;
-    property ProgressPost: TNProgressPost read FProgressEngine;
-    property PostProgress: TNProgressPost read FProgressEngine;
-    property PostRun: TNProgressPost read FProgressEngine;
-    property PostExecute: TNProgressPost read FProgressEngine;
+    property ProgressEngine: TN_Progress_Tool read FProgressEngine;
+    property ProgressPost: TN_Progress_Tool read FProgressEngine;
+    property PostProgress: TN_Progress_Tool read FProgressEngine;
+    property PostRun: TN_Progress_Tool read FProgressEngine;
+    property PostExecute: TN_Progress_Tool read FProgressEngine;
 
     property FileSystem: Boolean read FFileSystem write FFileSystem;
-    property FileReceiveDirectory: SystemString read FFileReceiveDirectory write FFileReceiveDirectory;
-    property PublicFileDirectory: SystemString read FFileReceiveDirectory write FFileReceiveDirectory;
+    property FileReceiveDirectory: SystemString read FFileShareDirectory write FFileShareDirectory;
+    property PublicFileDirectory: SystemString read FFileShareDirectory write FFileShareDirectory;
+    property FileShareDirectory: SystemString read FFileShareDirectory write FFileShareDirectory;
 
     property RecvTunnel: TZNet_Server read FRecvTunnel;
     property SendTunnel: TZNet_Server read FSendTunnel;
@@ -254,7 +255,7 @@ type
     FCurrentReceiveStreamFileName: SystemString;
 
     FCadencerEngine: TCadencer;
-    FProgressEngine: TNProgressPost;
+    FProgressEngine: TN_Progress_Tool;
 
     FLastCadencerTime: Double;
     FServerDelay: Double;
@@ -431,11 +432,11 @@ type
 
     property CadencerEngine: TCadencer read FCadencerEngine;
 
-    property ProgressEngine: TNProgressPost read FProgressEngine;
-    property ProgressPost: TNProgressPost read FProgressEngine;
-    property PostProgress: TNProgressPost read FProgressEngine;
-    property PostRun: TNProgressPost read FProgressEngine;
-    property PostExecute: TNProgressPost read FProgressEngine;
+    property ProgressEngine: TN_Progress_Tool read FProgressEngine;
+    property ProgressPost: TN_Progress_Tool read FProgressEngine;
+    property PostProgress: TN_Progress_Tool read FProgressEngine;
+    property PostRun: TN_Progress_Tool read FProgressEngine;
+    property PostExecute: TN_Progress_Tool read FProgressEngine;
 
     property ServerDelay: Double read FServerDelay;
 
@@ -471,7 +472,9 @@ type
     property QuietMode: Boolean read GetQuietMode write SetQuietMode;
   end;
 
+  TDT_P2PVM_VirtualAuth_Client = class;
   TDT_P2PVM_VirtualAuth_ServicePool = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<TDT_P2PVM_VirtualAuth_Service>;
+  TOn_DT_P2PVM_VirtualAuth_Client_TunnelLink = procedure(Sender: TDT_P2PVM_VirtualAuth_Client) of object;
 
   TDT_P2PVM_VirtualAuth_Client = class(TCore_Object)
   private
@@ -494,6 +497,7 @@ type
     LastUser, LastPasswd: SystemString;
     RegisterUserAndLogin: Boolean;
     AutomatedConnection: Boolean;
+    OnTunnelLink: TOn_DT_P2PVM_VirtualAuth_Client_TunnelLink;
 
     constructor Create(ClientClass_: TDTClient_VirtualAuthClass);
     destructor Destroy; override;
@@ -1270,7 +1274,7 @@ begin
       exit;
 
   fileName := InData.Reader.ReadString;
-  fullfn := umlCombineFileName(FFileReceiveDirectory, fileName);
+  fullfn := umlCombineFileName(FFileShareDirectory, fileName);
   if not umlFileExists(fullfn) then
     begin
       OutData.WriteBool(False);
@@ -1294,7 +1298,7 @@ begin
 
   fileName := InData.Reader.ReadString;
 
-  fullfn := umlCombineFileName(FFileReceiveDirectory, fileName);
+  fullfn := umlCombineFileName(FFileShareDirectory, fileName);
   if umlFileExists(fullfn) then
     begin
       OutData.WriteBool(True);
@@ -1318,7 +1322,7 @@ begin
   StartPos := ThInData.Reader.ReadInt64;
   EndPos := ThInData.Reader.ReadInt64;
 
-  fullfn := umlCombineFileName(FFileReceiveDirectory, fileName);
+  fullfn := umlCombineFileName(FFileShareDirectory, fileName);
   if not umlFileExists(fullfn) then
     begin
       ThOutData.WriteBool(False);
@@ -1378,7 +1382,7 @@ begin
   remoteinfo := InData.Reader.ReadString;
   RemoteBackcallAddr := InData.Reader.ReadPointer;
 
-  fullfn := umlCombineFileName(FFileReceiveDirectory, fileName);
+  fullfn := umlCombineFileName(FFileShareDirectory, fileName);
   if not umlFileExists(fullfn) then
     begin
       OutData.WriteBool(False);
@@ -1433,7 +1437,7 @@ begin
   remoteinfo := InData.Reader.ReadString;
   RemoteBackcallAddr := InData.Reader.ReadPointer;
 
-  fullfn := umlCombineFileName(FFileReceiveDirectory, fileName);
+  fullfn := umlCombineFileName(FFileShareDirectory, fileName);
   if not umlFileExists(fullfn) then
     begin
       OutData.WriteBool(False);
@@ -1494,7 +1498,7 @@ begin
   StartPos := InData.Reader.ReadInt64;
   FSize := InData.Reader.ReadInt64;
 
-  fullfn := umlCombineFileName(FFileReceiveDirectory, fn);
+  fullfn := umlCombineFileName(FFileShareDirectory, fn);
   UserDefineIO.FCurrentReceiveFileName := fullfn;
   try
     if (StartPos > 0) and (umlFileExists(fullfn)) then
@@ -1584,7 +1588,7 @@ begin
   EndPos := InData.Reader.ReadInt64;
   RemoteBackcallAddr := InData.Reader.ReadPointer;
 
-  fullfn := umlCombineFileName(FFileReceiveDirectory, fileName);
+  fullfn := umlCombineFileName(FFileShareDirectory, fileName);
   if not umlFileExists(fullfn) then
     begin
       OutData.WriteBool(False);
@@ -1769,13 +1773,13 @@ begin
 
   FCadencerEngine := TCadencer.Create;
   FCadencerEngine.OnProgress := {$IFDEF FPC}@{$ENDIF FPC}CadencerProgress;
-  FProgressEngine := TNProgressPost.Create;
+  FProgressEngine := TN_Progress_Tool.Create;
 
   FFileSystem := {$IFDEF DoubleIOFileSystem}True{$ELSE DoubleIOFileSystem}False{$ENDIF DoubleIOFileSystem};
-  FFileReceiveDirectory := umlCurrentPath;
+  FFileShareDirectory := umlCurrentPath;
 
-  if not umlDirectoryExists(FFileReceiveDirectory) then
-      umlCreateDirectory(FFileReceiveDirectory);
+  if not umlDirectoryExists(FFileShareDirectory) then
+      umlCreateDirectory(FFileShareDirectory);
 
   SwitchAsDefaultPerformance;
 
@@ -2601,7 +2605,7 @@ begin
 
   FCadencerEngine := TCadencer.Create;
   FCadencerEngine.OnProgress := {$IFDEF FPC}@{$ENDIF FPC}CadencerProgress;
-  FProgressEngine := TNProgressPost.Create;
+  FProgressEngine := TN_Progress_Tool.Create;
 
   FLastCadencerTime := 0;
   FServerDelay := 0;
@@ -4187,8 +4191,11 @@ begin
   if state then
     begin
       RegisterUserAndLogin := False;
+
       if AutomatedConnection then
           Reconnection := True;
+      if Assigned(OnTunnelLink) then
+          OnTunnelLink(Self);
     end;
 end;
 
@@ -4236,6 +4243,7 @@ begin
 
   RegisterUserAndLogin := False;
   AutomatedConnection := True;
+  OnTunnelLink := nil;
 
   RecvTunnel.PrefixName := 'VA';
   RecvTunnel.Name := 'R';

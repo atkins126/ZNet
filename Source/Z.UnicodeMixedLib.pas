@@ -89,6 +89,16 @@ type
 
   PIOHnd = ^TIOHnd;
 
+  TIOHnd_Cache = record
+  private
+    PrepareWriteBuff: U_Stream;
+    PrepareReadPosition: Int64;
+    PrepareReadBuff: U_Stream;
+  public
+    UsedWriteCache: Boolean;
+    UsedReadCache: Boolean;
+  end;
+
   TIOHnd = record
   public
     IsOnlyRead: Boolean;
@@ -99,10 +109,7 @@ type
     Size: Int64;
     Position: Int64;
     FileName: U_String;
-    FlushBuff: U_Stream;
-    FlushPosition: Int64;
-    PrepareReadPosition: Int64;
-    PrepareReadBuff: U_Stream;
+    Cache: TIOHnd_Cache;
     IORead, IOWrite: Int64;
     ChangeFromWrite: Boolean;
     FixedStringL: Byte;
@@ -116,6 +123,11 @@ type
 
   U_ByteArray = array [0 .. MaxInt div SizeOf(Byte) - 1] of Byte;
   P_ByteArray = ^U_ByteArray;
+
+  TListPascalString_Helper_ = class helper for TListPascalString
+  public
+    procedure FillToArry(var Output_: U_StringArray);
+  end;
 
 function umlBytesOf(const s: TPascalString): TBytes;
 function umlStringOf(const s: TBytes): TPascalString; overload;
@@ -168,10 +180,13 @@ function umlInRange(const v, min_, max_: UInt64): Boolean; overload;
 function umlInRange(const v, min_, max_: Cardinal): Boolean; overload;
 function umlInRange(const v, min_, max_: Word): Boolean; overload;
 function umlInRange(const v, min_, max_: Byte): Boolean; overload;
+function umlInRange(const v, min_, max_: Int64): Boolean; overload;
 function umlInRange(const v, min_, max_: SmallInt): Boolean; overload;
 function umlInRange(const v, min_, max_: ShortInt): Boolean; overload;
 function umlInRange(const v, min_, max_: Double): Boolean; overload;
 function umlInRange(const v, min_, max_: Single): Boolean; overload;
+
+function umlCompareText(s1, s2: TPascalString): Integer;
 
 function umlGetResourceStream(const FileName: TPascalString): TCore_Stream;
 
@@ -215,7 +230,6 @@ procedure umlFindClose(var SR: TSR);
 
 function umlGetFileList(const FullPath: TPascalString; AsLst: TCore_Strings): Integer; overload;
 function umlGetDirList(const FullPath: TPascalString; AsLst: TCore_Strings): Integer; overload;
-
 function umlGetFileList(const FullPath: TPascalString; AsLst: TPascalStringList): Integer; overload;
 function umlGetDirList(const FullPath: TPascalString; AsLst: TPascalStringList): Integer; overload;
 
@@ -259,9 +273,9 @@ function umlFilePrepareRead(var IOHnd: TIOHnd; Size: Int64; var buff): Boolean;
 function umlFileRead(var IOHnd: TIOHnd; const Size: Int64; var buff): Boolean;
 function umlBlockRead(var IOHnd: TIOHnd; var buff; const Size: Int64): Boolean;
 function umlFilePrepareWrite(var IOHnd: TIOHnd): Boolean;
-function umlFileFlushWrite(var IOHnd: TIOHnd): Boolean;
-function umlFileWrite(var IOHnd: TIOHnd; const Size: Int64; var buff): Boolean;
-function umlBlockWrite(var IOHnd: TIOHnd; var buff; const Size: Int64): Boolean;
+function umlFileFlushWriteCache(var IOHnd: TIOHnd): Boolean;
+function umlFileWrite(var IOHnd: TIOHnd; const Size: Int64; const buff): Boolean;
+function umlBlockWrite(var IOHnd: TIOHnd; const buff; const Size: Int64): Boolean;
 function umlFileWriteFixedString(var IOHnd: TIOHnd; var Value: TPascalString): Boolean;
 function umlFileReadFixedString(var IOHnd: TIOHnd; var Value: TPascalString): Boolean;
 function umlFileSeek(var IOHnd: TIOHnd; Pos_: Int64): Boolean;
@@ -512,8 +526,10 @@ procedure umlBase64EncodeBytes(var sour, dest: TBytes); overload;
 procedure umlBase64DecodeBytes(var sour, dest: TBytes); overload;
 procedure umlBase64EncodeBytes(var sour: TBytes; var dest: TPascalString); overload;
 procedure umlBase64DecodeBytes(const sour: TPascalString; var dest: TBytes); overload;
-procedure umlDecodeLineBASE64(const buffer: TPascalString; var output: TPascalString);
-procedure umlEncodeLineBASE64(const buffer: TPascalString; var output: TPascalString);
+procedure umlDecodeLineBASE64(const buffer: TPascalString; var output: TPascalString); overload;
+procedure umlEncodeLineBASE64(const buffer: TPascalString; var output: TPascalString); overload;
+function umlDecodeLineBASE64(const buffer: TPascalString): TPascalString; overload;
+function umlEncodeLineBASE64(const buffer: TPascalString): TPascalString; overload;
 procedure umlDecodeStreamBASE64(const buffer: TPascalString; output: TCore_Stream);
 procedure umlEncodeStreamBASE64(buffer: TCore_Stream; var output: TPascalString);
 function umlDivisionBase64Text(const buffer: TPascalString; width: Integer; DivisionAsPascalString: Boolean): TPascalString;
@@ -530,7 +546,9 @@ const
   ZeroMD5: TMD5 = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
   umlNullMD5: TMD5 = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
   umlZeroMD5: TMD5 = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+  Null_Buff_MD5: TMD5 = (212, 29, 140, 217, 143, 0, 178, 4, 233, 128, 9, 152, 236, 248, 66, 126);
 
+function umlStrToMD5(hex: TPascalString): TMD5;
 procedure umlTransformMD5(var Accu; const Buf);
 function umlMD5(const buffPtr: PByte; bufSiz: NativeUInt): TMD5;
 function umlMD5Char(const buffPtr: PByte; const BuffSize: NativeUInt): TPascalString;
@@ -550,7 +568,9 @@ function umlCombineMD5(const m1, m2, m3: TMD5): TMD5; overload;
 function umlCombineMD5(const m1, m2, m3, m4: TMD5): TMD5; overload;
 function umlCombineMD5(const buff: array of TMD5): TMD5; overload;
 function umlMD5ToStr(md5: TMD5): TPascalString; overload;
+function umlMD5ToStr(const buffPtr: PByte; bufSiz: NativeUInt): TPascalString; overload;
 function umlMD5ToString(md5: TMD5): TPascalString; overload;
+function umlMD5ToString(const buffPtr: PByte; bufSiz: NativeUInt): TPascalString; overload;
 function umlMD52String(md5: TMD5): TPascalString; overload;
 function umlMD5Compare(const m1, m2: TMD5): Boolean;
 function umlCompareMD5(const m1, m2: TMD5): Boolean;
@@ -756,7 +776,7 @@ uses
 {$IF Defined(WIN32) or Defined(WIN64)}
   Z.md5,
 {$ENDIF}
-  Z.Status, Z.MemoryStream;
+  Z.Cipher, Z.Status, Z.MemoryStream;
 
 procedure TReliableFileStream.InitIO;
 begin
@@ -764,7 +784,7 @@ begin
       exit;
 
   DoStatus(PFormat('Reliable IO Open : %s', [umlGetFileName(FileName).text]));
-  DoStatus(PFormat('Backup %s size: %s', [umlGetFileName(FileName).text, umlSizeToStr(SourceIO.Size).text]));
+  DoStatus(PFormat('Create Backup %s size: %s', [umlGetFileName(FileName).text, umlSizeToStr(SourceIO.Size).text]));
 
   BackupFileIO := TCore_FileStream.Create(FBackupFileName, fmCreate);
   BackupFileIO.Size := SourceIO.Size;
@@ -892,7 +912,7 @@ begin
     begin
       buff := n.Bytes;
       if length(buff) > FixedStringL - 1 then
-          n.DeleteFirst
+          n.DeleteLast
       else
           break;
     end;
@@ -911,6 +931,15 @@ begin
   buff := s.Bytes;
   Result := length(buff) > FixedStringL - 1;
   SetLength(buff, 0);
+end;
+
+procedure TListPascalString_Helper_.FillToArry(var Output_: U_StringArray);
+var
+  i: Integer;
+begin
+  SetLength(Output_, Count);
+  for i := 0 to Count - 1 do
+      Output_[i] := Items[i];
 end;
 
 function umlBytesOf(const s: TPascalString): TBytes;
@@ -1309,6 +1338,11 @@ begin
   Result := (v >= umlMin(min_, max_)) and (v <= umlMax(min_, max_));
 end;
 
+function umlInRange(const v, min_, max_: Int64): Boolean;
+begin
+  Result := (v >= umlMin(min_, max_)) and (v <= umlMax(min_, max_));
+end;
+
 function umlInRange(const v, min_, max_: SmallInt): Boolean;
 begin
   Result := (v >= umlMin(min_, max_)) and (v <= umlMax(min_, max_));
@@ -1327,6 +1361,37 @@ end;
 function umlInRange(const v, min_, max_: Single): Boolean;
 begin
   Result := (v >= umlMin(min_, max_)) and (v <= umlMax(min_, max_));
+end;
+
+function umlCompareText(s1, s2: TPascalString): Integer;
+  function comp_size(const A, B: Integer): Integer;
+  begin
+    if A = B then
+        Result := 0
+    else if A < B then
+        Result := -1
+    else
+        Result := 1;
+  end;
+
+  function IsWide_(p: PPascalString): Byte;
+  var
+    c: SystemChar;
+  begin
+    for c in p^.buff do
+      if Ord(c) > 127 then
+          exit(1);
+    Result := 0;
+  end;
+
+begin
+  Result := comp_size(IsWide_(@s1), IsWide_(@s2));
+  if Result = 0 then
+    begin
+      Result := comp_size(s1.L, s2.L);
+      if Result = 0 then
+          Result := CompareText(s1, s2);
+    end;
 end;
 
 function umlGetResourceStream(const FileName: TPascalString): TCore_Stream;
@@ -1753,61 +1818,61 @@ end;
 function umlGetFileListWithFullPath(const FullPath: TPascalString): U_StringArray;
 var
   ph: TPascalString;
-  ns: TPascalStringList;
+  L: TPascalStringList;
   i: Integer;
 begin
   ph := FullPath;
-  ns := TPascalStringList.Create;
-  umlGetFileList(FullPath, ns);
-  SetLength(Result, ns.Count);
-  for i := 0 to ns.Count - 1 do
-      Result[i] := umlCombineFileName(ph, ns[i]).text;
-  DisposeObject(ns);
+  L := TPascalStringList.Create;
+  umlGetFileList(FullPath, L);
+  SetLength(Result, L.Count);
+  for i := 0 to L.Count - 1 do
+      Result[i] := umlCombineFileName(ph, L[i]).text;
+  DisposeObject(L);
 end;
 
 function umlGetDirListWithFullPath(const FullPath: TPascalString): U_StringArray;
 var
   ph: TPascalString;
-  ns: TPascalStringList;
+  L: TPascalStringList;
   i: Integer;
 begin
   ph := FullPath;
-  ns := TPascalStringList.Create;
-  umlGetDirList(FullPath, ns);
-  SetLength(Result, ns.Count);
-  for i := 0 to ns.Count - 1 do
-      Result[i] := umlCombinePath(ph, ns[i]).text;
-  DisposeObject(ns);
+  L := TPascalStringList.Create;
+  umlGetDirList(FullPath, L);
+  SetLength(Result, L.Count);
+  for i := 0 to L.Count - 1 do
+      Result[i] := umlCombinePath(ph, L[i]).text;
+  DisposeObject(L);
 end;
 
 function umlGetFileListPath(const FullPath: TPascalString): U_StringArray;
 var
   ph: TPascalString;
-  ns: TPascalStringList;
+  L: TPascalStringList;
   i: Integer;
 begin
   ph := FullPath;
-  ns := TPascalStringList.Create;
-  umlGetFileList(FullPath, ns);
-  SetLength(Result, ns.Count);
-  for i := 0 to ns.Count - 1 do
-      Result[i] := ns[i];
-  DisposeObject(ns);
+  L := TPascalStringList.Create;
+  umlGetFileList(FullPath, L);
+  SetLength(Result, L.Count);
+  for i := 0 to L.Count - 1 do
+      Result[i] := L[i];
+  DisposeObject(L);
 end;
 
 function umlGetDirListPath(const FullPath: TPascalString): U_StringArray;
 var
   ph: TPascalString;
-  ns: TPascalStringList;
+  L: TPascalStringList;
   i: Integer;
 begin
   ph := FullPath;
-  ns := TPascalStringList.Create;
-  umlGetDirList(FullPath, ns);
-  SetLength(Result, ns.Count);
-  for i := 0 to ns.Count - 1 do
-      Result[i] := ns[i];
-  DisposeObject(ns);
+  L := TPascalStringList.Create;
+  umlGetDirList(FullPath, L);
+  SetLength(Result, L.Count);
+  for i := 0 to L.Count - 1 do
+      Result[i] := L[i];
+  DisposeObject(L);
 end;
 
 function umlCombinePath(const s1, s2: TPascalString): TPascalString;
@@ -2135,10 +2200,11 @@ begin
   IOHnd.Size := 0;
   IOHnd.Position := 0;
   IOHnd.FileName := '';
-  IOHnd.FlushBuff := nil;
-  IOHnd.FlushPosition := -1;
-  IOHnd.PrepareReadPosition := -1;
-  IOHnd.PrepareReadBuff := nil;
+  IOHnd.Cache.UsedWriteCache := False;
+  IOHnd.Cache.PrepareWriteBuff := nil;
+  IOHnd.Cache.UsedReadCache := False;
+  IOHnd.Cache.PrepareReadPosition := -1;
+  IOHnd.Cache.PrepareReadBuff := nil;
   IOHnd.IORead := 0;
   IOHnd.IOWrite := 0;
   IOHnd.ChangeFromWrite := False;
@@ -2157,6 +2223,8 @@ begin
     end;
   stream.Position := 0;
   IOHnd.Handle := stream;
+  IOHnd.Cache.UsedWriteCache := (IOHnd.Handle is TCore_FileStream) or (IOHnd.Handle is TReliableFileStream);
+  IOHnd.Cache.UsedReadCache := IOHnd.Cache.UsedWriteCache;
   IOHnd.Return := C_NotError;
   IOHnd.Size := stream.Size;
   IOHnd.Position := stream.Position;
@@ -2193,6 +2261,8 @@ begin
     end;
   stream.Position := 0;
   IOHnd.Handle := stream;
+  IOHnd.Cache.UsedWriteCache := (IOHnd.Handle is TCore_FileStream) or (IOHnd.Handle is TReliableFileStream);
+  IOHnd.Cache.UsedReadCache := IOHnd.Cache.UsedWriteCache;
   IOHnd.Return := C_NotError;
   IOHnd.Size := stream.Size;
   IOHnd.Position := stream.Position;
@@ -2213,6 +2283,8 @@ begin
       exit;
     end;
   IOHnd.Handle := TMS64.CustomCreate(8192);
+  IOHnd.Cache.UsedWriteCache := False;
+  IOHnd.Cache.UsedReadCache := False;
   IOHnd.Return := C_NotError;
   IOHnd.Size := IOHnd.Handle.Size;
   IOHnd.Position := IOHnd.Handle.Position;
@@ -2240,6 +2312,8 @@ begin
     Result := False;
     exit;
   end;
+  IOHnd.Cache.UsedWriteCache := True;
+  IOHnd.Cache.UsedReadCache := True;
   IOHnd.Return := C_NotError;
   IOHnd.Size := 0;
   IOHnd.Position := 0;
@@ -2273,6 +2347,8 @@ begin
     Result := False;
     exit;
   end;
+  IOHnd.Cache.UsedWriteCache := True;
+  IOHnd.Cache.UsedReadCache := True;
   IOHnd.IsOnlyRead := OnlyRead_;
   IOHnd.Return := C_NotError;
   IOHnd.Size := IOHnd.Handle.Size;
@@ -2299,12 +2375,12 @@ begin
       exit;
     end;
 
-  umlFileFlushWrite(IOHnd);
+  umlFileFlushWriteCache(IOHnd);
 
-  if IOHnd.PrepareReadBuff <> nil then
-      DisposeObject(IOHnd.PrepareReadBuff);
-  IOHnd.PrepareReadBuff := nil;
-  IOHnd.PrepareReadPosition := -1;
+  if IOHnd.Cache.PrepareReadBuff <> nil then
+      DisposeObject(IOHnd.Cache.PrepareReadBuff);
+  IOHnd.Cache.PrepareReadBuff := nil;
+  IOHnd.Cache.PrepareReadPosition := -1;
 
   try
     if IOHnd.AutoFree then
@@ -2331,7 +2407,7 @@ begin
       exit;
     end;
 
-  umlFileFlushWrite(IOHnd);
+  umlFileFlushWriteCache(IOHnd);
   umlResetPrepareRead(IOHnd);
   IOHnd.ChangeFromWrite := False;
 
@@ -2352,10 +2428,10 @@ end;
 
 procedure umlResetPrepareRead(var IOHnd: TIOHnd);
 begin
-  if IOHnd.PrepareReadBuff <> nil then
-      DisposeObject(IOHnd.PrepareReadBuff);
-  IOHnd.PrepareReadBuff := nil;
-  IOHnd.PrepareReadPosition := -1;
+  if IOHnd.Cache.PrepareReadBuff <> nil then
+      DisposeObject(IOHnd.Cache.PrepareReadBuff);
+  IOHnd.Cache.PrepareReadBuff := nil;
+  IOHnd.Cache.PrepareReadPosition := -1;
 end;
 
 function umlFilePrepareRead(var IOHnd: TIOHnd; Size: Int64; var buff): Boolean;
@@ -2365,7 +2441,7 @@ var
 begin
   Result := False;
 
-  if not(IOHnd.Handle.InheritsFrom(TCore_FileStream) or IOHnd.Handle.InheritsFrom(TReliableFileStream)) then
+  if not IOHnd.Cache.UsedReadCache then
       exit;
 
   if Size > C_PrepareReadCacheSize then
@@ -2375,19 +2451,19 @@ begin
       exit;
     end;
 
-  if IOHnd.PrepareReadBuff = nil then
-      IOHnd.PrepareReadBuff := TMS64.Create;
+  if IOHnd.Cache.PrepareReadBuff = nil then
+      IOHnd.Cache.PrepareReadBuff := TMS64.Create;
 
-  m64 := TMS64(IOHnd.PrepareReadBuff);
+  m64 := TMS64(IOHnd.Cache.PrepareReadBuff);
 
-  if (IOHnd.Position < IOHnd.PrepareReadPosition) or (IOHnd.PrepareReadPosition + m64.Size < IOHnd.Position + Size) then
+  if (IOHnd.Position < IOHnd.Cache.PrepareReadPosition) or (IOHnd.Cache.PrepareReadPosition + m64.Size < IOHnd.Position + Size) then
     begin
       // prepare read buffer
       IOHnd.Handle.Position := IOHnd.Position;
-      IOHnd.PrepareReadPosition := IOHnd.Position;
+      IOHnd.Cache.PrepareReadPosition := IOHnd.Position;
 
       m64.Clear;
-      IOHnd.PrepareReadPosition := IOHnd.Handle.Position;
+      IOHnd.Cache.PrepareReadPosition := IOHnd.Handle.Position;
       if IOHnd.Handle.Size - IOHnd.Handle.Position >= C_PrepareReadCacheSize then
         begin
           Result := m64.CopyFrom(IOHnd.Handle, C_PrepareReadCacheSize) = C_PrepareReadCacheSize;
@@ -2401,9 +2477,9 @@ begin
         end;
     end;
 
-  if (IOHnd.Position >= IOHnd.PrepareReadPosition) and (IOHnd.PrepareReadPosition + m64.Size >= IOHnd.Position + Size) then
+  if (IOHnd.Position >= IOHnd.Cache.PrepareReadPosition) and (IOHnd.Cache.PrepareReadPosition + m64.Size >= IOHnd.Position + Size) then
     begin
-      CopyPtr(Pointer(NativeUInt(m64.Memory) + (IOHnd.Position - IOHnd.PrepareReadPosition)), @buff, Size);
+      CopyPtr(GetOffset(m64.Memory, IOHnd.Position - IOHnd.Cache.PrepareReadPosition), @buff, Size);
       inc(IOHnd.Position, Size);
       Result := True;
     end
@@ -2420,9 +2496,8 @@ function umlFileRead(var IOHnd: TIOHnd; const Size: Int64; var buff): Boolean;
 var
   BuffPointer: Pointer;
   i: NativeInt;
-  BuffInt: NativeUInt;
 begin
-  if not umlFileFlushWrite(IOHnd) then
+  if not umlFileFlushWriteCache(IOHnd) then
     begin
       Result := False;
       exit;
@@ -2446,8 +2521,7 @@ begin
     if Size > C_MaxBufferFragmentSize then
       begin
         // process Chunk buffer
-        BuffInt := NativeUInt(@buff);
-        BuffPointer := Pointer(BuffInt);
+        BuffPointer := @buff;
         for i := 1 to (Size div C_MaxBufferFragmentSize) do
           begin
             if IOHnd.Handle.Read(BuffPointer^, C_MaxBufferFragmentSize) <> C_MaxBufferFragmentSize then
@@ -2456,8 +2530,7 @@ begin
                 Result := False;
                 exit;
               end;
-            BuffInt := BuffInt + C_MaxBufferFragmentSize;
-            BuffPointer := Pointer(BuffInt);
+            BuffPointer := GetOffset(BuffPointer, C_MaxBufferFragmentSize);
           end;
         // process buffer rest
         i := Size mod C_MaxBufferFragmentSize;
@@ -2497,29 +2570,18 @@ end;
 function umlFilePrepareWrite(var IOHnd: TIOHnd): Boolean;
 begin
   Result := True;
-
-  if not umlFileTest(IOHnd) then
-      exit;
-
-  if IOHnd.FlushBuff <> nil then
-      exit;
-
-  if (IOHnd.Handle is TCore_FileStream) or (IOHnd.Handle is TReliableFileStream) then
-    begin
-      IOHnd.FlushBuff := TMS64.CustomCreate(1024 * 1024 * 8);
-      IOHnd.FlushPosition := IOHnd.Handle.Position;
-    end;
+  if umlFileTest(IOHnd) and IOHnd.Cache.UsedWriteCache and (IOHnd.Cache.PrepareWriteBuff = nil) then
+      IOHnd.Cache.PrepareWriteBuff := TMS64.CustomCreate(1024 * 1024 * 8);
 end;
 
-function umlFileFlushWrite(var IOHnd: TIOHnd): Boolean;
+function umlFileFlushWriteCache(var IOHnd: TIOHnd): Boolean;
 var
   m64: TMS64;
 begin
-  if IOHnd.FlushBuff <> nil then
+  if IOHnd.Cache.PrepareWriteBuff <> nil then
     begin
-      m64 := TMS64(IOHnd.FlushBuff);
-      IOHnd.FlushBuff := nil;
-
+      m64 := TMS64(IOHnd.Cache.PrepareWriteBuff);
+      IOHnd.Cache.PrepareWriteBuff := nil;
       if IOHnd.Handle.Write(m64.Memory^, m64.Size) <> m64.Size then
         begin
           IOHnd.Return := C_FileWriteError;
@@ -2528,15 +2590,15 @@ begin
         end;
       inc(IOHnd.IOWrite, m64.Size);
       DisposeObject(m64);
+      IOHnd.Handle.Position := IOHnd.Position;
     end;
   Result := True;
 end;
 
-function umlFileWrite(var IOHnd: TIOHnd; const Size: Int64; var buff): Boolean;
+function umlFileWrite(var IOHnd: TIOHnd; const Size: Int64; const buff): Boolean;
 var
   BuffPointer: Pointer;
   i: NativeInt;
-  BuffInt: NativeUInt;
 begin
   if (IOHnd.IsOnlyRead) or (not IOHnd.IsOpen) then
     begin
@@ -2558,9 +2620,9 @@ begin
   if Size <= $F000 then
       umlFilePrepareWrite(IOHnd);
 
-  if IOHnd.FlushBuff <> nil then
+  if IOHnd.Cache.PrepareWriteBuff <> nil then
     begin
-      if TMS64(IOHnd.FlushBuff).Write64(buff, Size) <> Size then
+      if TMS64(IOHnd.Cache.PrepareWriteBuff).Write64(buff, Size) <> Size then
         begin
           IOHnd.Return := C_FileWriteError;
           Result := False;
@@ -2573,9 +2635,9 @@ begin
       IOHnd.Return := C_NotError;
       Result := True;
 
-      // 64M flush buffer
-      if IOHnd.FlushBuff.Size > 64 * 1024 * 1024 then
-          umlFileFlushWrite(IOHnd);
+      // 8M flush buffer
+      if IOHnd.Cache.PrepareWriteBuff.Size > 8 * 1024 * 1024 then
+          umlFileFlushWriteCache(IOHnd);
       exit;
     end;
 
@@ -2583,8 +2645,7 @@ begin
     if Size > C_MaxBufferFragmentSize then
       begin
         // process buffer chunk
-        BuffInt := NativeUInt(@buff);
-        BuffPointer := Pointer(BuffInt);
+        BuffPointer := @buff;
         for i := 1 to (Size div C_MaxBufferFragmentSize) do
           begin
             if IOHnd.Handle.Write(BuffPointer^, C_MaxBufferFragmentSize) <> C_MaxBufferFragmentSize then
@@ -2593,8 +2654,7 @@ begin
                 Result := False;
                 exit;
               end;
-            BuffInt := BuffInt + C_MaxBufferFragmentSize;
-            BuffPointer := Pointer(BuffInt);
+            BuffPointer := GetOffset(BuffPointer, C_MaxBufferFragmentSize);
           end;
         // process buffer rest
         i := Size mod C_MaxBufferFragmentSize;
@@ -2632,7 +2692,7 @@ begin
   end;
 end;
 
-function umlBlockWrite(var IOHnd: TIOHnd; var buff; const Size: Int64): Boolean;
+function umlBlockWrite(var IOHnd: TIOHnd; const buff; const Size: Int64): Boolean;
 begin
   Result := umlFileWrite(IOHnd, Size, buff);
 end;
@@ -2678,14 +2738,14 @@ end;
 
 function umlFileSeek(var IOHnd: TIOHnd; Pos_: Int64): Boolean;
 begin
-  if Pos_ = IOHnd.Position then
+  if (Pos_ = IOHnd.Position) and (Pos_ = IOHnd.Handle.Position) then
     begin
       IOHnd.Return := C_NotError;
       Result := True;
       exit;
     end;
 
-  if not umlFileFlushWrite(IOHnd) then
+  if not umlFileFlushWriteCache(IOHnd) then
     begin
       Result := False;
       exit;
@@ -2709,7 +2769,7 @@ end;
 
 function umlFileSetSize(var IOHnd: TIOHnd; siz_: Int64): Boolean;
 begin
-  if not umlFileFlushWrite(IOHnd) then
+  if not umlFileFlushWriteCache(IOHnd) then
     begin
       Result := False;
       exit;
@@ -2750,11 +2810,15 @@ function umlGetFileTime(const FileName: TPascalString): TDateTime;
 var
   SR: TSR;
 begin
-  if umlFindFirstFile(FileName, SR) then
-      Result := CovFileDate_(SR.FindData.ftLastWriteTime)
-  else
+  try
+    if umlFindFirstFile(FileName, SR) then
+        Result := CovFileDate_(SR.FindData.ftLastWriteTime)
+    else
+        Result := 0;
+    umlFindClose(SR);
+  except
       Result := 0;
-  umlFindClose(SR);
+  end;
 end;
 {$ELSE MSWINDOWS}
 
@@ -2762,21 +2826,28 @@ end;
 var
   f: THandle;
 begin
-  f := FileOpen(FileName.text, fmOpenRead or fmShareDenyNone);
-  if f <> THandle(-1) then
-    begin
-      Result := FileDateToDateTime(FileGetDate(f));
-      FileClose(f);
-    end
-  else
+  try
+    f := FileOpen(FileName.text, fmOpenRead or fmShareDenyNone);
+    if f <> THandle(-1) then
+      begin
+        Result := FileDateToDateTime(FileGetDate(f));
+        FileClose(f);
+      end
+    else
+        Result := 0;
+  except
       Result := 0;
+  end;
 end;
 {$ENDIF MSWINDOWS}
 
 
 procedure umlSetFileTime(const FileName: TPascalString; newTime: TDateTime);
 begin
-  FileSetDate(FileName.text, DateTimeToFileDate(newTime));
+  try
+      FileSetDate(FileName.text, DateTimeToFileDate(newTime));
+  except
+  end;
 end;
 
 function umlGetFileSize(const FileName: TPascalString): Int64;
@@ -2784,13 +2855,16 @@ var
   SR: TSR;
 begin
   Result := 0;
-  if umlFindFirstFile(FileName, SR) = True then
-    begin
-      Result := SR.Size;
-      while umlFindNextFile(SR) do
-          Result := Result + SR.Size;
-    end;
-  umlFindClose(SR);
+  try
+    if umlFindFirstFile(FileName, SR) = True then
+      begin
+        Result := SR.Size;
+        while umlFindNextFile(SR) do
+            Result := Result + SR.Size;
+      end;
+    umlFindClose(SR);
+  except
+  end;
 end;
 
 function umlGetFileCount(const FileName: TPascalString): Integer;
@@ -2854,27 +2928,27 @@ end;
 
 function umlCopyFile(const SourFile, DestFile: TPascalString): Boolean;
 var
-  _SH, _DH: TCore_FileStream;
+  SH_, DH_: TCore_FileStream;
 begin
   Result := False;
-  _SH := nil;
-  _DH := nil;
+  SH_ := nil;
+  DH_ := nil;
   try
     if not umlFileExists(SourFile) then
         exit;
     if umlMultipleMatch(True, ExpandFileName(SourFile.text), ExpandFileName(DestFile.text)) then
         exit;
-    _SH := TCore_FileStream.Create(SourFile.text, fmOpenRead or fmShareDenyNone);
-    _DH := TCore_FileStream.Create(DestFile.text, fmCreate);
-    Result := _DH.CopyFrom(_SH, _SH.Size) = _SH.Size;
-    DisposeObject(_SH);
-    DisposeObject(_DH);
+    SH_ := TCore_FileStream.Create(SourFile.text, fmOpenRead or fmShareDenyNone);
+    DH_ := TCore_FileStream.Create(DestFile.text, fmCreate);
+    Result := DH_.CopyFrom(SH_, SH_.Size) = SH_.Size;
+    DisposeObject(SH_);
+    DisposeObject(DH_);
     umlSetFileTime(DestFile, umlGetFileTime(SourFile));
   except
-    if _SH <> nil then
-        DisposeObject(_SH);
-    if _DH <> nil then
-        DisposeObject(_DH);
+    if SH_ <> nil then
+        DisposeObject(SH_);
+    if DH_ <> nil then
+        DisposeObject(DH_);
   end;
 end;
 
@@ -3822,9 +3896,7 @@ begin
   else if Size < 1 shl 20 then
       Result := Format('%f Kb', [Size / (1 shl 10)])
   else if Size < 1 shl 30 then
-      Result := Format('%f M', [Size / (1 shl 20)])
-  else
-      Result := Format('%f G', [Size / (1 shl 30)])
+      Result := Format('%f M', [Size / (1 shl 20)]);
 end;
 
 function umlIntToStr(Parameter: Single): TPascalString;
@@ -3859,9 +3931,7 @@ begin
   else if Size < 1 shl 20 then
       Result := Format('%f Kbps', [Size / (1 shl 10) * 10])
   else if Size < 1 shl 30 then
-      Result := Format('%f Mbps', [Size / (1 shl 20) * 10])
-  else
-      Result := Format('%f Gbps', [Size / (1 shl 30) * 10])
+      Result := Format('%f Mbps', [Size / (1 shl 20) * 10]);
 end;
 
 function umlSizeToStr(Parameter: Int64): TPascalString;
@@ -4481,7 +4551,7 @@ function umlCharIsSymbol(c: SystemChar): Boolean;
 begin
   Result := CharIn(c,
     [#13, #10, #9, #32, #46, #44, #43, #45, #42, #47, #40, #41, #59, #58, #61, #35, #64, #94,
-    #38, #37, #33, #34, #91, #93, #60, #62, #63, #123, #125, #39, #36, #124]);
+      #38, #37, #33, #34, #91, #93, #60, #62, #63, #123, #125, #39, #36, #124]);
 end;
 
 function umlCharIsSymbol(c: SystemChar; const CustomSymbol_: TArrayChar): Boolean;
@@ -5731,6 +5801,16 @@ begin
   output := umlStringOf(nb);
 end;
 
+function umlDecodeLineBASE64(const buffer: TPascalString): TPascalString;
+begin
+  umlDecodeLineBASE64(buffer, Result);
+end;
+
+function umlEncodeLineBASE64(const buffer: TPascalString): TPascalString;
+begin
+  umlEncodeLineBASE64(buffer, Result);
+end;
+
 procedure umlDecodeStreamBASE64(const buffer: TPascalString; output: TCore_Stream);
 var
   B, nb: TBytes;
@@ -5798,6 +5878,11 @@ begin
   Result := length(dest) > 0;
   if Result then
       SetLength(dest, 0);
+end;
+
+function umlStrToMD5(hex: TPascalString): TMD5;
+begin
+  TCipher.HexToBuffer(hex, Result[0], SizeOf(TMD5));
 end;
 
 procedure umlTransformMD5(var Accu; const Buf);
@@ -5912,7 +5997,7 @@ begin
   inc(TDigestCardinal(Accu)[2], c);
   inc(TDigestCardinal(Accu)[3], d)
 end;
-{$IFEND}
+{$ENDIF}
 
 
 function umlMD5(const buffPtr: PByte; bufSiz: NativeUInt): TMD5;
@@ -5966,7 +6051,7 @@ begin
   PCardinal(@ChunkBuff[$3C])^ := Hi;
   umlTransformMD5(Result, ChunkBuff);
 end;
-{$IFEND}
+{$ENDIF}
 
 
 function umlMD5Char(const buffPtr: PByte; const BuffSize: NativeUInt): TPascalString;
@@ -6017,7 +6102,7 @@ begin
 {$IFDEF OptimizationMemoryStreamMD5}
   if stream is TCore_MemoryStream then
     begin
-      Result := umlMD5(Pointer(NativeUInt(TCore_MemoryStream(stream).Memory) + StartPos), EndPos - StartPos);
+      Result := umlMD5(GetOffset(TCore_MemoryStream(stream).Memory, StartPos), EndPos - StartPos);
       exit;
     end;
   if stream is TMS64 then
@@ -6025,7 +6110,7 @@ begin
       Result := umlMD5(TMS64(stream).PositionAsPtr(StartPos), EndPos - StartPos);
       exit;
     end;
-{$IFEND}
+{$ENDIF OptimizationMemoryStreamMD5}
   //
 
   Lo := 0;
@@ -6046,7 +6131,11 @@ begin
 
   if bufSiz < $40 then
     begin
-      stream.Read(DeltaBuf^, bufSiz);
+      if stream.Read(DeltaBuf^, bufSiz) <> bufSiz then
+        begin
+          FreeMemory(DeltaBuf);
+          exit(NullMD5);
+        end;
       p := DeltaBuf;
     end
   else
@@ -6058,7 +6147,11 @@ begin
                 Rest := deltaSize
             else
                 Rest := bufSiz;
-            stream.ReadBuffer(DeltaBuf^, Rest);
+            if stream.Read(DeltaBuf^, Rest) <> Rest then
+              begin
+                FreeMemory(DeltaBuf);
+                exit(NullMD5);
+              end;
 
             p := DeltaBuf;
           end;
@@ -6088,7 +6181,7 @@ begin
   PCardinal(@ChunkBuff[$3C])^ := Hi;
   umlTransformMD5(Result, ChunkBuff);
 end;
-{$IFEND}
+{$ENDIF}
 
 
 function umlStreamMD5(stream: TCore_Stream): TMD5;
@@ -6226,6 +6319,11 @@ begin
     end;
 end;
 
+function umlMD5ToStr(const buffPtr: PByte; bufSiz: NativeUInt): TPascalString;
+begin
+  Result := umlMD5ToStr(umlMD5(buffPtr, bufSiz));
+end;
+
 function umlMD5ToString(md5: TMD5): TPascalString;
 const
   HexArr: array [0 .. 15] of U_Char = ('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f');
@@ -6238,6 +6336,11 @@ begin
       Result.buff[i * 2] := HexArr[(md5[i] shr 4) and $0F];
       Result.buff[i * 2 + 1] := HexArr[md5[i] and $0F];
     end;
+end;
+
+function umlMD5ToString(const buffPtr: PByte; bufSiz: NativeUInt): TPascalString;
+begin
+  Result := umlMD5ToString(umlMD5(buffPtr, bufSiz));
 end;
 
 function umlMD52String(md5: TMD5): TPascalString;
@@ -6325,7 +6428,7 @@ var
 begin
   if stream is TCore_MemoryStream then
     begin
-      Result := umlCRC16(Pointer(NativeUInt(TCore_MemoryStream(stream).Memory) + StartPos), EndPos - StartPos);
+      Result := umlCRC16(GetOffset(TCore_MemoryStream(stream).Memory, StartPos), EndPos - StartPos);
       exit;
     end;
   if stream is TMS64 then
@@ -6428,7 +6531,7 @@ var
 begin
   if stream is TCore_MemoryStream then
     begin
-      Result := umlCRC32(Pointer(NativeUInt(TCore_MemoryStream(stream).Memory) + StartPos), EndPos - StartPos);
+      Result := umlCRC32(GetOffset(TCore_MemoryStream(stream).Memory, StartPos), EndPos - StartPos);
       exit;
     end;
   if stream is TMS64 then
@@ -7506,7 +7609,7 @@ begin
     end
   else
       Result := ExLibs[LibName];
-{$IFEND}
+{$ENDIF}
 end;
 
 function FreeExtLib(LibName: SystemString): Boolean;
@@ -7524,14 +7627,14 @@ begin
       ExLibs.Delete(LibName);
       Result := True;
     end;
-{$IFEND}
+{$ENDIF}
 end;
 
 function GetExtProc(const LibName, ProcName: SystemString): Pointer;
 {$IF not(Defined(IOS) and Defined(CPUARM))}
 var
   h: HMODULE;
-{$IFEND}
+{$ENDIF}
 begin
   Result := nil;
 {$IF not(Defined(IOS) and Defined(CPUARM))}
@@ -7542,7 +7645,7 @@ begin
       if Result = nil then
           DoStatus('error external libray: %s - %s', [LibName, ProcName]);
     end;
-{$IFEND}
+{$ENDIF}
 end;
 
 {$IFDEF RangeCheck}{$R-}{$ENDIF}
@@ -7663,7 +7766,11 @@ begin
       new(p);
       p^.Time_ := ft;
       p^.Size_ := fs;
-      p^.md5 := umlFileMD5___(FileName);
+      try
+          p^.md5 := umlFileMD5___(FileName);
+      except
+          p^.md5 := Null_Buff_MD5;
+      end;
       FHash.Add(FileName, p, False);
       Result := p^.md5;
     end
@@ -7673,7 +7780,11 @@ begin
         begin
           p^.Time_ := ft;
           p^.Size_ := fs;
-          p^.md5 := umlFileMD5___(FileName);
+          try
+              p^.md5 := umlFileMD5___(FileName);
+          except
+              p^.md5 := Null_Buff_MD5;
+          end;
         end;
       Result := p^.md5;
     end;

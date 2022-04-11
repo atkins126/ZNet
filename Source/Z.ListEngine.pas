@@ -65,7 +65,7 @@ type
     FFirst: PHashListData;
     FLast: PHashListData;
 
-    FMaxNameLen, FMinNameLen: NativeInt;
+    FMaxNameSize, FMinNameSize: NativeInt;
 
     function GetListTable(hash: THash; AutoCreate: Boolean): TCore_List;
     function GetKeyData(const Name: SystemString): PHashListData;
@@ -74,7 +74,7 @@ type
     procedure RebuildIDSeedCounter;
 
     procedure DoAdd(p: PHashListData);
-    procedure DoInsertBefore(p, insertTo_: PHashListData);
+    procedure DoInsertBefore(p, To_: PHashListData);
     procedure DoDelete(p: PHashListData);
     procedure DefaultDataFreeProc(p: Pointer);
 
@@ -127,10 +127,15 @@ type
 
     property OnFreePtr: TOnPtr read FOnFreePtr write FOnFreePtr;
 
-    property MaxKeyLen: NativeInt read FMaxNameLen;
-    property MinKeyLen: NativeInt read FMinNameLen;
-    property MaxNameLen: NativeInt read FMaxNameLen;
-    property MinNameLen: NativeInt read FMinNameLen;
+    property MaxKeySize: NativeInt read FMaxNameSize;
+    property MinKeySize: NativeInt read FMinNameSize;
+    property MaxNameSize: NativeInt read FMaxNameSize;
+    property MinNameSize: NativeInt read FMinNameSize;
+    // alias
+    property MaxKeyLen: NativeInt read FMaxNameSize;
+    property MinKeyLen: NativeInt read FMinNameSize;
+    property MaxNameLen: NativeInt read FMaxNameSize;
+    property MinNameLen: NativeInt read FMinNameSize;
   end;
 
   PHashList = ^THashList;
@@ -174,7 +179,7 @@ type
     procedure RebuildIDSeedCounter;
 
     procedure DoAdd(p: PInt64HashListObjectStruct);
-    procedure DoInsertBefore(p, insertTo_: PInt64HashListObjectStruct);
+    procedure DoInsertBefore(p, To_: PInt64HashListObjectStruct);
     procedure DoDelete(p: PInt64HashListObjectStruct);
     procedure DefaultObjectFreeProc(Obj: TCore_Object);
     procedure DoDataFreeProc(Obj: TCore_Object);
@@ -256,7 +261,7 @@ type
     procedure RebuildIDSeedCounter;
 
     procedure DoAdd(p: PInt64HashListPointerStruct);
-    procedure DoInsertBefore(p, insertTo_: PInt64HashListPointerStruct);
+    procedure DoInsertBefore(p, To_: PInt64HashListPointerStruct);
     procedure DoDelete(p: PInt64HashListPointerStruct);
     procedure DefaultDataFreeProc(p: Pointer);
     procedure DoDataFreeProc(p: Pointer);
@@ -335,7 +340,7 @@ type
     procedure RebuildIDSeedCounter;
 
     procedure DoAdd(p: PUInt32HashListObjectStruct);
-    procedure DoInsertBefore(p, insertTo_: PUInt32HashListObjectStruct);
+    procedure DoInsertBefore(p, To_: PUInt32HashListObjectStruct);
     procedure DoDelete(p: PUInt32HashListObjectStruct);
     procedure DoDataFreeProc(Obj: TCore_Object);
   public
@@ -413,7 +418,7 @@ type
     procedure RebuildIDSeedCounter;
 
     procedure DoAdd(p: PUInt32HashListPointerStruct);
-    procedure DoInsertBefore(p, insertTo_: PUInt32HashListPointerStruct);
+    procedure DoInsertBefore(p, To_: PUInt32HashListPointerStruct);
     procedure DoDelete(p: PUInt32HashListPointerStruct);
     procedure DoDataFreeProc(pData: Pointer);
     procedure DoAddDataNotifyProc(pData: Pointer);
@@ -495,7 +500,7 @@ type
     procedure RebuildIDSeedCounter;
 
     procedure DoAdd(p: PPointerHashListNativeUIntStruct);
-    procedure DoInsertBefore(p, insertTo_: PPointerHashListNativeUIntStruct);
+    procedure DoInsertBefore(p, To_: PPointerHashListNativeUIntStruct);
     procedure DoDelete(p: PPointerHashListNativeUIntStruct);
   public
     constructor Create;
@@ -919,197 +924,6 @@ type
 
   PHashVariantList = ^THashVariantList;
 {$ENDREGION 'THashVariantList'}
-{$REGION 'TListCardinal'}
-
-  TListCardinalData = record
-    Data: Cardinal;
-  end;
-
-  PListCardinalData = ^TListCardinalData;
-
-  TListCardinal = class(TCore_Object)
-  private
-    FList: TCore_List;
-  protected
-    function GetItems(idx: Integer): Cardinal;
-    procedure SetItems(idx: Integer; Value: Cardinal);
-  public
-    constructor Create;
-    destructor Destroy; override;
-
-    function Add(Value: Cardinal): Integer;
-    procedure AddArray(const Value: array of Cardinal);
-    function Delete(idx: Integer): Integer;
-    function DeleteCardinal(Value: Cardinal): Integer;
-    procedure Clear;
-    function Count: Integer;
-    function ExistsValue(Value: Cardinal): Integer;
-    procedure Assign(SameObj: TListCardinal);
-
-    property Items[idx: Integer]: Cardinal read GetItems write SetItems; default;
-  end;
-
-  TCardinalList = TListCardinal;
-{$ENDREGION 'TListCardinal'}
-{$REGION 'TListInt64'}
-
-  TListInt64Data = record
-    Data: Int64;
-  end;
-
-  PListInt64Data = ^TListInt64Data;
-
-  TListInt64 = class(TCore_Object)
-  private
-    FList: TCore_List;
-  protected
-    function GetItems(idx: Integer): Int64;
-    procedure SetItems(idx: Integer; Value: Int64);
-  public
-    constructor Create;
-    destructor Destroy; override;
-
-    function Add(Value: Int64): Integer;
-    procedure AddArray(const Value: array of Int64);
-    function Delete(idx: Integer): Integer;
-    function DeleteInt64(Value: Int64): Integer;
-    procedure Clear;
-    function Count: Integer;
-    function ExistsValue(Value: Int64): Integer;
-    procedure Assign(SameObj: TListInt64);
-
-    procedure SaveToStream(stream: TCore_Stream);
-    procedure LoadFromStream(stream: TCore_Stream);
-
-    property Items[idx: Integer]: Int64 read GetItems write SetItems; default;
-    property List: TCore_List read FList;
-  end;
-
-{$ENDREGION 'TListInt64'}
-{$REGION 'TListNativeInt'}
-
-  TListNativeIntData = record
-    Data: NativeInt;
-  end;
-
-  PListNativeIntData = ^TListNativeIntData;
-
-  TListNativeInt = class(TCore_Object)
-  private
-    FList: TCore_List;
-  protected
-    function GetItems(idx: Integer): NativeInt;
-    procedure SetItems(idx: Integer; Value: NativeInt);
-  public
-    constructor Create;
-    destructor Destroy; override;
-
-    function Add(Value: NativeInt): Integer;
-    procedure AddArray(const Value: array of NativeInt);
-    function Delete(idx: Integer): Integer;
-    function DeleteNativeInt(Value: NativeInt): Integer;
-    procedure Clear;
-    function Count: Integer;
-    function ExistsValue(Value: NativeInt): Integer;
-    procedure Assign(SameObj: TListNativeInt);
-
-    property Items[idx: Integer]: NativeInt read GetItems write SetItems; default;
-  end;
-
-  TNativeIntList = TListNativeInt;
-{$ENDREGION 'TListNativeInt'}
-{$REGION 'TListInteger'}
-
-  TListIntegerData = record
-    Data: Integer;
-  end;
-
-  PListIntegerData = ^TListIntegerData;
-
-  TListInteger = class(TCore_Object)
-  private
-    FList: TCore_List;
-  protected
-    function GetItems(idx: Integer): Integer;
-    procedure SetItems(idx: Integer; Value: Integer);
-  public
-    constructor Create;
-    destructor Destroy; override;
-
-    function Add(Value: Integer): Integer;
-    procedure AddArray(const Value: array of Integer);
-    function Delete(idx: Integer): Integer;
-    function DeleteInteger(Value: Integer): Integer;
-    procedure Clear;
-    function Count: Integer;
-    function ExistsValue(Value: Integer): Integer;
-    procedure Assign(SameObj: TListInteger);
-
-    property Items[idx: Integer]: Integer read GetItems write SetItems; default;
-  end;
-
-  TIntegerList = TListInteger;
-{$ENDREGION 'TListInteger'}
-{$REGION 'TListDouble'}
-
-  TListDoubleData = record
-    Data: Double;
-  end;
-
-  PListDoubleData = ^TListDoubleData;
-
-  TListDouble = class(TCore_Object)
-  private
-    FList: TCore_List;
-  protected
-    function GetItems(idx: Integer): Double;
-    procedure SetItems(idx: Integer; Value: Double);
-  public
-    constructor Create;
-    destructor Destroy; override;
-
-    function Add(Value: Double): Integer;
-    procedure AddArray(const Value: array of Double);
-    function Delete(idx: Integer): Integer;
-    procedure Clear;
-    function Count: Integer;
-    procedure Assign(SameObj: TListDouble);
-
-    property Items[idx: Integer]: Double read GetItems write SetItems; default;
-  end;
-
-{$ENDREGION 'TListDouble'}
-{$REGION 'TListPointer'}
-
-  TListPointerData = record
-    Data: Pointer;
-  end;
-
-  PListPointerData = ^TListPointerData;
-
-  TListPointer = class(TCore_Object)
-  private
-    FList: TCore_List;
-  protected
-    function GetItems(idx: Integer): Pointer;
-    procedure SetItems(idx: Integer; Value: Pointer);
-  public
-    constructor Create;
-    destructor Destroy; override;
-
-    function Add(Value: Pointer): Integer;
-    function Delete(idx: Integer): Integer;
-    function DeletePointer(Value: Pointer): Integer;
-    procedure Clear;
-    function Count: Integer;
-    function ExistsValue(Value: Pointer): Integer;
-    procedure Assign(SameObj: TListPointer);
-
-    property Items[idx: Integer]: Pointer read GetItems write SetItems; default;
-  end;
-
-  TPointerList = TListPointer;
-{$ENDREGION 'TListPointer'}
 {$REGION 'TListString'}
 
   TListStringData = record
@@ -1218,157 +1032,32 @@ type
     property List: TCore_List read FList;
   end;
 {$ENDREGION 'TListPascalString'}
-{$REGION 'TListVariant'}
+{$REGION 'TBackcall_Pool'}
 
-  TListVariantData = record
-    Data: Variant;
-  end;
-
-  PListVariantData = ^TListVariantData;
-
-  TListVariant = class(TCore_Object)
-  private
-    FList: TCore_List;
-  protected
-    function GetItems(idx: Integer): Variant;
-    procedure SetItems(idx: Integer; Value: Variant);
-  public
-    constructor Create;
-    destructor Destroy; override;
-
-    function Add(Value: Variant): Integer;
-    function Delete(idx: Integer): Integer;
-    function DeleteVariant(Value: Variant): Integer;
-    procedure Clear;
-    function Count: Integer;
-    function ExistsValue(Value: Variant): Integer;
-    procedure Assign(SameObj: TListVariant);
-
-    property Items[idx: Integer]: Variant read GetItems write SetItems; default;
-  end;
-{$ENDREGION 'TListVariant'}
-{$REGION 'TVariantToDataList'}
-
-  TVariantToDataListData = record
-    ID: Variant;
-    Data: Pointer;
-  end;
-
-  PVariantToDataListData = ^TVariantToDataListData;
-
-  TVariantToDataList = class(TCore_Object)
-  private
-    FList: TCore_List;
-    FAutoFreeData: Boolean;
-    FOnFreePtr: TOnPtr;
-  protected
-    function GetItems(ID: Variant): Pointer;
-    procedure SetItems(ID: Variant; Value: Pointer);
-    procedure DefaultDataFreeProc(p: Pointer);
-    procedure DoDataFreeProc(p: Pointer);
-  public
-    constructor Create;
-    destructor Destroy; override;
-
-    function Add(ID: Variant; Data: Pointer): Boolean;
-    function Delete(ID: Variant): Boolean;
-    procedure Clear;
-    function Exists(ID: Variant): Boolean;
-    procedure GetList(_To: TListVariant);
-    function Count: Integer;
-
-{$IFNDEF FPC} property AutoFreeData: Boolean read FAutoFreeData write FAutoFreeData; {$ENDIF}
-    property Items[ID: Variant]: Pointer read GetItems write SetItems; default;
-    property OnFreePtr: TOnPtr read FOnFreePtr write FOnFreePtr;
-  end;
-
-{$ENDREGION 'TVariantToDataList'}
-{$REGION 'TVariantToVariantList'}
-
-  TVariantToVariantListData = record
-    V: Variant;
-  end;
-
-  PVariantToVariantListData = ^TVariantToVariantListData;
-
-  TVariantToVariantList = class(TCore_Object)
-  private
-    FList: TVariantToDataList;
-  protected
-    function GetItems(ID: Variant): Variant;
-    procedure SetItems(ID: Variant; Value: Variant);
-    procedure DefaultDataFreeProc(p: Pointer);
-  public
-    constructor Create;
-    destructor Destroy; override;
-
-    function Add(ID, Value_: Variant): Boolean;
-    function Delete(ID: Variant): Boolean;
-    procedure Clear;
-    function Exists(ID: Variant): Boolean;
-    procedure GetList(_To: TListVariant);
-    procedure GetValueList(_To: TListVariant);
-    function Count: Integer;
-    procedure Assign(SameObj: TVariantToVariantList);
-
-    property Items[ID: Variant]: Variant read GetItems write SetItems; default;
-  end;
-
-{$ENDREGION 'TVariantToVariantList'}
-{$REGION 'TVariantToObjectList'}
-
-  TVariantToObjectListData = record
-    Obj: TCore_Object;
-  end;
-
-  PVariantToObjectListData = ^TVariantToObjectListData;
-
-  TVariantToObjectList = class(TCore_Object)
-  private
-    FList: TVariantToDataList;
-  protected
-    function GetItems(ID: Variant): TCore_Object;
-    procedure SetItems(ID: Variant; Value: TCore_Object);
-    procedure DefaultDataFreeProc(p: Pointer);
-  public
-    constructor Create;
-    destructor Destroy; override;
-
-    function Add(ID: Variant; Obj: TCore_Object): Boolean;
-    function Delete(ID: Variant): Boolean;
-    procedure Clear;
-    function Exists(ID: Variant): Boolean;
-    procedure GetList(_To: TListVariant);
-    function Count: Integer;
-    procedure Assign(SameObj: TVariantToObjectList);
-
-    property Items[ID: Variant]: TCore_Object read GetItems write SetItems; default;
-  end;
-{$ENDREGION 'TVariantToObjectList'}
-{$REGION 'TBackcalls'}
-
-  TBackcalls = class;
-  TBackcallNotify_C = procedure(Sender: TBackcalls; TriggerObject: TCore_Object; Param1, Param2, Param3: Variant);
-  TBackcallNotifyMethod = procedure(Sender: TBackcalls; TriggerObject: TCore_Object; Param1, Param2, Param3: Variant) of object;
+  TBackcall_Pool = class;
+  TOn_Backcall_C = procedure(Sender: TBackcall_Pool; TriggerObject: TCore_Object; Param1, Param2, Param3: Variant);
+  TOn_Backcall_M = procedure(Sender: TBackcall_Pool; TriggerObject: TCore_Object; Param1, Param2, Param3: Variant) of object;
 
 {$IFDEF FPC}
-  TBackcallNotifyProc = procedure(Sender: TBackcalls; TriggerObject: TCore_Object; Param1, Param2, Param3: Variant) is nested;
+  TOn_Backcall_P = procedure(Sender: TBackcall_Pool; TriggerObject: TCore_Object; Param1, Param2, Param3: Variant) is nested;
 {$ELSE FPC}
-  TBackcallNotifyProc = reference to procedure(Sender: TBackcalls; TriggerObject: TCore_Object; Param1, Param2, Param3: Variant);
+  TOn_Backcall_P = reference to procedure(Sender: TBackcall_Pool; TriggerObject: TCore_Object; Param1, Param2, Param3: Variant);
 {$ENDIF FPC}
-  PBackcallData = ^TBackcallData;
+  POn_Backcall_ = ^TOn_Backcall_;
 
-  TBackcallData = record
-    TokenObj: TCore_Object;
-    Notify_C: TBackcallNotify_C;
-    Notify_M: TBackcallNotifyMethod;
-    Notify_P: TBackcallNotifyProc;
+  TOn_Backcall_ = record
+    Obj_: TCore_Object;
+    On_C: TOn_Backcall_C;
+    On_M: TOn_Backcall_M;
+    On_P: TOn_Backcall_P;
     procedure Init;
   end;
 
-  TBackcalls = class(TCore_Object)
+  TBackcall_List_Decl = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<POn_Backcall_>;
+
+  TBackcall_Pool = class(TCore_Object)
   private
-    FList: TCore_List;
+    FList: TBackcall_List_Decl;
     FVariantList: THashVariantList;
     FObjectList: THashObjectList;
     FOwner: TCore_Object;
@@ -1380,10 +1069,10 @@ type
     constructor Create;
     destructor Destroy; override;
 
-    procedure RegisterBackcallC(TokenObj_: TCore_Object; Notify_C_: TBackcallNotify_C);
-    procedure RegisterBackcallM(TokenObj_: TCore_Object; Notify_M_: TBackcallNotifyMethod);
-    procedure RegisterBackcallP(TokenObj_: TCore_Object; Notify_P_: TBackcallNotifyProc);
-    procedure UnRegisterBackcall(TokenObj_: TCore_Object);
+    procedure RegisterBackcallC(Obj_: TCore_Object; On_C_: TOn_Backcall_C);
+    procedure RegisterBackcallM(Obj_: TCore_Object; On_M_: TOn_Backcall_M);
+    procedure RegisterBackcallP(Obj_: TCore_Object; On_P_: TOn_Backcall_P);
+    procedure UnRegisterBackcall(Obj_: TCore_Object);
 
     procedure Clear;
 
@@ -1393,7 +1082,7 @@ type
     property ObjectList: THashObjectList read GetObjectList;
     property Owner: TCore_Object read FOwner write FOwner;
   end;
-{$ENDREGION 'TBackcalls'}
+{$ENDREGION 'TBackcall_Pool'}
 {$REGION 'Generics decl'}
 
   TUInt8List = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<Byte>;
@@ -1409,15 +1098,16 @@ type
   TSingleList = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<Single>;
   TFloatList = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<Single>;
   TDoubleList = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<Double>;
+  TVariantList = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<Variant>;
 {$ENDREGION 'Generics decl'}
 
-function HashMod(const h: THash; const m: Integer): Integer;
+function HashMod(const h: THash; const m: Integer): Integer; {$IFDEF INLINE_ASM}inline; {$ENDIF INLINE_ASM}
 // fast hash support
-function MakeHashS(const S: PSystemString): THash;
-function MakeHashPas(const S: PPascalString): THash;
-function MakeHashI64(const i64: Int64): THash;
-function MakeHashU32(const c32: Cardinal): THash;
-function MakeHashP(const p: Pointer): THash;
+function MakeHashS(const S: PSystemString): THash; {$IFDEF INLINE_ASM}inline; {$ENDIF INLINE_ASM}
+function MakeHashPas(const S: PPascalString): THash; {$IFDEF INLINE_ASM}inline; {$ENDIF INLINE_ASM}
+function MakeHashI64(const i64: Int64): THash; {$IFDEF INLINE_ASM}inline; {$ENDIF INLINE_ASM}
+function MakeHashU32(const c32: Cardinal): THash; {$IFDEF INLINE_ASM}inline; {$ENDIF INLINE_ASM}
+function MakeHashP(const p: Pointer): THash; {$IFDEF INLINE_ASM}inline; {$ENDIF INLINE_ASM}
 
 procedure DoStatusL(const V: TListPascalString); overload;
 procedure DoStatusL(const V: TListString); overload;
@@ -1508,24 +1198,24 @@ end;
 
 function THashList.GetKeyData(const Name: SystemString): PHashListData;
 var
-  lName: SystemString;
-  newhash: THash;
+  Low_Name: SystemString;
+  New_Hash: THash;
   i: Integer;
   lst: TCore_List;
   pData: PHashListData;
 begin
   Result := nil;
   if FIgnoreCase then
-      lName := LowerCase(Name)
+      Low_Name := LowerCase(Name)
   else
-      lName := Name;
-  newhash := MakeHashS(@lName);
-  lst := GetListTable(newhash, False);
+      Low_Name := Name;
+  New_Hash := MakeHashS(@Low_Name);
+  lst := GetListTable(New_Hash, False);
   if (lst <> nil) and (lst.Count > 0) then
     for i := lst.Count - 1 downto 0 do
       begin
         pData := PHashListData(lst[i]);
-        if (newhash = pData^.qHash) and (lName = pData^.LowerCaseName) then
+        if (New_Hash = pData^.qHash) and (Low_Name = pData^.LowerCaseName) then
           begin
             Result := pData;
 
@@ -1606,50 +1296,48 @@ begin
     end;
 end;
 
-procedure THashList.DoInsertBefore(p, insertTo_: PHashListData);
+procedure THashList.DoInsertBefore(p, To_: PHashListData);
 var
-  FP: PHashListData;
+  P_P: PHashListData;
 begin
-  if FFirst = insertTo_ then
+  if p = To_ then
+      Exit;
+  if FFirst = To_ then
       FFirst := p;
-
-  FP := insertTo_^.Prev;
-
-  if FP^.Next = insertTo_ then
-      FP^.Next := p;
-  if FP^.Prev = insertTo_ then
-      FP^.Prev := p;
-  if FP = insertTo_ then
-      insertTo_^.Prev := p;
-
-  p^.Prev := FP;
-  p^.Next := insertTo_;
+  P_P := To_^.Prev;
+  if P_P^.Next = To_ then
+      P_P^.Next := p;
+  if To_^.Next = To_ then
+      To_^.Next := p;
+  To_^.Prev := p;
+  p^.Prev := P_P;
+  p^.Next := To_;
 end;
 
 procedure THashList.DoDelete(p: PHashListData);
 var
-  FP, NP: PHashListData;
+  P_P, N_P: PHashListData;
 begin
-  FP := p^.Prev;
-  NP := p^.Next;
+  P_P := p^.Prev;
+  N_P := p^.Next;
 
   if p = FFirst then
-      FFirst := NP;
+      FFirst := N_P;
   if p = FLast then
-      FLast := FP;
+      FLast := P_P;
 
   if (FFirst = FLast) and (FLast = p) then
     begin
       FFirst := nil;
       FLast := nil;
-      Exit;
+    end
+  else
+    begin
+      P_P^.Next := N_P;
+      N_P^.Prev := P_P;
+      p^.Prev := nil;
+      p^.Next := nil;
     end;
-
-  FP^.Next := NP;
-  NP^.Prev := FP;
-
-  p^.Prev := nil;
-  p^.Next := nil;
 end;
 
 procedure THashList.DefaultDataFreeProc(p: Pointer);
@@ -1683,8 +1371,8 @@ begin
   FOnFreePtr := {$IFDEF FPC}@{$ENDIF FPC}DefaultDataFreeProc;
   FFirst := nil;
   FLast := nil;
-  FMaxNameLen := -1;
-  FMinNameLen := -1;
+  FMaxNameSize := -1;
+  FMinNameSize := -1;
   SetLength(FListBuffer, 0);
   SetHashBlockCount(HashPoolSize_);
 end;
@@ -1706,8 +1394,8 @@ begin
   FIDSeed := 0;
   FFirst := nil;
   FLast := nil;
-  FMaxNameLen := -1;
-  FMinNameLen := -1;
+  FMaxNameSize := -1;
+  FMinNameSize := -1;
   if Length(FListBuffer) = 0 then
       Exit;
 
@@ -1870,27 +1558,27 @@ end;
 
 procedure THashList.Delete(const Name: SystemString);
 var
-  newhash: THash;
+  New_Hash: THash;
   i: Integer;
-  lName: SystemString;
+  Low_Name: SystemString;
   lst: TCore_List;
   _ItemData: PHashListData;
 begin
   if FCount = 0 then
       Exit;
   if FIgnoreCase then
-      lName := LowerCase(Name)
+      Low_Name := LowerCase(Name)
   else
-      lName := Name;
-  newhash := MakeHashS(@lName);
-  lst := GetListTable(newhash, False);
+      Low_Name := Name;
+  New_Hash := MakeHashS(@Low_Name);
+  lst := GetListTable(New_Hash, False);
   if lst <> nil then
     begin
       i := 0;
       while i < lst.Count do
         begin
           _ItemData := lst[i];
-          if (newhash = _ItemData^.qHash) and (lName = _ItemData^.LowerCaseName) then
+          if (New_Hash = _ItemData^.qHash) and (Low_Name = _ItemData^.LowerCaseName) then
             begin
               DoDelete(_ItemData);
               if (FAutoFreeData) and (_ItemData^.Data <> nil) then
@@ -1913,47 +1601,47 @@ begin
   if FCount = 0 then
     begin
       FIDSeed := 1;
-      FMaxNameLen := -1;
-      FMinNameLen := -1;
+      FMaxNameSize := -1;
+      FMinNameSize := -1;
     end;
 end;
 
 function THashList.Add(const Name: SystemString; Data_: Pointer; const Overwrite_: Boolean): PHashListData;
 var
-  newhash: THash;
+  New_Hash: THash;
   L: NativeInt;
   lst: TCore_List;
   i: Integer;
-  lName: SystemString;
+  Low_Name: SystemString;
   pData: PHashListData;
 begin
   if FIgnoreCase then
-      lName := LowerCase(Name)
+      Low_Name := LowerCase(Name)
   else
-      lName := Name;
-  newhash := MakeHashS(@lName);
+      Low_Name := Name;
+  New_Hash := MakeHashS(@Low_Name);
 
-  L := Length(lName);
+  L := Length(Low_Name);
   if Count > 0 then
     begin
-      if L > FMaxNameLen then
-          FMaxNameLen := L;
-      if L < FMinNameLen then
-          FMinNameLen := L;
+      if L > FMaxNameSize then
+          FMaxNameSize := L;
+      if L < FMinNameSize then
+          FMinNameSize := L;
     end
   else
     begin
-      FMaxNameLen := L;
-      FMinNameLen := L;
+      FMaxNameSize := L;
+      FMinNameSize := L;
     end;
 
-  lst := GetListTable(newhash, True);
+  lst := GetListTable(New_Hash, True);
   if (lst.Count > 0) and (Overwrite_) then
     begin
       for i := 0 to lst.Count - 1 do
         begin
           pData := PHashListData(lst[i]);
-          if (newhash = pData^.qHash) and (lName = pData^.LowerCaseName) then
+          if (New_Hash = pData^.qHash) and (Low_Name = pData^.LowerCaseName) then
             begin
               DoDelete(pData);
               if (FAutoFreeData) and (pData^.Data <> nil) and (pData^.Data <> Data_) then
@@ -1989,8 +1677,8 @@ begin
     end;
 
   new(pData);
-  pData^.qHash := newhash;
-  pData^.LowerCaseName := lName;
+  pData^.qHash := New_Hash;
+  pData^.LowerCaseName := Low_Name;
   pData^.OriginName := Name;
   pData^.Data := Data_;
   pData^.ID := FIDSeed;
@@ -2014,41 +1702,41 @@ end;
 
 procedure THashList.SetValue(const Name: SystemString; const Data_: Pointer);
 var
-  newhash: THash;
+  New_Hash: THash;
   L: NativeInt;
   lst: TCore_List;
   i: Integer;
-  lName: SystemString;
+  Low_Name: SystemString;
   pData: PHashListData;
   Done: Boolean;
 begin
   if FIgnoreCase then
-      lName := LowerCase(Name)
+      Low_Name := LowerCase(Name)
   else
-      lName := Name;
-  newhash := MakeHashS(@lName);
+      Low_Name := Name;
+  New_Hash := MakeHashS(@Low_Name);
 
-  L := Length(lName);
+  L := Length(Low_Name);
   if Count > 0 then
     begin
-      if L > FMaxNameLen then
-          FMaxNameLen := L;
-      if L < FMinNameLen then
-          FMinNameLen := L;
+      if L > FMaxNameSize then
+          FMaxNameSize := L;
+      if L < FMinNameSize then
+          FMinNameSize := L;
     end
   else
     begin
-      FMaxNameLen := L;
-      FMinNameLen := L;
+      FMaxNameSize := L;
+      FMinNameSize := L;
     end;
 
-  lst := GetListTable(newhash, True);
+  lst := GetListTable(New_Hash, True);
   Done := False;
   if (lst.Count > 0) then
     for i := 0 to lst.Count - 1 do
       begin
         pData := PHashListData(lst[i]);
-        if (newhash = pData^.qHash) and (lName = pData^.LowerCaseName) then
+        if (New_Hash = pData^.qHash) and (Low_Name = pData^.LowerCaseName) then
           begin
             if (FAutoFreeData) and (pData^.Data <> nil) and (pData^.Data <> Data_) then
               begin
@@ -2065,8 +1753,8 @@ begin
   if not Done then
     begin
       new(pData);
-      pData^.qHash := newhash;
-      pData^.LowerCaseName := lName;
+      pData^.qHash := New_Hash;
+      pData^.LowerCaseName := Low_Name;
       pData^.OriginName := Name;
       pData^.Data := Data_;
       pData^.ID := FIDSeed;
@@ -2086,11 +1774,11 @@ end;
 
 function THashList.Insert(Name, InsertToBefore_: SystemString; Data_: Pointer; const Overwrite_: Boolean): PHashListData;
 var
-  newhash: THash;
+  New_Hash: THash;
   L: NativeInt;
   lst: TCore_List;
   i: Integer;
-  lName: SystemString;
+  Low_Name: SystemString;
   InsertDest_, pData: PHashListData;
 begin
   InsertDest_ := NameData[InsertToBefore_];
@@ -2101,32 +1789,32 @@ begin
     end;
 
   if FIgnoreCase then
-      lName := LowerCase(Name)
+      Low_Name := LowerCase(Name)
   else
-      lName := Name;
-  newhash := MakeHashS(@lName);
+      Low_Name := Name;
+  New_Hash := MakeHashS(@Low_Name);
 
-  L := Length(lName);
+  L := Length(Low_Name);
   if Count > 0 then
     begin
-      if L > FMaxNameLen then
-          FMaxNameLen := L;
-      if L < FMinNameLen then
-          FMinNameLen := L;
+      if L > FMaxNameSize then
+          FMaxNameSize := L;
+      if L < FMinNameSize then
+          FMinNameSize := L;
     end
   else
     begin
-      FMaxNameLen := L;
-      FMinNameLen := L;
+      FMaxNameSize := L;
+      FMinNameSize := L;
     end;
 
-  lst := GetListTable(newhash, True);
+  lst := GetListTable(New_Hash, True);
   if (lst.Count > 0) and (Overwrite_) then
     begin
       for i := 0 to lst.Count - 1 do
         begin
           pData := PHashListData(lst[i]);
-          if (newhash = pData^.qHash) and (lName = pData^.LowerCaseName) then
+          if (New_Hash = pData^.qHash) and (Low_Name = pData^.LowerCaseName) then
             begin
               DoDelete(pData);
               if (FAutoFreeData) and (pData^.Data <> nil) and (pData^.Data <> Data_) then
@@ -2162,8 +1850,8 @@ begin
     end;
 
   new(pData);
-  pData^.qHash := newhash;
-  pData^.LowerCaseName := lName;
+  pData^.qHash := New_Hash;
+  pData^.LowerCaseName := Low_Name;
   pData^.OriginName := Name;
   pData^.Data := Data_;
   pData^.ID := FIDSeed;
@@ -2211,28 +1899,28 @@ end;
 
 function THashList.Exists(const Name: SystemString): Boolean;
 var
-  newhash: THash;
+  New_Hash: THash;
   i: Integer;
   lst: TCore_List;
   pData: PHashListData;
-  lName: SystemString;
+  Low_Name: SystemString;
 begin
   Result := False;
   if FCount = 0 then
       Exit;
   if FIgnoreCase then
-      lName := LowerCase(Name)
+      Low_Name := LowerCase(Name)
   else
-      lName := Name;
-  newhash := MakeHashS(@lName);
-  lst := GetListTable(newhash, False);
+      Low_Name := Name;
+  New_Hash := MakeHashS(@Low_Name);
+  lst := GetListTable(New_Hash, False);
   if lst <> nil then
     begin
       if lst.Count > 0 then
         for i := lst.Count - 1 downto 0 do
           begin
             pData := PHashListData(lst[i]);
-            if (newhash = pData^.qHash) and (lName = pData^.LowerCaseName) then
+            if (New_Hash = pData^.qHash) and (Low_Name = pData^.LowerCaseName) then
                 Exit(True);
           end;
     end;
@@ -2405,19 +2093,19 @@ end;
 
 function TInt64HashObjectList.Geti64Data(i64: Int64): PInt64HashListObjectStruct;
 var
-  newhash: THash;
+  New_Hash: THash;
   i: Integer;
   lst: TCore_List;
   pData: PInt64HashListObjectStruct;
 begin
   Result := nil;
-  newhash := MakeHashI64(i64);
-  lst := GetListTable(newhash, False);
+  New_Hash := MakeHashI64(i64);
+  lst := GetListTable(New_Hash, False);
   if (lst <> nil) and (lst.Count > 0) then
     for i := lst.Count - 1 downto 0 do
       begin
         pData := PInt64HashListObjectStruct(lst[i]);
-        if (newhash = pData^.qHash) and (i64 = pData^.i64) then
+        if (New_Hash = pData^.qHash) and (i64 = pData^.i64) then
           begin
             Result := pData;
             if (FAccessOptimization) and (pData^.ID < FIDSeed - 1) then
@@ -2496,50 +2184,48 @@ begin
     end;
 end;
 
-procedure TInt64HashObjectList.DoInsertBefore(p, insertTo_: PInt64HashListObjectStruct);
+procedure TInt64HashObjectList.DoInsertBefore(p, To_: PInt64HashListObjectStruct);
 var
-  FP: PInt64HashListObjectStruct;
+  P_P: PInt64HashListObjectStruct;
 begin
-  if FFirst = insertTo_ then
+  if p = To_ then
+      Exit;
+  if FFirst = To_ then
       FFirst := p;
-
-  FP := insertTo_^.Prev;
-
-  if FP^.Next = insertTo_ then
-      FP^.Next := p;
-  if FP^.Prev = insertTo_ then
-      FP^.Prev := p;
-  if FP = insertTo_ then
-      insertTo_^.Prev := p;
-
-  p^.Prev := FP;
-  p^.Next := insertTo_;
+  P_P := To_^.Prev;
+  if P_P^.Next = To_ then
+      P_P^.Next := p;
+  if To_^.Next = To_ then
+      To_^.Next := p;
+  To_^.Prev := p;
+  p^.Prev := P_P;
+  p^.Next := To_;
 end;
 
 procedure TInt64HashObjectList.DoDelete(p: PInt64HashListObjectStruct);
 var
-  FP, NP: PInt64HashListObjectStruct;
+  P_P, N_P: PInt64HashListObjectStruct;
 begin
-  FP := p^.Prev;
-  NP := p^.Next;
+  P_P := p^.Prev;
+  N_P := p^.Next;
 
   if p = FFirst then
-      FFirst := NP;
+      FFirst := N_P;
   if p = FLast then
-      FLast := FP;
+      FLast := P_P;
 
   if (FFirst = FLast) and (FLast = p) then
     begin
       FFirst := nil;
       FLast := nil;
-      Exit;
+    end
+  else
+    begin
+      P_P^.Next := N_P;
+      N_P^.Prev := P_P;
+      p^.Prev := nil;
+      p^.Next := nil;
     end;
-
-  FP^.Next := NP;
-  NP^.Prev := FP;
-
-  p^.Prev := nil;
-  p^.Next := nil;
 end;
 
 procedure TInt64HashObjectList.DefaultObjectFreeProc(Obj: TCore_Object);
@@ -2639,22 +2325,22 @@ end;
 
 procedure TInt64HashObjectList.Delete(i64: Int64);
 var
-  newhash: THash;
+  New_Hash: THash;
   i: Integer;
   lst: TCore_List;
   _ItemData: PInt64HashListObjectStruct;
 begin
   if FCount = 0 then
       Exit;
-  newhash := MakeHashI64(i64);
-  lst := GetListTable(newhash, False);
+  New_Hash := MakeHashI64(i64);
+  lst := GetListTable(New_Hash, False);
   if lst <> nil then
     begin
       i := 0;
       while i < lst.Count do
         begin
           _ItemData := lst[i];
-          if (newhash = _ItemData^.qHash) and (i64 = _ItemData^.i64) then
+          if (New_Hash = _ItemData^.qHash) and (i64 = _ItemData^.i64) then
             begin
               DoDelete(_ItemData);
               if (FAutoFreeData) and (_ItemData^.Data <> nil) then
@@ -2680,20 +2366,20 @@ end;
 
 function TInt64HashObjectList.Add(i64: Int64; Data_: TCore_Object; const Overwrite_: Boolean): PInt64HashListObjectStruct;
 var
-  newhash: THash;
+  New_Hash: THash;
   lst: TCore_List;
   i: Integer;
   pData: PInt64HashListObjectStruct;
 begin
-  newhash := MakeHashI64(i64);
+  New_Hash := MakeHashI64(i64);
 
-  lst := GetListTable(newhash, True);
+  lst := GetListTable(New_Hash, True);
   if (lst.Count > 0) and (Overwrite_) then
     begin
       for i := lst.Count - 1 downto 0 do
         begin
           pData := PInt64HashListObjectStruct(lst[i]);
-          if (newhash = pData^.qHash) and (i64 = pData^.i64) then
+          if (New_Hash = pData^.qHash) and (i64 = pData^.i64) then
             begin
               DoDelete(pData);
               if (FAutoFreeData) and (pData^.Data <> nil) and (pData^.Data <> Data_) then
@@ -2729,7 +2415,7 @@ begin
     end;
 
   new(pData);
-  pData^.qHash := newhash;
+  pData^.qHash := New_Hash;
   pData^.i64 := i64;
   pData^.Data := Data_;
   pData^.ID := FIDSeed;
@@ -2748,22 +2434,22 @@ end;
 
 procedure TInt64HashObjectList.SetValue(i64: Int64; Data_: TCore_Object);
 var
-  newhash: THash;
+  New_Hash: THash;
   lst: TCore_List;
   i: Integer;
   pData: PInt64HashListObjectStruct;
   Done: Boolean;
 begin
-  newhash := MakeHashI64(i64);
+  New_Hash := MakeHashI64(i64);
 
-  lst := GetListTable(newhash, True);
+  lst := GetListTable(New_Hash, True);
   Done := False;
   if (lst.Count > 0) then
     begin
       for i := lst.Count - 1 downto 0 do
         begin
           pData := PInt64HashListObjectStruct(lst[i]);
-          if (newhash = pData^.qHash) and (i64 = pData^.i64) then
+          if (New_Hash = pData^.qHash) and (i64 = pData^.i64) then
             begin
               if (FAutoFreeData) and (pData^.Data <> nil) and (pData^.Data <> Data_) then
                 begin
@@ -2781,7 +2467,7 @@ begin
   if not Done then
     begin
       new(pData);
-      pData^.qHash := newhash;
+      pData^.qHash := New_Hash;
       pData^.i64 := i64;
       pData^.Data := Data_;
       pData^.ID := FIDSeed;
@@ -2800,7 +2486,7 @@ end;
 
 function TInt64HashObjectList.Insert(i64, InsertToBefore_: Int64; Data_: TCore_Object; const Overwrite_: Boolean): PInt64HashListObjectStruct;
 var
-  newhash: THash;
+  New_Hash: THash;
   lst: TCore_List;
   i: Integer;
   InsertDest_, pData: PInt64HashListObjectStruct;
@@ -2812,15 +2498,15 @@ begin
       Exit;
     end;
 
-  newhash := MakeHashI64(i64);
+  New_Hash := MakeHashI64(i64);
 
-  lst := GetListTable(newhash, True);
+  lst := GetListTable(New_Hash, True);
   if (lst.Count > 0) and (Overwrite_) then
     begin
       for i := lst.Count - 1 downto 0 do
         begin
           pData := PInt64HashListObjectStruct(lst[i]);
-          if (newhash = pData^.qHash) and (i64 = pData^.i64) then
+          if (New_Hash = pData^.qHash) and (i64 = pData^.i64) then
             begin
               DoDelete(pData);
               if (FAutoFreeData) and (pData^.Data <> nil) and (pData^.Data <> Data_) then
@@ -2856,7 +2542,7 @@ begin
     end;
 
   new(pData);
-  pData^.qHash := newhash;
+  pData^.qHash := New_Hash;
   pData^.i64 := i64;
   pData^.Data := Data_;
   pData^.ID := FIDSeed;
@@ -2875,7 +2561,7 @@ end;
 
 function TInt64HashObjectList.Exists(i64: Int64): Boolean;
 var
-  newhash: THash;
+  New_Hash: THash;
   i: Integer;
   lst: TCore_List;
   pData: PInt64HashListObjectStruct;
@@ -2883,15 +2569,15 @@ begin
   Result := False;
   if FCount = 0 then
       Exit;
-  newhash := MakeHashI64(i64);
-  lst := GetListTable(newhash, False);
+  New_Hash := MakeHashI64(i64);
+  lst := GetListTable(New_Hash, False);
   if lst <> nil then
     begin
       if lst.Count > 0 then
         for i := lst.Count - 1 downto 0 do
           begin
             pData := PInt64HashListObjectStruct(lst[i]);
-            if (newhash = pData^.qHash) and (i64 = pData^.i64) then
+            if (New_Hash = pData^.qHash) and (i64 = pData^.i64) then
                 Exit(True);
           end;
     end;
@@ -3076,19 +2762,19 @@ end;
 
 function TInt64HashPointerList.Geti64Data(i64: Int64): PInt64HashListPointerStruct;
 var
-  newhash: THash;
+  New_Hash: THash;
   i: Integer;
   lst: TCore_List;
   pData: PInt64HashListPointerStruct;
 begin
   Result := nil;
-  newhash := MakeHashI64(i64);
-  lst := GetListTable(newhash, False);
+  New_Hash := MakeHashI64(i64);
+  lst := GetListTable(New_Hash, False);
   if (lst <> nil) and (lst.Count > 0) then
     for i := lst.Count - 1 downto 0 do
       begin
         pData := PInt64HashListPointerStruct(lst[i]);
-        if (newhash = pData^.qHash) and (i64 = pData^.i64) then
+        if (New_Hash = pData^.qHash) and (i64 = pData^.i64) then
           begin
             Result := pData;
             if (FAccessOptimization) and (pData^.ID < FIDSeed - 1) then
@@ -3167,50 +2853,48 @@ begin
     end;
 end;
 
-procedure TInt64HashPointerList.DoInsertBefore(p, insertTo_: PInt64HashListPointerStruct);
+procedure TInt64HashPointerList.DoInsertBefore(p, To_: PInt64HashListPointerStruct);
 var
-  FP: PInt64HashListPointerStruct;
+  P_P: PInt64HashListPointerStruct;
 begin
-  if FFirst = insertTo_ then
+  if p = To_ then
+      Exit;
+  if FFirst = To_ then
       FFirst := p;
-
-  FP := insertTo_^.Prev;
-
-  if FP^.Next = insertTo_ then
-      FP^.Next := p;
-  if FP^.Prev = insertTo_ then
-      FP^.Prev := p;
-  if FP = insertTo_ then
-      insertTo_^.Prev := p;
-
-  p^.Prev := FP;
-  p^.Next := insertTo_;
+  P_P := To_^.Prev;
+  if P_P^.Next = To_ then
+      P_P^.Next := p;
+  if To_^.Next = To_ then
+      To_^.Next := p;
+  To_^.Prev := p;
+  p^.Prev := P_P;
+  p^.Next := To_;
 end;
 
 procedure TInt64HashPointerList.DoDelete(p: PInt64HashListPointerStruct);
 var
-  FP, NP: PInt64HashListPointerStruct;
+  P_P, N_P: PInt64HashListPointerStruct;
 begin
-  FP := p^.Prev;
-  NP := p^.Next;
+  P_P := p^.Prev;
+  N_P := p^.Next;
 
   if p = FFirst then
-      FFirst := NP;
+      FFirst := N_P;
   if p = FLast then
-      FLast := FP;
+      FLast := P_P;
 
   if (FFirst = FLast) and (FLast = p) then
     begin
       FFirst := nil;
       FLast := nil;
-      Exit;
+    end
+  else
+    begin
+      P_P^.Next := N_P;
+      N_P^.Prev := P_P;
+      p^.Prev := nil;
+      p^.Next := nil;
     end;
-
-  FP^.Next := NP;
-  NP^.Prev := FP;
-
-  p^.Prev := nil;
-  p^.Next := nil;
 end;
 
 procedure TInt64HashPointerList.DefaultDataFreeProc(p: Pointer);
@@ -3320,22 +3004,22 @@ end;
 
 procedure TInt64HashPointerList.Delete(i64: Int64);
 var
-  newhash: THash;
+  New_Hash: THash;
   i: Integer;
   lst: TCore_List;
   _ItemData: PInt64HashListPointerStruct;
 begin
   if FCount = 0 then
       Exit;
-  newhash := MakeHashI64(i64);
-  lst := GetListTable(newhash, False);
+  New_Hash := MakeHashI64(i64);
+  lst := GetListTable(New_Hash, False);
   if lst <> nil then
     begin
       i := 0;
       while i < lst.Count do
         begin
           _ItemData := lst[i];
-          if (newhash = _ItemData^.qHash) and (i64 = _ItemData^.i64) then
+          if (New_Hash = _ItemData^.qHash) and (i64 = _ItemData^.i64) then
             begin
               DoDelete(_ItemData);
               if (FAutoFreeData) and (_ItemData^.Data <> nil) then
@@ -3361,20 +3045,20 @@ end;
 
 function TInt64HashPointerList.Add(i64: Int64; Data_: Pointer; const Overwrite_: Boolean): PInt64HashListPointerStruct;
 var
-  newhash: THash;
+  New_Hash: THash;
   lst: TCore_List;
   i: Integer;
   pData: PInt64HashListPointerStruct;
 begin
-  newhash := MakeHashI64(i64);
+  New_Hash := MakeHashI64(i64);
 
-  lst := GetListTable(newhash, True);
+  lst := GetListTable(New_Hash, True);
   if (lst.Count > 0) and (Overwrite_) then
     begin
       for i := lst.Count - 1 downto 0 do
         begin
           pData := PInt64HashListPointerStruct(lst[i]);
-          if (newhash = pData^.qHash) and (i64 = pData^.i64) then
+          if (New_Hash = pData^.qHash) and (i64 = pData^.i64) then
             begin
               DoDelete(pData);
               if (FAutoFreeData) and (pData^.Data <> nil) and (pData^.Data <> Data_) then
@@ -3412,7 +3096,7 @@ begin
     end;
 
   new(pData);
-  pData^.qHash := newhash;
+  pData^.qHash := New_Hash;
   pData^.i64 := i64;
   pData^.Data := Data_;
   pData^.ID := FIDSeed;
@@ -3433,22 +3117,22 @@ end;
 
 procedure TInt64HashPointerList.SetValue(i64: Int64; Data_: Pointer);
 var
-  newhash: THash;
+  New_Hash: THash;
   lst: TCore_List;
   i: Integer;
   pData: PInt64HashListPointerStruct;
   Done: Boolean;
 begin
-  newhash := MakeHashI64(i64);
+  New_Hash := MakeHashI64(i64);
 
-  lst := GetListTable(newhash, True);
+  lst := GetListTable(New_Hash, True);
   Done := False;
   if (lst.Count > 0) then
     begin
       for i := lst.Count - 1 downto 0 do
         begin
           pData := PInt64HashListPointerStruct(lst[i]);
-          if (newhash = pData^.qHash) and (i64 = pData^.i64) then
+          if (New_Hash = pData^.qHash) and (i64 = pData^.i64) then
             begin
               if (FAutoFreeData) and (pData^.Data <> nil) and (pData^.Data <> Data_) then
                 begin
@@ -3467,7 +3151,7 @@ begin
   if not Done then
     begin
       new(pData);
-      pData^.qHash := newhash;
+      pData^.qHash := New_Hash;
       pData^.i64 := i64;
       pData^.Data := Data_;
       pData^.ID := FIDSeed;
@@ -3488,7 +3172,7 @@ end;
 
 function TInt64HashPointerList.Insert(i64, InsertToBefore_: Int64; Data_: Pointer; const Overwrite_: Boolean): PInt64HashListPointerStruct;
 var
-  newhash: THash;
+  New_Hash: THash;
   lst: TCore_List;
   i: Integer;
   InsertDest_, pData: PInt64HashListPointerStruct;
@@ -3500,15 +3184,15 @@ begin
       Exit;
     end;
 
-  newhash := MakeHashI64(i64);
+  New_Hash := MakeHashI64(i64);
 
-  lst := GetListTable(newhash, True);
+  lst := GetListTable(New_Hash, True);
   if (lst.Count > 0) and (Overwrite_) then
     begin
       for i := lst.Count - 1 downto 0 do
         begin
           pData := PInt64HashListPointerStruct(lst[i]);
-          if (newhash = pData^.qHash) and (i64 = pData^.i64) then
+          if (New_Hash = pData^.qHash) and (i64 = pData^.i64) then
             begin
               DoDelete(pData);
               if (FAutoFreeData) and (pData^.Data <> nil) and (pData^.Data <> Data_) then
@@ -3546,7 +3230,7 @@ begin
     end;
 
   new(pData);
-  pData^.qHash := newhash;
+  pData^.qHash := New_Hash;
   pData^.i64 := i64;
   pData^.Data := Data_;
   pData^.ID := FIDSeed;
@@ -3567,7 +3251,7 @@ end;
 
 function TInt64HashPointerList.Exists(i64: Int64): Boolean;
 var
-  newhash: THash;
+  New_Hash: THash;
   i: Integer;
   lst: TCore_List;
   pData: PInt64HashListPointerStruct;
@@ -3575,15 +3259,15 @@ begin
   Result := False;
   if FCount = 0 then
       Exit;
-  newhash := MakeHashI64(i64);
-  lst := GetListTable(newhash, False);
+  New_Hash := MakeHashI64(i64);
+  lst := GetListTable(New_Hash, False);
   if lst <> nil then
     begin
       if lst.Count > 0 then
         for i := lst.Count - 1 downto 0 do
           begin
             pData := PInt64HashListPointerStruct(lst[i]);
-            if (newhash = pData^.qHash) and (i64 = pData^.i64) then
+            if (New_Hash = pData^.qHash) and (i64 = pData^.i64) then
                 Exit(True);
           end;
     end;
@@ -3756,19 +3440,19 @@ end;
 
 function TUInt32HashObjectList.Getu32Data(u32: UInt32): PUInt32HashListObjectStruct;
 var
-  newhash: THash;
+  New_Hash: THash;
   i: Integer;
   lst: TCore_List;
   pData: PUInt32HashListObjectStruct;
 begin
   Result := nil;
-  newhash := MakeHashU32(u32);
-  lst := GetListTable(newhash, False);
+  New_Hash := MakeHashU32(u32);
+  lst := GetListTable(New_Hash, False);
   if (lst <> nil) and (lst.Count > 0) then
     for i := lst.Count - 1 downto 0 do
       begin
         pData := PUInt32HashListObjectStruct(lst[i]);
-        if (newhash = pData^.qHash) and (u32 = pData^.u32) then
+        if (New_Hash = pData^.qHash) and (u32 = pData^.u32) then
           begin
             Result := pData;
             if (FAccessOptimization) and (pData^.ID < FIDSeed - 1) then
@@ -3847,50 +3531,48 @@ begin
     end;
 end;
 
-procedure TUInt32HashObjectList.DoInsertBefore(p, insertTo_: PUInt32HashListObjectStruct);
+procedure TUInt32HashObjectList.DoInsertBefore(p, To_: PUInt32HashListObjectStruct);
 var
-  FP: PUInt32HashListObjectStruct;
+  P_P: PUInt32HashListObjectStruct;
 begin
-  if FFirst = insertTo_ then
+  if p = To_ then
+      Exit;
+  if FFirst = To_ then
       FFirst := p;
-
-  FP := insertTo_^.Prev;
-
-  if FP^.Next = insertTo_ then
-      FP^.Next := p;
-  if FP^.Prev = insertTo_ then
-      FP^.Prev := p;
-  if FP = insertTo_ then
-      insertTo_^.Prev := p;
-
-  p^.Prev := FP;
-  p^.Next := insertTo_;
+  P_P := To_^.Prev;
+  if P_P^.Next = To_ then
+      P_P^.Next := p;
+  if To_^.Next = To_ then
+      To_^.Next := p;
+  To_^.Prev := p;
+  p^.Prev := P_P;
+  p^.Next := To_;
 end;
 
 procedure TUInt32HashObjectList.DoDelete(p: PUInt32HashListObjectStruct);
 var
-  FP, NP: PUInt32HashListObjectStruct;
+  P_P, N_P: PUInt32HashListObjectStruct;
 begin
-  FP := p^.Prev;
-  NP := p^.Next;
+  P_P := p^.Prev;
+  N_P := p^.Next;
 
   if p = FFirst then
-      FFirst := NP;
+      FFirst := N_P;
   if p = FLast then
-      FLast := FP;
+      FLast := P_P;
 
   if (FFirst = FLast) and (FLast = p) then
     begin
       FFirst := nil;
       FLast := nil;
-      Exit;
+    end
+  else
+    begin
+      P_P^.Next := N_P;
+      N_P^.Prev := P_P;
+      p^.Prev := nil;
+      p^.Next := nil;
     end;
-
-  FP^.Next := NP;
-  NP^.Prev := FP;
-
-  p^.Prev := nil;
-  p^.Next := nil;
 end;
 
 procedure TUInt32HashObjectList.DoDataFreeProc(Obj: TCore_Object);
@@ -3983,22 +3665,22 @@ end;
 
 procedure TUInt32HashObjectList.Delete(u32: UInt32);
 var
-  newhash: THash;
+  New_Hash: THash;
   i: Integer;
   lst: TCore_List;
   _ItemData: PUInt32HashListObjectStruct;
 begin
   if FCount = 0 then
       Exit;
-  newhash := MakeHashU32(u32);
-  lst := GetListTable(newhash, False);
+  New_Hash := MakeHashU32(u32);
+  lst := GetListTable(New_Hash, False);
   if lst <> nil then
     begin
       i := 0;
       while i < lst.Count do
         begin
           _ItemData := lst[i];
-          if (newhash = _ItemData^.qHash) and (u32 = _ItemData^.u32) then
+          if (New_Hash = _ItemData^.qHash) and (u32 = _ItemData^.u32) then
             begin
               DoDelete(_ItemData);
               if (FAutoFreeData) and (_ItemData^.Data <> nil) then
@@ -4024,20 +3706,20 @@ end;
 
 function TUInt32HashObjectList.Add(u32: UInt32; Data_: TCore_Object; const Overwrite_: Boolean): PUInt32HashListObjectStruct;
 var
-  newhash: THash;
+  New_Hash: THash;
   lst: TCore_List;
   i: Integer;
   pData: PUInt32HashListObjectStruct;
 begin
-  newhash := MakeHashU32(u32);
+  New_Hash := MakeHashU32(u32);
 
-  lst := GetListTable(newhash, True);
+  lst := GetListTable(New_Hash, True);
   if (lst.Count > 0) and (Overwrite_) then
     begin
       for i := lst.Count - 1 downto 0 do
         begin
           pData := PUInt32HashListObjectStruct(lst[i]);
-          if (newhash = pData^.qHash) and (u32 = pData^.u32) then
+          if (New_Hash = pData^.qHash) and (u32 = pData^.u32) then
             begin
               DoDelete(pData);
               if (FAutoFreeData) and (pData^.Data <> nil) and (pData^.Data <> Data_) then
@@ -4073,7 +3755,7 @@ begin
     end;
 
   new(pData);
-  pData^.qHash := newhash;
+  pData^.qHash := New_Hash;
   pData^.u32 := u32;
   pData^.Data := Data_;
   pData^.ID := FIDSeed;
@@ -4092,22 +3774,22 @@ end;
 
 procedure TUInt32HashObjectList.SetValue(u32: UInt32; Data_: TCore_Object);
 var
-  newhash: THash;
+  New_Hash: THash;
   lst: TCore_List;
   i: Integer;
   pData: PUInt32HashListObjectStruct;
   Done: Boolean;
 begin
-  newhash := MakeHashU32(u32);
+  New_Hash := MakeHashU32(u32);
 
-  lst := GetListTable(newhash, True);
+  lst := GetListTable(New_Hash, True);
   Done := False;
   if (lst.Count > 0) then
     begin
       for i := lst.Count - 1 downto 0 do
         begin
           pData := PUInt32HashListObjectStruct(lst[i]);
-          if (newhash = pData^.qHash) and (u32 = pData^.u32) then
+          if (New_Hash = pData^.qHash) and (u32 = pData^.u32) then
             begin
               if (FAutoFreeData) and (pData^.Data <> nil) and (pData^.Data <> Data_) then
                 begin
@@ -4125,7 +3807,7 @@ begin
   if not Done then
     begin
       new(pData);
-      pData^.qHash := newhash;
+      pData^.qHash := New_Hash;
       pData^.u32 := u32;
       pData^.Data := Data_;
       pData^.ID := FIDSeed;
@@ -4144,7 +3826,7 @@ end;
 
 function TUInt32HashObjectList.Insert(u32, InsertToBefore_: UInt32; Data_: TCore_Object; const Overwrite_: Boolean): PUInt32HashListObjectStruct;
 var
-  newhash: THash;
+  New_Hash: THash;
   lst: TCore_List;
   i: Integer;
   InsertDest_, pData: PUInt32HashListObjectStruct;
@@ -4156,15 +3838,15 @@ begin
       Exit;
     end;
 
-  newhash := MakeHashU32(u32);
+  New_Hash := MakeHashU32(u32);
 
-  lst := GetListTable(newhash, True);
+  lst := GetListTable(New_Hash, True);
   if (lst.Count > 0) and (Overwrite_) then
     begin
       for i := lst.Count - 1 downto 0 do
         begin
           pData := PUInt32HashListObjectStruct(lst[i]);
-          if (newhash = pData^.qHash) and (u32 = pData^.u32) then
+          if (New_Hash = pData^.qHash) and (u32 = pData^.u32) then
             begin
               DoDelete(pData);
               if (FAutoFreeData) and (pData^.Data <> nil) and (pData^.Data <> Data_) then
@@ -4197,7 +3879,7 @@ begin
     end;
 
   new(pData);
-  pData^.qHash := newhash;
+  pData^.qHash := New_Hash;
   pData^.u32 := u32;
   pData^.Data := Data_;
   pData^.ID := FIDSeed;
@@ -4216,7 +3898,7 @@ end;
 
 function TUInt32HashObjectList.Exists(u32: UInt32): Boolean;
 var
-  newhash: THash;
+  New_Hash: THash;
   i: Integer;
   lst: TCore_List;
   pData: PUInt32HashListObjectStruct;
@@ -4224,15 +3906,15 @@ begin
   Result := False;
   if FCount = 0 then
       Exit;
-  newhash := MakeHashU32(u32);
-  lst := GetListTable(newhash, False);
+  New_Hash := MakeHashU32(u32);
+  lst := GetListTable(New_Hash, False);
   if lst <> nil then
     begin
       if lst.Count > 0 then
         for i := lst.Count - 1 downto 0 do
           begin
             pData := PUInt32HashListObjectStruct(lst[i]);
-            if (newhash = pData^.qHash) and (u32 = pData^.u32) then
+            if (New_Hash = pData^.qHash) and (u32 = pData^.u32) then
                 Exit(True);
           end;
     end;
@@ -4428,19 +4110,19 @@ end;
 
 function TUInt32HashPointerList.Getu32Data(u32: UInt32): PUInt32HashListPointerStruct;
 var
-  newhash: THash;
+  New_Hash: THash;
   i: Integer;
   lst: TCore_List;
   pData: PUInt32HashListPointerStruct;
 begin
   Result := nil;
-  newhash := MakeHashU32(u32);
-  lst := GetListTable(newhash, False);
+  New_Hash := MakeHashU32(u32);
+  lst := GetListTable(New_Hash, False);
   if (lst <> nil) and (lst.Count > 0) then
     for i := lst.Count - 1 downto 0 do
       begin
         pData := PUInt32HashListPointerStruct(lst[i]);
-        if (newhash = pData^.qHash) and (u32 = pData^.u32) then
+        if (New_Hash = pData^.qHash) and (u32 = pData^.u32) then
           begin
             Result := pData;
             if (FAccessOptimization) and (pData^.ID < FIDSeed - 1) then
@@ -4519,50 +4201,48 @@ begin
     end;
 end;
 
-procedure TUInt32HashPointerList.DoInsertBefore(p, insertTo_: PUInt32HashListPointerStruct);
+procedure TUInt32HashPointerList.DoInsertBefore(p, To_: PUInt32HashListPointerStruct);
 var
-  FP: PUInt32HashListPointerStruct;
+  P_P: PUInt32HashListPointerStruct;
 begin
-  if FFirst = insertTo_ then
+  if p = To_ then
+      Exit;
+  if FFirst = To_ then
       FFirst := p;
-
-  FP := insertTo_^.Prev;
-
-  if FP^.Next = insertTo_ then
-      FP^.Next := p;
-  if FP^.Prev = insertTo_ then
-      FP^.Prev := p;
-  if FP = insertTo_ then
-      insertTo_^.Prev := p;
-
-  p^.Prev := FP;
-  p^.Next := insertTo_;
+  P_P := To_^.Prev;
+  if P_P^.Next = To_ then
+      P_P^.Next := p;
+  if To_^.Next = To_ then
+      To_^.Next := p;
+  To_^.Prev := p;
+  p^.Prev := P_P;
+  p^.Next := To_;
 end;
 
 procedure TUInt32HashPointerList.DoDelete(p: PUInt32HashListPointerStruct);
 var
-  FP, NP: PUInt32HashListPointerStruct;
+  P_P, N_P: PUInt32HashListPointerStruct;
 begin
-  FP := p^.Prev;
-  NP := p^.Next;
+  P_P := p^.Prev;
+  N_P := p^.Next;
 
   if p = FFirst then
-      FFirst := NP;
+      FFirst := N_P;
   if p = FLast then
-      FLast := FP;
+      FLast := P_P;
 
   if (FFirst = FLast) and (FLast = p) then
     begin
       FFirst := nil;
       FLast := nil;
-      Exit;
+    end
+  else
+    begin
+      P_P^.Next := N_P;
+      N_P^.Prev := P_P;
+      p^.Prev := nil;
+      p^.Next := nil;
     end;
-
-  FP^.Next := NP;
-  NP^.Prev := FP;
-
-  p^.Prev := nil;
-  p^.Next := nil;
 end;
 
 procedure TUInt32HashPointerList.DoDataFreeProc(pData: Pointer);
@@ -4664,7 +4344,7 @@ end;
 
 function TUInt32HashPointerList.Delete(u32: UInt32): Boolean;
 var
-  newhash: THash;
+  New_Hash: THash;
   i: Integer;
   lst: TCore_List;
   _ItemData: PUInt32HashListPointerStruct;
@@ -4672,15 +4352,15 @@ begin
   Result := False;
   if FCount = 0 then
       Exit;
-  newhash := MakeHashU32(u32);
-  lst := GetListTable(newhash, False);
+  New_Hash := MakeHashU32(u32);
+  lst := GetListTable(New_Hash, False);
   if lst <> nil then
     begin
       i := 0;
       while i < lst.Count do
         begin
           _ItemData := lst[i];
-          if (newhash = _ItemData^.qHash) and (u32 = _ItemData^.u32) then
+          if (New_Hash = _ItemData^.qHash) and (u32 = _ItemData^.u32) then
             begin
               DoDelete(_ItemData);
               if (FAutoFreeData) and (_ItemData^.Data <> nil) then
@@ -4707,20 +4387,20 @@ end;
 
 function TUInt32HashPointerList.Add(u32: UInt32; Data_: Pointer; const Overwrite_: Boolean): PUInt32HashListPointerStruct;
 var
-  newhash: THash;
+  New_Hash: THash;
   lst: TCore_List;
   i: Integer;
   pData: PUInt32HashListPointerStruct;
 begin
-  newhash := MakeHashU32(u32);
+  New_Hash := MakeHashU32(u32);
 
-  lst := GetListTable(newhash, True);
+  lst := GetListTable(New_Hash, True);
   if (lst.Count > 0) and (Overwrite_) then
     begin
       for i := lst.Count - 1 downto 0 do
         begin
           pData := PUInt32HashListPointerStruct(lst[i]);
-          if (newhash = pData^.qHash) and (u32 = pData^.u32) then
+          if (New_Hash = pData^.qHash) and (u32 = pData^.u32) then
             begin
               DoDelete(pData);
               if (FAutoFreeData) and (pData^.Data <> nil) and (pData^.Data <> Data_) then
@@ -4754,7 +4434,7 @@ begin
     end;
 
   new(pData);
-  pData^.qHash := newhash;
+  pData^.qHash := New_Hash;
   pData^.u32 := u32;
   pData^.Data := Data_;
   pData^.ID := FIDSeed;
@@ -4775,22 +4455,22 @@ end;
 
 procedure TUInt32HashPointerList.SetValue(u32: UInt32; Data_: Pointer);
 var
-  newhash: THash;
+  New_Hash: THash;
   lst: TCore_List;
   i: Integer;
   pData: PUInt32HashListPointerStruct;
   Done: Boolean;
 begin
-  newhash := MakeHashU32(u32);
+  New_Hash := MakeHashU32(u32);
 
-  lst := GetListTable(newhash, True);
+  lst := GetListTable(New_Hash, True);
   Done := False;
   if (lst.Count > 0) then
     begin
       for i := lst.Count - 1 downto 0 do
         begin
           pData := PUInt32HashListPointerStruct(lst[i]);
-          if (newhash = pData^.qHash) and (u32 = pData^.u32) then
+          if (New_Hash = pData^.qHash) and (u32 = pData^.u32) then
             begin
               if (FAutoFreeData) and (pData^.Data <> nil) and (pData^.Data <> Data_) then
                 begin
@@ -4809,7 +4489,7 @@ begin
   if not Done then
     begin
       new(pData);
-      pData^.qHash := newhash;
+      pData^.qHash := New_Hash;
       pData^.u32 := u32;
       pData^.Data := Data_;
       pData^.ID := FIDSeed;
@@ -4829,7 +4509,7 @@ end;
 
 function TUInt32HashPointerList.Insert(u32, InsertToBefore_: UInt32; Data_: Pointer; const Overwrite_: Boolean): PUInt32HashListPointerStruct;
 var
-  newhash: THash;
+  New_Hash: THash;
   lst: TCore_List;
   i: Integer;
   InsertDest_, pData: PUInt32HashListPointerStruct;
@@ -4841,15 +4521,15 @@ begin
       Exit;
     end;
 
-  newhash := MakeHashU32(u32);
+  New_Hash := MakeHashU32(u32);
 
-  lst := GetListTable(newhash, True);
+  lst := GetListTable(New_Hash, True);
   if (lst.Count > 0) and (Overwrite_) then
     begin
       for i := lst.Count - 1 downto 0 do
         begin
           pData := PUInt32HashListPointerStruct(lst[i]);
-          if (newhash = pData^.qHash) and (u32 = pData^.u32) then
+          if (New_Hash = pData^.qHash) and (u32 = pData^.u32) then
             begin
               DoDelete(pData);
               if (FAutoFreeData) and (pData^.Data <> nil) and (pData^.Data <> Data_) then
@@ -4883,7 +4563,7 @@ begin
     end;
 
   new(pData);
-  pData^.qHash := newhash;
+  pData^.qHash := New_Hash;
   pData^.u32 := u32;
   pData^.Data := Data_;
   pData^.ID := FIDSeed;
@@ -4904,7 +4584,7 @@ end;
 
 function TUInt32HashPointerList.Exists(u32: UInt32): Boolean;
 var
-  newhash: THash;
+  New_Hash: THash;
   i: Integer;
   lst: TCore_List;
   pData: PUInt32HashListPointerStruct;
@@ -4912,15 +4592,15 @@ begin
   Result := False;
   if FCount = 0 then
       Exit;
-  newhash := MakeHashU32(u32);
-  lst := GetListTable(newhash, False);
+  New_Hash := MakeHashU32(u32);
+  lst := GetListTable(New_Hash, False);
   if lst <> nil then
     begin
       if lst.Count > 0 then
         for i := lst.Count - 1 downto 0 do
           begin
             pData := PUInt32HashListPointerStruct(lst[i]);
-            if (newhash = pData^.qHash) and (u32 = pData^.u32) then
+            if (New_Hash = pData^.qHash) and (u32 = pData^.u32) then
                 Exit(True);
           end;
     end;
@@ -5116,19 +4796,19 @@ end;
 
 function TPointerHashNativeUIntList.GetNPtrData(NPtr: Pointer): PPointerHashListNativeUIntStruct;
 var
-  newhash: THash;
+  New_Hash: THash;
   i: Integer;
   lst: TCore_List;
   pData: PPointerHashListNativeUIntStruct;
 begin
   Result := nil;
-  newhash := MakeHashP(NPtr);
-  lst := GetListTable(newhash, False);
+  New_Hash := MakeHashP(NPtr);
+  lst := GetListTable(New_Hash, False);
   if (lst <> nil) and (lst.Count > 0) then
     for i := lst.Count - 1 downto 0 do
       begin
         pData := PPointerHashListNativeUIntStruct(lst[i]);
-        if (newhash = pData^.qHash) and (NPtr = pData^.NPtr) then
+        if (New_Hash = pData^.qHash) and (NPtr = pData^.NPtr) then
           begin
             Result := pData;
             if (FAccessOptimization) and (pData^.ID < FIDSeed - 1) then
@@ -5207,50 +4887,48 @@ begin
     end;
 end;
 
-procedure TPointerHashNativeUIntList.DoInsertBefore(p, insertTo_: PPointerHashListNativeUIntStruct);
+procedure TPointerHashNativeUIntList.DoInsertBefore(p, To_: PPointerHashListNativeUIntStruct);
 var
-  FP: PPointerHashListNativeUIntStruct;
+  P_P: PPointerHashListNativeUIntStruct;
 begin
-  if FFirst = insertTo_ then
+  if p = To_ then
+      Exit;
+  if FFirst = To_ then
       FFirst := p;
-
-  FP := insertTo_^.Prev;
-
-  if FP^.Next = insertTo_ then
-      FP^.Next := p;
-  if FP^.Prev = insertTo_ then
-      FP^.Prev := p;
-  if FP = insertTo_ then
-      insertTo_^.Prev := p;
-
-  p^.Prev := FP;
-  p^.Next := insertTo_;
+  P_P := To_^.Prev;
+  if P_P^.Next = To_ then
+      P_P^.Next := p;
+  if To_^.Next = To_ then
+      To_^.Next := p;
+  To_^.Prev := p;
+  p^.Prev := P_P;
+  p^.Next := To_;
 end;
 
 procedure TPointerHashNativeUIntList.DoDelete(p: PPointerHashListNativeUIntStruct);
 var
-  FP, NP: PPointerHashListNativeUIntStruct;
+  P_P, N_P: PPointerHashListNativeUIntStruct;
 begin
-  FP := p^.Prev;
-  NP := p^.Next;
+  P_P := p^.Prev;
+  N_P := p^.Next;
 
   if p = FFirst then
-      FFirst := NP;
+      FFirst := N_P;
   if p = FLast then
-      FLast := FP;
+      FLast := P_P;
 
   if (FFirst = FLast) and (FLast = p) then
     begin
       FFirst := nil;
       FLast := nil;
-      Exit;
+    end
+  else
+    begin
+      P_P^.Next := N_P;
+      N_P^.Prev := P_P;
+      p^.Prev := nil;
+      p^.Next := nil;
     end;
-
-  FP^.Next := NP;
-  NP^.Prev := FP;
-
-  p^.Prev := nil;
-  p^.Next := nil;
 end;
 
 constructor TPointerHashNativeUIntList.Create;
@@ -5374,7 +5052,7 @@ end;
 
 function TPointerHashNativeUIntList.Delete(NPtr: Pointer): Boolean;
 var
-  newhash: THash;
+  New_Hash: THash;
   i: Integer;
   lst: TCore_List;
   _ItemData: PPointerHashListNativeUIntStruct;
@@ -5382,15 +5060,15 @@ begin
   Result := False;
   if FCount = 0 then
       Exit;
-  newhash := MakeHashP(NPtr);
-  lst := GetListTable(newhash, False);
+  New_Hash := MakeHashP(NPtr);
+  lst := GetListTable(New_Hash, False);
   if lst <> nil then
     begin
       i := 0;
       while i < lst.Count do
         begin
           _ItemData := lst[i];
-          if (newhash = _ItemData^.qHash) and (NPtr = _ItemData^.NPtr) then
+          if (New_Hash = _ItemData^.qHash) and (NPtr = _ItemData^.NPtr) then
             begin
               dec(FTotal, _ItemData^.Data);
               DoDelete(_ItemData);
@@ -5415,20 +5093,20 @@ end;
 
 function TPointerHashNativeUIntList.Add(NPtr: Pointer; Data_: NativeUInt; const Overwrite_: Boolean): PPointerHashListNativeUIntStruct;
 var
-  newhash: THash;
+  New_Hash: THash;
   lst: TCore_List;
   i: Integer;
   pData: PPointerHashListNativeUIntStruct;
 begin
-  newhash := MakeHashP(NPtr);
+  New_Hash := MakeHashP(NPtr);
 
-  lst := GetListTable(newhash, True);
+  lst := GetListTable(New_Hash, True);
   if (lst.Count > 0) and (Overwrite_) then
     begin
       for i := lst.Count - 1 downto 0 do
         begin
           pData := PPointerHashListNativeUIntStruct(lst[i]);
-          if (newhash = pData^.qHash) and (NPtr = pData^.NPtr) then
+          if (New_Hash = pData^.qHash) and (NPtr = pData^.NPtr) then
             begin
               dec(FTotal, pData^.Data);
               DoDelete(pData);
@@ -5459,7 +5137,7 @@ begin
     end;
 
   new(pData);
-  pData^.qHash := newhash;
+  pData^.qHash := New_Hash;
   pData^.NPtr := NPtr;
   pData^.Data := Data_;
   pData^.ID := FIDSeed;
@@ -5485,22 +5163,22 @@ end;
 
 procedure TPointerHashNativeUIntList.SetValue(NPtr: Pointer; Data_: NativeUInt);
 var
-  newhash: THash;
+  New_Hash: THash;
   lst: TCore_List;
   i: Integer;
   pData: PPointerHashListNativeUIntStruct;
   Done: Boolean;
 begin
-  newhash := MakeHashP(NPtr);
+  New_Hash := MakeHashP(NPtr);
 
-  lst := GetListTable(newhash, True);
+  lst := GetListTable(New_Hash, True);
   Done := False;
   if (lst.Count > 0) then
     begin
       for i := lst.Count - 1 downto 0 do
         begin
           pData := PPointerHashListNativeUIntStruct(lst[i]);
-          if (newhash = pData^.qHash) and (NPtr = pData^.NPtr) then
+          if (New_Hash = pData^.qHash) and (NPtr = pData^.NPtr) then
             begin
               dec(FTotal, pData^.Data);
               pData^.Data := Data_;
@@ -5513,7 +5191,7 @@ begin
   if not Done then
     begin
       new(pData);
-      pData^.qHash := newhash;
+      pData^.qHash := New_Hash;
       pData^.NPtr := NPtr;
       pData^.Data := Data_;
       pData^.ID := FIDSeed;
@@ -5539,7 +5217,7 @@ end;
 
 function TPointerHashNativeUIntList.Insert(NPtr, InsertToBefore_: Pointer; Data_: NativeUInt; const Overwrite_: Boolean): PPointerHashListNativeUIntStruct;
 var
-  newhash: THash;
+  New_Hash: THash;
   lst: TCore_List;
   i: Integer;
   InsertDest_, pData: PPointerHashListNativeUIntStruct;
@@ -5551,15 +5229,15 @@ begin
       Exit;
     end;
 
-  newhash := MakeHashP(NPtr);
+  New_Hash := MakeHashP(NPtr);
 
-  lst := GetListTable(newhash, True);
+  lst := GetListTable(New_Hash, True);
   if (lst.Count > 0) and (Overwrite_) then
     begin
       for i := lst.Count - 1 downto 0 do
         begin
           pData := PPointerHashListNativeUIntStruct(lst[i]);
-          if (newhash = pData^.qHash) and (NPtr = pData^.NPtr) then
+          if (New_Hash = pData^.qHash) and (NPtr = pData^.NPtr) then
             begin
               dec(FTotal, pData^.Data);
               DoDelete(pData);
@@ -5590,7 +5268,7 @@ begin
     end;
 
   new(pData);
-  pData^.qHash := newhash;
+  pData^.qHash := New_Hash;
   pData^.NPtr := NPtr;
   pData^.Data := Data_;
   pData^.ID := FIDSeed;
@@ -5616,7 +5294,7 @@ end;
 
 function TPointerHashNativeUIntList.Exists(NPtr: Pointer): Boolean;
 var
-  newhash: THash;
+  New_Hash: THash;
   i: Integer;
   lst: TCore_List;
   pData: PPointerHashListNativeUIntStruct;
@@ -5624,15 +5302,15 @@ begin
   Result := False;
   if FCount = 0 then
       Exit;
-  newhash := MakeHashP(NPtr);
-  lst := GetListTable(newhash, False);
+  New_Hash := MakeHashP(NPtr);
+  lst := GetListTable(New_Hash, False);
   if lst <> nil then
     begin
       if lst.Count > 0 then
         for i := lst.Count - 1 downto 0 do
           begin
             pData := PPointerHashListNativeUIntStruct(lst[i]);
-            if (newhash = pData^.qHash) and (NPtr = pData^.NPtr) then
+            if (New_Hash = pData^.qHash) and (NPtr = pData^.NPtr) then
                 Exit(True);
           end;
     end;
@@ -8415,642 +8093,6 @@ begin
     end;
 end;
 
-function TListCardinal.GetItems(idx: Integer): Cardinal;
-begin
-  with PListCardinalData(FList[idx])^ do
-      Result := Data;
-end;
-
-procedure TListCardinal.SetItems(idx: Integer; Value: Cardinal);
-begin
-  with PListCardinalData(FList[idx])^ do
-      Data := Value;
-end;
-
-constructor TListCardinal.Create;
-begin
-  inherited Create;
-  FList := TCore_List.Create;
-end;
-
-destructor TListCardinal.Destroy;
-begin
-  Clear;
-  DisposeObject(FList);
-  inherited Destroy;
-end;
-
-function TListCardinal.Add(Value: Cardinal): Integer;
-var
-  p: PListCardinalData;
-begin
-  new(p);
-  p^.Data := Value;
-  Result := FList.Add(p);
-end;
-
-procedure TListCardinal.AddArray(const Value: array of Cardinal);
-var
-  i: Integer;
-begin
-  for i := 0 to Length(Value) - 1 do
-      Add(Value[i]);
-end;
-
-function TListCardinal.Delete(idx: Integer): Integer;
-var
-  p: PListCardinalData;
-begin
-  p := FList[idx];
-  Dispose(p);
-  FList.Delete(idx);
-  Result := Count;
-end;
-
-function TListCardinal.DeleteCardinal(Value: Cardinal): Integer;
-var
-  i: Integer;
-begin
-  i := 0;
-  while i < Count do
-    begin
-      if Items[i] = Value then
-          Delete(i)
-      else
-          inc(i);
-    end;
-  Result := Count;
-end;
-
-procedure TListCardinal.Clear;
-var
-  i: Integer;
-  p: PListCardinalData;
-begin
-  for i := 0 to FList.Count - 1 do
-    begin
-      p := PListCardinalData(FList[i]);
-      Dispose(p);
-    end;
-  FList.Clear;
-end;
-
-function TListCardinal.Count: Integer;
-begin
-  Result := FList.Count;
-end;
-
-function TListCardinal.ExistsValue(Value: Cardinal): Integer;
-var
-  i: Integer;
-begin
-  Result := -1;
-
-  for i := 0 to Count - 1 do
-    if Items[i] = Value then
-      begin
-        Result := i;
-        Break;
-      end;
-end;
-
-procedure TListCardinal.Assign(SameObj: TListCardinal);
-var
-  i: Integer;
-begin
-  Clear;
-  for i := 0 to SameObj.Count - 1 do
-      Add(SameObj[i]);
-end;
-
-function TListInt64.GetItems(idx: Integer): Int64;
-begin
-  with PListInt64Data(FList[idx])^ do
-      Result := Data;
-end;
-
-procedure TListInt64.SetItems(idx: Integer; Value: Int64);
-begin
-  with PListInt64Data(FList[idx])^ do
-      Data := Value;
-end;
-
-constructor TListInt64.Create;
-begin
-  inherited Create;
-  FList := TCore_List.Create;
-end;
-
-destructor TListInt64.Destroy;
-begin
-  Clear;
-  DisposeObject(FList);
-  inherited Destroy;
-end;
-
-function TListInt64.Add(Value: Int64): Integer;
-var
-  p: PListInt64Data;
-begin
-  new(p);
-  p^.Data := Value;
-  Result := FList.Add(p);
-end;
-
-procedure TListInt64.AddArray(const Value: array of Int64);
-var
-  i: Integer;
-begin
-  for i := 0 to Length(Value) - 1 do
-      Add(Value[i]);
-end;
-
-function TListInt64.Delete(idx: Integer): Integer;
-var
-  p: PListInt64Data;
-begin
-  p := FList[idx];
-  Dispose(p);
-  FList.Delete(idx);
-  Result := Count;
-end;
-
-function TListInt64.DeleteInt64(Value: Int64): Integer;
-var
-  i: Integer;
-begin
-  i := 0;
-  while i < Count do
-    begin
-      if Items[i] = Value then
-          Delete(i)
-      else
-          inc(i);
-    end;
-  Result := Count;
-end;
-
-procedure TListInt64.Clear;
-var
-  i: Integer;
-  p: PListInt64Data;
-begin
-  for i := 0 to FList.Count - 1 do
-    begin
-      p := PListInt64Data(FList[i]);
-      Dispose(p);
-    end;
-  FList.Clear;
-end;
-
-function TListInt64.Count: Integer;
-begin
-  Result := FList.Count;
-end;
-
-function TListInt64.ExistsValue(Value: Int64): Integer;
-var
-  i: Integer;
-begin
-  Result := -1;
-
-  for i := 0 to Count - 1 do
-    if Items[i] = Value then
-      begin
-        Result := i;
-        Break;
-      end;
-end;
-
-procedure TListInt64.Assign(SameObj: TListInt64);
-var
-  i: Integer;
-begin
-  Clear;
-  for i := 0 to SameObj.Count - 1 do
-      Add(SameObj[i]);
-end;
-
-procedure TListInt64.SaveToStream(stream: TCore_Stream);
-var
-  i: Integer;
-  c: Integer;
-begin
-  c := FList.Count;
-  stream.write(c, C_Integer_Size);
-  for i := 0 to FList.Count - 1 do
-      stream.write(PListInt64Data(FList[i])^.Data, C_Int64_Size);
-end;
-
-procedure TListInt64.LoadFromStream(stream: TCore_Stream);
-var
-  i: Integer;
-  c: Integer;
-  V: Int64;
-begin
-  stream.read(c, C_Integer_Size);
-  for i := 0 to c - 1 do
-    begin
-      stream.read(V, C_Int64_Size);
-      Add(V);
-    end;
-end;
-
-function TListNativeInt.GetItems(idx: Integer): NativeInt;
-begin
-  with PListNativeIntData(FList[idx])^ do
-      Result := Data;
-end;
-
-procedure TListNativeInt.SetItems(idx: Integer; Value: NativeInt);
-begin
-  with PListNativeIntData(FList[idx])^ do
-      Data := Value;
-end;
-
-constructor TListNativeInt.Create;
-begin
-  inherited Create;
-  FList := TCore_List.Create;
-end;
-
-destructor TListNativeInt.Destroy;
-begin
-  Clear;
-  DisposeObject(FList);
-  inherited Destroy;
-end;
-
-function TListNativeInt.Add(Value: NativeInt): Integer;
-var
-  p: PListNativeIntData;
-begin
-  new(p);
-  p^.Data := Value;
-  Result := FList.Add(p);
-end;
-
-procedure TListNativeInt.AddArray(const Value: array of NativeInt);
-var
-  i: Integer;
-begin
-  for i := 0 to Length(Value) - 1 do
-      Add(Value[i]);
-end;
-
-function TListNativeInt.Delete(idx: Integer): Integer;
-var
-  p: PListNativeIntData;
-begin
-  p := FList[idx];
-  Dispose(p);
-  FList.Delete(idx);
-  Result := Count;
-end;
-
-function TListNativeInt.DeleteNativeInt(Value: NativeInt): Integer;
-var
-  i: Integer;
-begin
-  i := 0;
-  while i < Count do
-    begin
-      if Items[i] = Value then
-          Delete(i)
-      else
-          inc(i);
-    end;
-  Result := Count;
-end;
-
-procedure TListNativeInt.Clear;
-var
-  i: Integer;
-  p: PListNativeIntData;
-begin
-  for i := 0 to FList.Count - 1 do
-    begin
-      p := PListNativeIntData(FList[i]);
-      Dispose(p);
-    end;
-  FList.Clear;
-end;
-
-function TListNativeInt.Count: Integer;
-begin
-  Result := FList.Count;
-end;
-
-function TListNativeInt.ExistsValue(Value: NativeInt): Integer;
-var
-  i: Integer;
-begin
-  Result := -1;
-
-  for i := 0 to Count - 1 do
-    if Items[i] = Value then
-      begin
-        Result := i;
-        Break;
-      end;
-end;
-
-procedure TListNativeInt.Assign(SameObj: TListNativeInt);
-var
-  i: Integer;
-begin
-  Clear;
-  for i := 0 to SameObj.Count - 1 do
-      Add(SameObj[i]);
-end;
-
-function TListInteger.GetItems(idx: Integer): Integer;
-begin
-  with PListIntegerData(FList[idx])^ do
-      Result := Data;
-end;
-
-procedure TListInteger.SetItems(idx: Integer; Value: Integer);
-begin
-  with PListIntegerData(FList[idx])^ do
-      Data := Value;
-end;
-
-constructor TListInteger.Create;
-begin
-  inherited Create;
-  FList := TCore_List.Create;
-end;
-
-destructor TListInteger.Destroy;
-begin
-  Clear;
-  DisposeObject(FList);
-  inherited Destroy;
-end;
-
-function TListInteger.Add(Value: Integer): Integer;
-var
-  p: PListIntegerData;
-begin
-  new(p);
-  p^.Data := Value;
-  Result := FList.Add(p);
-end;
-
-procedure TListInteger.AddArray(const Value: array of Integer);
-var
-  i: Integer;
-begin
-  for i := 0 to Length(Value) - 1 do
-      Add(Value[i]);
-end;
-
-function TListInteger.Delete(idx: Integer): Integer;
-var
-  p: PListIntegerData;
-begin
-  p := FList[idx];
-  Dispose(p);
-  FList.Delete(idx);
-  Result := Count;
-end;
-
-function TListInteger.DeleteInteger(Value: Integer): Integer;
-var
-  i: Integer;
-begin
-  i := 0;
-  while i < Count do
-    begin
-      if Items[i] = Value then
-          Delete(i)
-      else
-          inc(i);
-    end;
-  Result := Count;
-end;
-
-procedure TListInteger.Clear;
-var
-  i: Integer;
-  p: PListIntegerData;
-begin
-  for i := 0 to FList.Count - 1 do
-    begin
-      p := PListIntegerData(FList[i]);
-      Dispose(p);
-    end;
-  FList.Clear;
-end;
-
-function TListInteger.Count: Integer;
-begin
-  Result := FList.Count;
-end;
-
-function TListInteger.ExistsValue(Value: Integer): Integer;
-var
-  i: Integer;
-begin
-  Result := -1;
-
-  for i := 0 to Count - 1 do
-    if Items[i] = Value then
-      begin
-        Result := i;
-        Break;
-      end;
-end;
-
-procedure TListInteger.Assign(SameObj: TListInteger);
-var
-  i: Integer;
-begin
-  Clear;
-  for i := 0 to SameObj.Count - 1 do
-      Add(SameObj[i]);
-end;
-
-function TListDouble.GetItems(idx: Integer): Double;
-begin
-  with PListDoubleData(FList[idx])^ do
-      Result := Data;
-end;
-
-procedure TListDouble.SetItems(idx: Integer; Value: Double);
-begin
-  with PListDoubleData(FList[idx])^ do
-      Data := Value;
-end;
-
-constructor TListDouble.Create;
-begin
-  inherited Create;
-  FList := TCore_List.Create;
-end;
-
-destructor TListDouble.Destroy;
-begin
-  Clear;
-  DisposeObject(FList);
-  inherited Destroy;
-end;
-
-function TListDouble.Add(Value: Double): Integer;
-var
-  p: PListDoubleData;
-begin
-  new(p);
-  p^.Data := Value;
-  Result := FList.Add(p);
-end;
-
-procedure TListDouble.AddArray(const Value: array of Double);
-var
-  i: Integer;
-begin
-  for i := 0 to Length(Value) - 1 do
-      Add(Value[i]);
-end;
-
-function TListDouble.Delete(idx: Integer): Integer;
-var
-  p: PListDoubleData;
-begin
-  p := FList[idx];
-  Dispose(p);
-  FList.Delete(idx);
-  Result := Count;
-end;
-
-procedure TListDouble.Clear;
-var
-  i: Integer;
-  p: PListDoubleData;
-begin
-  for i := 0 to FList.Count - 1 do
-    begin
-      p := PListDoubleData(FList[i]);
-      Dispose(p);
-    end;
-  FList.Clear;
-end;
-
-function TListDouble.Count: Integer;
-begin
-  Result := FList.Count;
-end;
-
-procedure TListDouble.Assign(SameObj: TListDouble);
-var
-  i: Integer;
-begin
-  Clear;
-  for i := 0 to SameObj.Count - 1 do
-      Add(SameObj[i]);
-end;
-
-function TListPointer.GetItems(idx: Integer): Pointer;
-begin
-  with PListPointerData(FList[idx])^ do
-      Result := Data;
-end;
-
-procedure TListPointer.SetItems(idx: Integer; Value: Pointer);
-begin
-  with PListPointerData(FList[idx])^ do
-      Data := Value;
-end;
-
-constructor TListPointer.Create;
-begin
-  inherited Create;
-  FList := TCore_List.Create;
-end;
-
-destructor TListPointer.Destroy;
-begin
-  Clear;
-  DisposeObject(FList);
-  inherited Destroy;
-end;
-
-function TListPointer.Add(Value: Pointer): Integer;
-var
-  p: PListPointerData;
-begin
-  new(p);
-  p^.Data := Value;
-  Result := FList.Add(p);
-end;
-
-function TListPointer.Delete(idx: Integer): Integer;
-var
-  p: PListPointerData;
-begin
-  p := FList[idx];
-  Dispose(p);
-  FList.Delete(idx);
-  Result := Count;
-end;
-
-function TListPointer.DeletePointer(Value: Pointer): Integer;
-var
-  i: Integer;
-begin
-  i := 0;
-  while i < Count do
-    begin
-      if Items[i] = Value then
-          Delete(i)
-      else
-          inc(i);
-    end;
-  Result := Count;
-end;
-
-procedure TListPointer.Clear;
-var
-  i: Integer;
-  p: PListPointerData;
-begin
-  for i := 0 to FList.Count - 1 do
-    begin
-      p := PListPointerData(FList[i]);
-      Dispose(p);
-    end;
-  FList.Clear;
-end;
-
-function TListPointer.Count: Integer;
-begin
-  Result := FList.Count;
-end;
-
-function TListPointer.ExistsValue(Value: Pointer): Integer;
-var
-  i: Integer;
-begin
-  Result := -1;
-
-  for i := 0 to Count - 1 do
-    if Items[i] = Value then
-      begin
-        Result := i;
-        Break;
-      end;
-end;
-
-procedure TListPointer.Assign(SameObj: TListPointer);
-var
-  i: Integer;
-begin
-  Clear;
-  for i := 0 to SameObj.Count - 1 do
-      Add(SameObj[i]);
-end;
-
 function TListString.GetItems(idx: Integer): SystemString;
 begin
   Result := PListStringData(FList[idx])^.Data;
@@ -9610,502 +8652,38 @@ begin
   end;
 end;
 
-function TListVariant.GetItems(idx: Integer): Variant;
+procedure TOn_Backcall_.Init;
 begin
-  with PListVariantData(FList[idx])^ do
-      Result := Data;
+  Obj_ := nil;
+  On_C := nil;
+  On_M := nil;
+  On_P := nil;
 end;
 
-procedure TListVariant.SetItems(idx: Integer; Value: Variant);
-begin
-  with PListVariantData(FList[idx])^ do
-      Data := Value;
-end;
-
-constructor TListVariant.Create;
-begin
-  inherited Create;
-  FList := TCore_List.Create;
-end;
-
-destructor TListVariant.Destroy;
-begin
-  Clear;
-  DisposeObject(FList);
-  inherited Destroy;
-end;
-
-function TListVariant.Add(Value: Variant): Integer;
-var
-  p: PListVariantData;
-begin
-  new(p);
-  p^.Data := Value;
-  Result := FList.Add(p);
-end;
-
-function TListVariant.Delete(idx: Integer): Integer;
-var
-  p: PListVariantData;
-begin
-  p := FList[idx];
-  Dispose(p);
-  FList.Delete(idx);
-  Result := Count;
-end;
-
-function TListVariant.DeleteVariant(Value: Variant): Integer;
-var
-  i: Integer;
-begin
-  i := 0;
-  while i < Count do
-    begin
-      if umlSameVarValue(Items[i], Value) then
-          Delete(i)
-      else
-          inc(i);
-    end;
-  Result := Count;
-end;
-
-procedure TListVariant.Clear;
-begin
-  while Count > 0 do
-      Delete(0);
-end;
-
-function TListVariant.Count: Integer;
-begin
-  Result := FList.Count;
-end;
-
-function TListVariant.ExistsValue(Value: Variant): Integer;
-var
-  i: Integer;
-begin
-  Result := -1;
-
-  for i := 0 to Count - 1 do
-    if umlSameVarValue(Items[i], Value) then
-      begin
-        Result := i;
-        Break;
-      end;
-end;
-
-procedure TListVariant.Assign(SameObj: TListVariant);
-var
-  i: Integer;
-begin
-  Clear;
-  for i := 0 to SameObj.Count - 1 do
-      Add(SameObj[i]);
-end;
-
-function TVariantToDataList.GetItems(ID: Variant): Pointer;
-var
-  i: Integer;
-  p: PVariantToDataListData;
-begin
-  Result := nil;
-  for i := 0 to FList.Count - 1 do
-    begin
-      p := FList[i];
-      if umlSameVarValue(p^.ID, ID) then
-        begin
-          Result := p^.Data;
-          Break;
-        end;
-    end;
-end;
-
-procedure TVariantToDataList.SetItems(ID: Variant; Value: Pointer);
-var
-  i: Integer;
-  p: PVariantToDataListData;
-begin
-  for i := 0 to FList.Count - 1 do
-    begin
-      p := FList[i];
-      if umlSameVarValue(p^.ID, ID) then
-        begin
-          p^.Data := Value;
-          Exit;
-        end;
-    end;
-
-  new(p);
-  p^.ID := ID;
-  p^.Data := Value;
-  FList.Add(p);
-end;
-
-procedure TVariantToDataList.DefaultDataFreeProc(p: Pointer);
-begin
-{$IFDEF FPC}
-{$ELSE}
-  Dispose(p);
-{$ENDIF}
-end;
-
-procedure TVariantToDataList.DoDataFreeProc(p: Pointer);
-begin
-  FOnFreePtr(p);
-end;
-
-constructor TVariantToDataList.Create;
-begin
-  inherited Create;
-  FList := TCore_List.Create;
-  FAutoFreeData := True;
-  FOnFreePtr := {$IFDEF FPC}@{$ENDIF FPC}DefaultDataFreeProc;
-end;
-
-destructor TVariantToDataList.Destroy;
-begin
-  Clear;
-  DisposeObject(FList);
-  inherited Destroy;
-end;
-
-function TVariantToDataList.Add(ID: Variant; Data: Pointer): Boolean;
-var
-  p: PVariantToDataListData;
-begin
-  if not Exists(ID) then
-    begin
-      new(p);
-      p^.ID := ID;
-      p^.Data := Data;
-      FList.Add(p);
-      Result := True;
-    end
-  else
-      Result := False;
-end;
-
-function TVariantToDataList.Delete(ID: Variant): Boolean;
-var
-  i: Integer;
-  p: PVariantToDataListData;
-begin
-  Result := False;
-  i := 0;
-  while i < FList.Count do
-    begin
-      p := FList[i];
-      if umlSameVarValue(p^.ID, ID) then
-        begin
-          try
-            if (FAutoFreeData) and (p^.Data <> nil) then
-                DoDataFreeProc(p^.Data);
-            Dispose(p);
-          except
-          end;
-          FList.Delete(i);
-          Result := True;
-        end
-      else
-          inc(i);
-    end;
-end;
-
-procedure TVariantToDataList.Clear;
-var
-  p: PVariantToDataListData;
-begin
-  while FList.Count > 0 do
-    begin
-      p := FList[0];
-      try
-        if (FAutoFreeData) and (p^.Data <> nil) then
-            DoDataFreeProc(p^.Data);
-        Dispose(p);
-      except
-      end;
-      FList.Delete(0);
-    end;
-end;
-
-function TVariantToDataList.Exists(ID: Variant): Boolean;
-var
-  i: Integer;
-  p: PVariantToDataListData;
-begin
-  Result := False;
-  for i := 0 to FList.Count - 1 do
-    begin
-      p := FList[i];
-      if umlSameVarValue(p^.ID, ID) then
-        begin
-          Result := True;
-          Break;
-        end;
-    end;
-end;
-
-procedure TVariantToDataList.GetList(_To: TListVariant);
-var
-  i: Integer;
-  p: PVariantToDataListData;
-begin
-  for i := 0 to FList.Count - 1 do
-    begin
-      p := FList[i];
-      _To.Add(p^.ID);
-    end;
-end;
-
-function TVariantToDataList.Count: Integer;
-begin
-  Result := FList.Count;
-end;
-
-function TVariantToVariantList.GetItems(ID: Variant): Variant;
-var
-  p: PVariantToVariantListData;
-begin
-  p := FList.Items[ID];
-  if p <> nil then
-      Result := p^.V
-  else
-      Result := Null;
-end;
-
-procedure TVariantToVariantList.SetItems(ID: Variant; Value: Variant);
-var
-  p: PVariantToVariantListData;
-begin
-  p := FList.Items[ID];
-  if p <> nil then
-      p^.V := Value
-  else
-      Add(ID, Value);
-end;
-
-procedure TVariantToVariantList.DefaultDataFreeProc(p: Pointer);
-begin
-  Dispose(PVariantToVariantListData(p));
-end;
-
-constructor TVariantToVariantList.Create;
-begin
-  inherited Create;
-  FList := TVariantToDataList.Create;
-  FList.FAutoFreeData := True;
-  FList.OnFreePtr := {$IFDEF FPC}@{$ENDIF FPC}DefaultDataFreeProc;
-end;
-
-destructor TVariantToVariantList.Destroy;
-begin
-  Clear;
-  DisposeObject(FList);
-  inherited Destroy;
-end;
-
-function TVariantToVariantList.Add(ID, Value_: Variant): Boolean;
-var
-  p: PVariantToVariantListData;
-begin
-  if FList.Exists(ID) then
-    begin
-      p := FList[ID];
-    end
-  else
-    begin
-      new(p);
-      FList[ID] := p;
-    end;
-
-  p^.V := Value_;
-
-  Result := True;
-end;
-
-function TVariantToVariantList.Delete(ID: Variant): Boolean;
-begin
-  Result := FList.Delete(ID);
-end;
-
-procedure TVariantToVariantList.Clear;
-begin
-  FList.Clear;
-end;
-
-function TVariantToVariantList.Exists(ID: Variant): Boolean;
-begin
-  Result := FList.Exists(ID);
-end;
-
-procedure TVariantToVariantList.GetList(_To: TListVariant);
-begin
-  FList.GetList(_To);
-end;
-
-procedure TVariantToVariantList.GetValueList(_To: TListVariant);
-var
-  i: Integer;
-  pVarData: PVariantToDataListData;
-  pToValueData: PVariantToVariantListData;
-begin
-  for i := 0 to FList.FList.Count - 1 do
-    begin
-      pVarData := FList.FList[i];
-      pToValueData := pVarData^.Data;
-      _To.Add(pToValueData^.V);
-    end;
-end;
-
-function TVariantToVariantList.Count: Integer;
-begin
-  Result := FList.Count;
-end;
-
-procedure TVariantToVariantList.Assign(SameObj: TVariantToVariantList);
-var
-  _To: TListVariant;
-  i: Integer;
-begin
-  Clear;
-  _To := TListVariant.Create;
-  SameObj.GetList(_To);
-  for i := 0 to _To.Count - 1 do
-      Items[_To[i]] := SameObj[_To[i]];
-  DisposeObject(_To);
-end;
-
-function TVariantToObjectList.GetItems(ID: Variant): TCore_Object;
-var
-  p: PVariantToObjectListData;
-begin
-  p := FList.Items[ID];
-  if p <> nil then
-      Result := p^.Obj
-  else
-      Result := nil;
-end;
-
-procedure TVariantToObjectList.SetItems(ID: Variant; Value: TCore_Object);
-var
-  p: PVariantToObjectListData;
-begin
-  p := FList.Items[ID];
-  if p <> nil then
-      p^.Obj := Value
-  else
-      Add(ID, Value);
-end;
-
-procedure TVariantToObjectList.DefaultDataFreeProc(p: Pointer);
-begin
-
-end;
-
-constructor TVariantToObjectList.Create;
-begin
-  inherited Create;
-  FList := TVariantToDataList.Create;
-  FList.FAutoFreeData := True;
-  FList.OnFreePtr := {$IFDEF FPC}@{$ENDIF FPC}DefaultDataFreeProc;
-end;
-
-destructor TVariantToObjectList.Destroy;
-begin
-  Clear;
-  DisposeObject(FList);
-  inherited Destroy;
-end;
-
-function TVariantToObjectList.Add(ID: Variant; Obj: TCore_Object): Boolean;
-var
-  p: PVariantToObjectListData;
-begin
-  if FList.Exists(ID) then
-    begin
-      p := FList[ID];
-    end
-  else
-    begin
-      new(p);
-      FList[ID] := p;
-    end;
-
-  p^.Obj := Obj;
-
-  Result := True;
-end;
-
-function TVariantToObjectList.Delete(ID: Variant): Boolean;
-begin
-  Result := FList.Delete(ID);
-end;
-
-procedure TVariantToObjectList.Clear;
-begin
-  FList.Clear;
-end;
-
-function TVariantToObjectList.Exists(ID: Variant): Boolean;
-begin
-  Result := FList.Exists(ID);
-end;
-
-procedure TVariantToObjectList.GetList(_To: TListVariant);
-begin
-  FList.GetList(_To);
-end;
-
-function TVariantToObjectList.Count: Integer;
-begin
-  Result := FList.Count;
-end;
-
-procedure TVariantToObjectList.Assign(SameObj: TVariantToObjectList);
-var
-  _To: TListVariant;
-  i: Integer;
-begin
-  Clear;
-  _To := TListVariant.Create;
-  SameObj.GetList(_To);
-  for i := 0 to _To.Count - 1 do
-      Items[_To[i]] := SameObj[_To[i]];
-  DisposeObject(_To);
-end;
-
-procedure TBackcallData.Init;
-begin
-  TokenObj := nil;
-  Notify_C := nil;
-  Notify_M := nil;
-  Notify_P := nil;
-end;
-
-function TBackcalls.GetVariantList: THashVariantList;
+function TBackcall_Pool.GetVariantList: THashVariantList;
 begin
   if FVariantList = nil then
       FVariantList := THashVariantList.Create;
   Result := FVariantList;
 end;
 
-function TBackcalls.GetObjectList: THashObjectList;
+function TBackcall_Pool.GetObjectList: THashObjectList;
 begin
   if FObjectList = nil then
       FObjectList := THashObjectList.Create(False);
   Result := FObjectList;
 end;
 
-constructor TBackcalls.Create;
+constructor TBackcall_Pool.Create;
 begin
   inherited Create;
-  FList := TCore_List.Create;
+  FList := TBackcall_List_Decl.Create;
   FVariantList := nil;
   FObjectList := nil;
   FOwner := nil;
 end;
 
-destructor TBackcalls.Destroy;
+destructor TBackcall_Pool.Destroy;
 begin
   if FVariantList <> nil then
       DisposeObject(FVariantList);
@@ -10116,64 +8694,64 @@ begin
   inherited Destroy;
 end;
 
-procedure TBackcalls.RegisterBackcallC(TokenObj_: TCore_Object; Notify_C_: TBackcallNotify_C);
+procedure TBackcall_Pool.RegisterBackcallC(Obj_: TCore_Object; On_C_: TOn_Backcall_C);
 var
-  p: PBackcallData;
+  p: POn_Backcall_;
   i: Integer;
 begin
   for i := 0 to FList.Count - 1 do
-    if PBackcallData(FList[i])^.TokenObj = TokenObj_ then
+    if FList[i]^.Obj_ = Obj_ then
         Exit;
 
   new(p);
   p^.Init;
-  p^.TokenObj := TokenObj_;
-  p^.Notify_C := Notify_C_;
+  p^.Obj_ := Obj_;
+  p^.On_C := On_C_;
   FList.Add(p);
 end;
 
-procedure TBackcalls.RegisterBackcallM(TokenObj_: TCore_Object; Notify_M_: TBackcallNotifyMethod);
+procedure TBackcall_Pool.RegisterBackcallM(Obj_: TCore_Object; On_M_: TOn_Backcall_M);
 var
-  p: PBackcallData;
+  p: POn_Backcall_;
   i: Integer;
 begin
   for i := 0 to FList.Count - 1 do
-    if PBackcallData(FList[i])^.TokenObj = TokenObj_ then
+    if FList[i]^.Obj_ = Obj_ then
         Exit;
 
   new(p);
   p^.Init;
-  p^.TokenObj := TokenObj_;
-  p^.Notify_M := Notify_M_;
+  p^.Obj_ := Obj_;
+  p^.On_M := On_M_;
   FList.Add(p);
 end;
 
-procedure TBackcalls.RegisterBackcallP(TokenObj_: TCore_Object; Notify_P_: TBackcallNotifyProc);
+procedure TBackcall_Pool.RegisterBackcallP(Obj_: TCore_Object; On_P_: TOn_Backcall_P);
 var
-  p: PBackcallData;
+  p: POn_Backcall_;
   i: Integer;
 begin
   for i := 0 to FList.Count - 1 do
-    if PBackcallData(FList[i])^.TokenObj = TokenObj_ then
+    if FList[i]^.Obj_ = Obj_ then
         Exit;
 
   new(p);
   p^.Init;
-  p^.TokenObj := TokenObj_;
-  p^.Notify_P := Notify_P_;
+  p^.Obj_ := Obj_;
+  p^.On_P := On_P_;
   FList.Add(p);
 end;
 
-procedure TBackcalls.UnRegisterBackcall(TokenObj_: TCore_Object);
+procedure TBackcall_Pool.UnRegisterBackcall(Obj_: TCore_Object);
 var
   i: Integer;
 begin
   i := 0;
   while i < FList.Count do
     begin
-      if PBackcallData(FList[i])^.TokenObj = TokenObj_ then
+      if FList[i]^.Obj_ = Obj_ then
         begin
-          Dispose(PBackcallData(FList[i]));
+          Dispose(FList[i]);
           FList.Delete(i);
         end
       else
@@ -10181,42 +8759,42 @@ begin
     end;
 end;
 
-procedure TBackcalls.Clear;
+procedure TBackcall_Pool.Clear;
 var
   i: Integer;
 begin
   for i := 0 to FList.Count - 1 do
-      Dispose(PBackcallData(FList[i]));
+      Dispose(FList[i]);
   FList.Clear;
 end;
 
-procedure TBackcalls.ExecuteBackcall(TriggerObject: TCore_Object; Param1, Param2, Param3: Variant);
+procedure TBackcall_Pool.ExecuteBackcall(TriggerObject: TCore_Object; Param1, Param2, Param3: Variant);
 var
   i: Integer;
-  p: PBackcallData;
+  p: POn_Backcall_;
 begin
   i := 0;
   while i < FList.Count do
     begin
       p := FList[i];
-      if Assigned(p^.Notify_C) then
+      if Assigned(p^.On_C) then
         begin
           try
-              p^.Notify_C(Self, TriggerObject, Param1, Param2, Param3);
+              p^.On_C(Self, TriggerObject, Param1, Param2, Param3);
           except
           end;
         end;
-      if Assigned(p^.Notify_M) then
+      if Assigned(p^.On_M) then
         begin
           try
-              p^.Notify_M(Self, TriggerObject, Param1, Param2, Param3);
+              p^.On_M(Self, TriggerObject, Param1, Param2, Param3);
           except
           end;
         end;
-      if Assigned(p^.Notify_P) then
+      if Assigned(p^.On_P) then
         begin
           try
-              p^.Notify_P(Self, TriggerObject, Param1, Param2, Param3);
+              p^.On_P(Self, TriggerObject, Param1, Param2, Param3);
           except
           end;
         end;

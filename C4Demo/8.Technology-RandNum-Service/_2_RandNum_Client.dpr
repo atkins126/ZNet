@@ -17,7 +17,26 @@ uses
   Z.ListEngine,
   Z.Net.PhysicsIO,
   Z.Net.C4,
-  Z.Net.C4_RandSeed;
+  Z.Net.C4_RandSeed,
+  Z.Net.C4_Console_APP;
+
+var
+  exit_signal: Boolean;
+
+procedure Do_Check_On_Exit;
+var
+  n: string;
+  cH: TC40_Console_Help;
+begin
+  cH := TC40_Console_Help.Create;
+  repeat
+    TCompute.Sleep(100);
+    Readln(n);
+    cH.Run_HelpCmd(n);
+  until cH.IsExit;
+  disposeObject(cH);
+  exit_signal := True;
+end;
 
 const
   // 调度服务器端口公网地址,可以是ipv4,ipv6,dns
@@ -38,9 +57,9 @@ begin
   Z.Net.C4.C40_ClientPool.WaitConnectedDoneP('RandSeed', procedure(States_: TC40_Custom_ClientPool_Wait_States)
     var
       i: Integer;
-      L: TListCardinal;
+      L: TUInt32List;
     begin
-      L := TListCardinal.Create;
+      L := TUInt32List.Create;
       for i := 0 to 100 do
           GetRandSeed_Client.MakeSeed_P('my_group', 1000, 9999,
           procedure(sender: TC40_RandSeed_Client; Seed_: UInt32)
@@ -59,10 +78,12 @@ begin
     end);
 
   // 主循环
-  while True do
-    begin
+  StatusThreadID := False;
+  exit_signal := False;
+  TCompute.RunC_NP(@Do_Check_On_Exit);
+  while not exit_signal do
       Z.Net.C4.C40Progress;
-      TCompute.Sleep(1);
-    end;
+
+  Z.Net.C4.C40Clean;
 
 end.

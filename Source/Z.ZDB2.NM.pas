@@ -107,7 +107,12 @@ begin
   if FData = nil then
       exit;
   if (Keep <= 0) and (GetTimeTick - FAlive > FTimeOut) then
+    begin
       Save;
+{$IFDEF DEBUG}
+      DoStatus('%s -> %s Space Recycle ID %s size:%d', [UnitName, ClassName, CoreSpace.GetSpaceHndAsText(FID).Text, CoreSpace.GetDataSize(FID)]);
+{$ENDIF DEBUG}
+    end;
 end;
 
 procedure TZDB2_NM.Load;
@@ -317,6 +322,14 @@ var
 begin
   if IOHnd.IsOnlyRead then
       exit;
+
+  if (PHead_(@CoreSpace.UserCustomHeader^[0])^.Identifier = $FFFF) and
+    CoreSpace.Check(PHead_(@CoreSpace.UserCustomHeader^[0])^.ID) then
+    begin
+      CoreSpace.RemoveData(PHead_(@CoreSpace.UserCustomHeader^[0])^.ID, False);
+      FillPtr(@CoreSpace.UserCustomHeader^[0], SizeOf(THead_), 0);
+    end;
+
   sum_ := 0;
   if Count > 0 then
     for i := 0 to Count - 1 do
@@ -358,7 +371,10 @@ begin
         end;
     end
   else
+    begin
       FillPtr(@CoreSpace.UserCustomHeader^[0], SizeOf(THead_), 0);
+      Clear(False);
+    end;
 
   if flush_core_space then
       CoreSpace.Save;

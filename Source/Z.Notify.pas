@@ -39,6 +39,9 @@ type
     FPool_Data_Ptr: TN_Post_Execute_List_Struct.PQueueStruct;
     FDFE_Inst: TDFE;
     FNewTime: Double;
+    FIsRuning, FIsExit: PBoolean;
+    procedure SetIsExit(const Value: PBoolean);
+    procedure SetIsRuning(const Value: PBoolean);
   public
     Data1: TCore_Object;
     Data2: TCore_Object;
@@ -46,17 +49,17 @@ type
     Data4: Variant;
     Data5: Pointer;
     Delay: Double;
-
     OnExecute_C: TN_Post_Execute_C;
     OnExecute_C_NP: TN_Post_Execute_C_NP;
     OnExecute_M: TN_Post_Execute_M;
     OnExecute_M_NP: TN_Post_Execute_M_NP;
     OnExecute_P: TN_Post_Execute_P;
     OnExecute_P_NP: TN_Post_Execute_P_NP;
-
     property DataEng: TDFE read FDFE_Inst;
     property DFE_Inst: TDFE read FDFE_Inst;
     property Owner: TN_Progress_Tool read FOwner;
+    property IsRuning: PBoolean read FIsRuning write SetIsRuning;
+    property IsExit: PBoolean read FIsExit write SetIsExit;
 
     constructor Create; virtual;
     destructor Destroy; override;
@@ -99,7 +102,8 @@ type
     function PostExecuteP(Delay: Double; OnExecute_P: TN_Post_Execute_P): TN_Post_Execute; overload;
     function PostExecuteP_NP(Delay: Double; OnExecute_P: TN_Post_Execute_P_NP): TN_Post_Execute; overload;
     // state and dispatch
-    procedure PostDelayFreeObject(Delay: Double; Obj1_, Obj2_: TCore_Object);
+    procedure PostDelayFreeObject(Delay: Double; Obj1_, Obj2_: TCore_Object); overload;
+    procedure PostDelayFreeObject(Delay: Double; Obj1_: TCore_Object); overload;
     procedure Remove(Inst_: TN_Post_Execute); overload; virtual;
     procedure Progress(deltaTime: Double);
     property Paused: Boolean read FPaused write FPaused;
@@ -187,6 +191,20 @@ begin
   DisposeObject(Sender.Data2);
 end;
 
+procedure TN_Post_Execute.SetIsExit(const Value: PBoolean);
+begin
+  FIsExit := Value;
+  if FIsExit <> nil then
+      FIsExit^ := False;
+end;
+
+procedure TN_Post_Execute.SetIsRuning(const Value: PBoolean);
+begin
+  FIsRuning := Value;
+  if FIsRuning <> nil then
+      FIsRuning^ := True;
+end;
+
 constructor TN_Post_Execute.Create;
 begin
   inherited Create;
@@ -201,6 +219,8 @@ begin
   Data4 := Null;
   Data5 := nil;
   Delay := 0;
+  FIsRuning := nil;
+  FIsExit := nil;
 
   OnExecute_C := nil;
   OnExecute_C_NP := nil;
@@ -214,8 +234,11 @@ destructor TN_Post_Execute.Destroy;
 begin
   if FOwner <> nil then
     begin
-      if FOwner.CurrentExecute = Self then
+      if FOwner.FCurrentExecute = Self then
+        begin
           FOwner.FBreakProgress := True;
+          FOwner.FCurrentExecute := nil;
+        end;
 
       if FPool_Data_Ptr <> nil then
         begin
@@ -230,6 +253,11 @@ end;
 
 procedure TN_Post_Execute.Execute;
 begin
+  if FIsRuning <> nil then
+      FIsRuning^ := True;
+  if FIsExit <> nil then
+      FIsExit^ := False;
+
   if Assigned(OnExecute_C) then
     begin
       FDFE_Inst.Reader.index := 0;
@@ -282,6 +310,20 @@ begin
       except
       end;
     end;
+
+  if FIsRuning <> nil then
+      FIsRuning^ := False;
+  if FIsExit <> nil then
+      FIsExit^ := True;
+end;
+
+procedure TN_Progress_Tool.Do_Free(var Inst_: TN_Post_Execute);
+begin
+  if Inst_ <> nil then
+    begin
+      Inst_.FPool_Data_Ptr := nil;
+      DisposeObjectAndNil(Inst_);
+    end;
 end;
 
 constructor TN_Progress_Tool.Create;
@@ -302,15 +344,6 @@ begin
   ResetPost;
   DisposeObject(FPostExecuteList);
   inherited Destroy;
-end;
-
-procedure TN_Progress_Tool.Do_Free(var Inst_: TN_Post_Execute);
-begin
-  if Inst_ <> nil then
-    begin
-      Inst_.FPool_Data_Ptr := nil;
-      DisposeObjectAndNil(Inst_);
-    end;
 end;
 
 procedure TN_Progress_Tool.ResetPost;
@@ -438,6 +471,16 @@ begin
   tmp.OnExecute_C := {$IFDEF FPC}@{$ENDIF FPC}DoDelayFreeObject;
 end;
 
+procedure TN_Progress_Tool.PostDelayFreeObject(Delay: Double; Obj1_: TCore_Object);
+var
+  tmp: TN_Post_Execute;
+begin
+  tmp := PostExecute(Delay);
+  tmp.Data1 := Obj1_;
+  tmp.Data2 := nil;
+  tmp.OnExecute_C := {$IFDEF FPC}@{$ENDIF FPC}DoDelayFreeObject;
+end;
+
 procedure TN_Progress_Tool.Remove(Inst_: TN_Post_Execute);
 begin
   DisposeObject(Inst_);
@@ -446,15 +489,10 @@ end;
 procedure TN_Progress_Tool.Progress(deltaTime: Double);
 var
   tmp_Order: TN_Post_Execute_Temp_Order_Struct;
-{$IFDEF FPC}
-  procedure do_fpc_Progress(Index_: NativeInt; p: TN_Post_Execute_List_Struct.PQueueStruct; var Aborted: Boolean);
-  begin
-    p^.Data.FNewTime := p^.Data.FNewTime + deltaTime;
-    if p^.Data.FNewTime >= p^.Data.Delay then
-        tmp_Order.Push(p^.Data);
-  end;
-{$ENDIF FPC}
+
   procedure Do_Run;
+  var
+    backup_state: Boolean;
   begin
     while tmp_Order.Num > 0 do
       begin
@@ -468,11 +506,15 @@ var
             end;
             FBusy := False;
           end;
-        DisposeObjectAndNil(FCurrentExecute);
+        backup_state := FBreakProgress;
+        DisposeObject(FCurrentExecute);
+        FBreakProgress := backup_state;
         tmp_Order.Next;
       end;
   end;
 
+var
+  __Repeat__: TN_Post_Execute_List_Struct.TRepeat___;
 begin
   if FPaused then
       Exit;
@@ -486,16 +528,12 @@ begin
 
   tmp_Order := TN_Post_Execute_Temp_Order_Struct.Create;
   try
-{$IFDEF FPC}
-    FPostExecuteList.Progress_P(@do_fpc_Progress);
-{$ELSE FPC}
-    FPostExecuteList.Progress_P(procedure(Index_: NativeInt; p: TN_Post_Execute_List_Struct.PQueueStruct; var Aborted: Boolean)
-      begin
-        p^.Data.FNewTime := p^.Data.FNewTime + deltaTime;
-        if p^.Data.FNewTime >= p^.Data.Delay then
-            tmp_Order.Push(p^.Data);
-      end);
-{$ENDIF FPC}
+    __Repeat__ := FPostExecuteList.Repeat_;
+    repeat
+      __Repeat__.Queue^.Data.FNewTime := __Repeat__.Queue^.Data.FNewTime + deltaTime;
+      if __Repeat__.Queue^.Data.FNewTime >= __Repeat__.Queue^.Data.Delay then
+          tmp_Order.Push(__Repeat__.Queue^.Data);
+    until not __Repeat__.Next;
     Do_Run;
     tmp_Order.Free;
   finally

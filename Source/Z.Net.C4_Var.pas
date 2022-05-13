@@ -24,9 +24,8 @@ type
   TC40_Var_Client = class;
 
 {$REGION 'Service Define'}
-  TC40_PhysicsServicePool_Decl = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<TC40_PhysicsService>;
 
-  TC40_VarService_NM_Pool = class(TNumberModulePool)
+  TC40_Var_Service_NM_Pool = class(TNumberModulePool)
   public
     Name: U_String;
     Service: TC40_Var_Service;
@@ -40,11 +39,11 @@ type
     procedure DoNMChange(Sender: TNumberModule; OLD_, New_: Variant); override;
   end;
 
-  TOnC40_Var_Service_NM_Change = procedure(Sender: TC40_Var_Service; NMPool_: TC40_VarService_NM_Pool; NM: TNumberModule) of object;
-  TOnC40_Var_Service_NMPool_Event = procedure(Sender: TC40_Var_Service; NMPool_: TC40_VarService_NM_Pool) of object;
+  TOn_C40_Var_Service_NM_Change = procedure(Sender: TC40_Var_Service; NMPool_: TC40_Var_Service_NM_Pool; NM: TNumberModule) of object;
+  TOn_C40_Var_Service_NMPool_Event = procedure(Sender: TC40_Var_Service; NMPool_: TC40_Var_Service_NM_Pool) of object;
 
-  TVAR_Service_NMBigPool = {$IFDEF FPC}specialize {$ENDIF FPC}TGenericHashList<TC40_VarService_NM_Pool>;
-  TC40_Var_NumberModulePool_List = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<TC40_VarService_NM_Pool>;
+  TVAR_Service_NMBigPool = {$IFDEF FPC}specialize {$ENDIF FPC}TGeneric_String_Object_Hash<TC40_Var_Service_NM_Pool>;
+  TC40_Var_NumberModulePool_List = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<TC40_Var_Service_NM_Pool>;
 
   TC40_Var_Service_IO_Define = class(TPeerClientUserDefineForRecvTunnel_NoAuth)
   public
@@ -82,119 +81,119 @@ type
     procedure cmd_NM_SearchAndRunScript(Sender: TPeerIO; InData: TDFE);
   protected
     ProgressTempNMList: TC40_Var_NumberModulePool_List;
-    procedure Progress_NMPool(const Name: PSystemString; Obj: TC40_VarService_NM_Pool);
+    procedure Progress_NMPool(const Name: PSystemString; Obj: TC40_Var_Service_NM_Pool);
   public
     C40_Var_FileName: U_String;
     NMBigPool: TVAR_Service_NMBigPool;
-    OnChange: TOnC40_Var_Service_NM_Change;
-    OnRemove: TOnC40_Var_Service_NMPool_Event;
+    OnChange: TOn_C40_Var_Service_NM_Change;
+    OnRemove: TOn_C40_Var_Service_NMPool_Event;
     constructor Create(PhysicsService_: TC40_PhysicsService; ServiceTyp, Param_: U_String); override;
     destructor Destroy; override;
     procedure SafeCheck; override;
     procedure Progress; override;
     procedure SaveData;
-    function GetNM(Name_: U_String): TC40_VarService_NM_Pool;
-    procedure DoRemoveNumberModulePool(NM: TC40_VarService_NM_Pool);
+    function GetNM(Name_: U_String): TC40_Var_Service_NM_Pool;
+    procedure DoRemoveNumberModulePool(NM: TC40_Var_Service_NM_Pool);
     procedure PrintError(v: SystemString); overload;
     procedure PrintError(v: SystemString; const Args: array of const); overload;
   end;
 
 {$REGION 'Client Define'}
 
-  TOnC40_Var_Client_NM_Change = procedure(Sender: TC40_Var_Client; NMPool_: TC40_VarService_NM_Pool; NM: TNumberModule) of object;
-  TOnC40_Var_Client_NM_Remove_Event = procedure(Sender: TC40_Var_Client; NMName: U_String) of object;
+  TON_C40_Var_Client_NM_Change = procedure(Sender: TC40_Var_Client; NMPool_: TC40_Var_Service_NM_Pool; NM: TNumberModule) of object;
+  TON_C40_Var_Client_NM_Remove_Event = procedure(Sender: TC40_Var_Client; NMName: U_String) of object;
 
-  TON_NM_GetC = procedure(Sender: TC40_Var_Client; L: TC40_Var_NumberModulePool_List);
-  TON_NM_GetM = procedure(Sender: TC40_Var_Client; L: TC40_Var_NumberModulePool_List) of object;
+  TC40_Var_Client_NM_GetC = procedure(Sender: TC40_Var_Client; L: TC40_Var_NumberModulePool_List);
+  TC40_Var_Client_NM_GetM = procedure(Sender: TC40_Var_Client; L: TC40_Var_NumberModulePool_List) of object;
 {$IFDEF FPC}
-  TON_NM_GetP = procedure(Sender: TC40_Var_Client; L: TC40_Var_NumberModulePool_List) is nested;
+  TC40_Var_Client_NM_GetP = procedure(Sender: TC40_Var_Client; L: TC40_Var_NumberModulePool_List) is nested;
 {$ELSE FPC}
-  TON_NM_GetP = reference to procedure(Sender: TC40_Var_Client; L: TC40_Var_NumberModulePool_List);
+  TC40_Var_Client_NM_GetP = reference to procedure(Sender: TC40_Var_Client; L: TC40_Var_NumberModulePool_List);
 {$ENDIF FPC}
 
-  TON_NM_Get = class(TOnResultBridge)
+  TC40_Var_Client_NM_Get = class(TOnResultBridge)
   public
     Client: TC40_Var_Client;
-    OnResultC: TON_NM_GetC;
-    OnResultM: TON_NM_GetM;
-    OnResultP: TON_NM_GetP;
+    OnResultC: TC40_Var_Client_NM_GetC;
+    OnResultM: TC40_Var_Client_NM_GetM;
+    OnResultP: TC40_Var_Client_NM_GetP;
     constructor Create;
     procedure DoStreamParamEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData, Result_: TDFE); override;
     procedure DoStreamFailedEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData: TDFE); override;
   end;
 
-  TON_NM_GetValueC = procedure(Sender: TC40_Var_Client; NM: TNumberModule);
-  TON_NM_GetValueM = procedure(Sender: TC40_Var_Client; NM: TNumberModule) of object;
+  TC40_Var_Client_NM_GetValueC = procedure(Sender: TC40_Var_Client; NM: TNumberModule);
+  TC40_Var_Client_NM_GetValueM = procedure(Sender: TC40_Var_Client; NM: TNumberModule) of object;
 {$IFDEF FPC}
-  TON_NM_GetValueP = procedure(Sender: TC40_Var_Client; NM: TNumberModule) is nested;
+  TC40_Var_Client_NM_GetValueP = procedure(Sender: TC40_Var_Client; NM: TNumberModule) is nested;
 {$ELSE FPC}
-  TON_NM_GetValueP = reference to procedure(Sender: TC40_Var_Client; NM: TNumberModule);
+  TC40_Var_Client_NM_GetValueP = reference to procedure(Sender: TC40_Var_Client; NM: TNumberModule);
 {$ENDIF FPC}
 
-  TON_NM_GetValue = class(TOnResultBridge)
+  TC40_Var_Client_NM_GetValue = class(TOnResultBridge)
   public
     Client: TC40_Var_Client;
     NM_Name: U_String;
-    OnResultC: TON_NM_GetValueC;
-    OnResultM: TON_NM_GetValueM;
-    OnResultP: TON_NM_GetValueP;
+    OnResultC: TC40_Var_Client_NM_GetValueC;
+    OnResultM: TC40_Var_Client_NM_GetValueM;
+    OnResultP: TC40_Var_Client_NM_GetValueP;
     constructor Create;
     procedure DoStreamParamEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData, Result_: TDFE); override;
     procedure DoStreamFailedEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData: TDFE); override;
   end;
 
-  TON_NM_OpenC = procedure(Sender: TC40_Var_Client; NMPool_: TC40_VarService_NM_Pool);
-  TON_NM_OpenM = procedure(Sender: TC40_Var_Client; NMPool_: TC40_VarService_NM_Pool) of object;
+  TC40_Var_Client_NM_OpenC = procedure(Sender: TC40_Var_Client; NMPool_: TC40_Var_Service_NM_Pool);
+  TC40_Var_Client_NM_OpenM = procedure(Sender: TC40_Var_Client; NMPool_: TC40_Var_Service_NM_Pool) of object;
 {$IFDEF FPC}
-  TON_NM_OpenP = procedure(Sender: TC40_Var_Client; NMPool_: TC40_VarService_NM_Pool) is nested;
+  TC40_Var_Client_NM_OpenP = procedure(Sender: TC40_Var_Client; NMPool_: TC40_Var_Service_NM_Pool) is nested;
 {$ELSE FPC}
-  TON_NM_OpenP = reference to procedure(Sender: TC40_Var_Client; NMPool_: TC40_VarService_NM_Pool);
+  TC40_Var_Client_NM_OpenP = reference to procedure(Sender: TC40_Var_Client; NMPool_: TC40_Var_Service_NM_Pool);
 {$ENDIF FPC}
 
-  TON_NM_Open = class(TOnResultBridge)
+  TC40_Var_Client_NM_Open = class(TOnResultBridge)
   public
     Client: TC40_Var_Client;
-    OnResultC: TON_NM_OpenC;
-    OnResultM: TON_NM_OpenM;
-    OnResultP: TON_NM_OpenP;
+    OnResultC: TC40_Var_Client_NM_OpenC;
+    OnResultM: TC40_Var_Client_NM_OpenM;
+    OnResultP: TC40_Var_Client_NM_OpenP;
     constructor Create;
     procedure DoStreamParamEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData, Result_: TDFE); override;
     procedure DoStreamFailedEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData: TDFE); override;
   end;
 
-  TON_NM_ScriptC = procedure(Sender: TC40_Var_Client; Result_: TExpressionValueVector);
-  TON_NM_ScriptM = procedure(Sender: TC40_Var_Client; Result_: TExpressionValueVector) of object;
+  TC40_Var_Client_NM_ScriptC = procedure(Sender: TC40_Var_Client; Result_: TExpressionValueVector);
+  TC40_Var_Client_NM_ScriptM = procedure(Sender: TC40_Var_Client; Result_: TExpressionValueVector) of object;
 {$IFDEF FPC}
-  TON_NM_ScriptP = procedure(Sender: TC40_Var_Client; Result_: TExpressionValueVector) is nested;
+  TC40_Var_Client_NM_ScriptP = procedure(Sender: TC40_Var_Client; Result_: TExpressionValueVector) is nested;
 {$ELSE FPC}
-  TON_NM_ScriptP = reference to procedure(Sender: TC40_Var_Client; Result_: TExpressionValueVector);
+  TC40_Var_Client_NM_ScriptP = reference to procedure(Sender: TC40_Var_Client; Result_: TExpressionValueVector);
 {$ENDIF FPC}
 
-  TON_NM_Script = class(TOnResultBridge)
+  TC40_Var_Client_NM_Script = class(TOnResultBridge)
   public
     Client: TC40_Var_Client;
-    OnResultC: TON_NM_ScriptC;
-    OnResultM: TON_NM_ScriptM;
-    OnResultP: TON_NM_ScriptP;
+    OnResultC: TC40_Var_Client_NM_ScriptC;
+    OnResultM: TC40_Var_Client_NM_ScriptM;
+    OnResultP: TC40_Var_Client_NM_ScriptP;
     constructor Create;
     procedure DoStreamParamEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData, Result_: TDFE); override;
     procedure DoStreamFailedEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData: TDFE); override;
   end;
 
-  TON_NM_SearchC = procedure(Sender: TC40_Var_Client; NMPool_: TC40_Var_NumberModulePool_List);
-  TON_NM_SearchM = procedure(Sender: TC40_Var_Client; NMPool_: TC40_Var_NumberModulePool_List) of object;
+  TC40_Var_Client_NM_SearchC = procedure(Sender: TC40_Var_Client; NMPool_: TC40_Var_NumberModulePool_List);
+  TC40_Var_Client_NM_SearchM = procedure(Sender: TC40_Var_Client; NMPool_: TC40_Var_NumberModulePool_List) of object;
 {$IFDEF FPC}
-  TON_NM_SearchP = procedure(Sender: TC40_Var_Client; NMPool_: TC40_Var_NumberModulePool_List) is nested;
+  TC40_Var_Client_NM_SearchP = procedure(Sender: TC40_Var_Client; NMPool_: TC40_Var_NumberModulePool_List) is nested;
 {$ELSE FPC}
-  TON_NM_SearchP = reference to procedure(Sender: TC40_Var_Client; NMPool_: TC40_Var_NumberModulePool_List);
+  TC40_Var_Client_NM_SearchP = reference to procedure(Sender: TC40_Var_Client; NMPool_: TC40_Var_NumberModulePool_List);
 {$ENDIF FPC}
 
-  TON_NM_Search = class(TOnResultBridge)
+  TC40_Var_Client_NM_Search = class(TOnResultBridge)
   public
     Client: TC40_Var_Client;
-    OnResultC: TON_NM_SearchC;
-    OnResultM: TON_NM_SearchM;
-    OnResultP: TON_NM_SearchP;
+    OnResultC: TC40_Var_Client_NM_SearchC;
+    OnResultM: TC40_Var_Client_NM_SearchM;
+    OnResultP: TC40_Var_Client_NM_SearchP;
     constructor Create;
     procedure DoStreamParamEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData, Result_: TDFE); override;
     procedure DoStreamFailedEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData: TDFE); override;
@@ -207,45 +206,52 @@ type
     procedure cmd_NM_Remove(Sender: TPeerIO; InData: SystemString);
   public
     NMBigPool: TVAR_Service_NMBigPool;
-    OnChange: TOnC40_Var_Client_NM_Change;
-    OnRemove: TOnC40_Var_Client_NM_Remove_Event;
+    OnChange: TON_C40_Var_Client_NM_Change;
+    OnRemove: TON_C40_Var_Client_NM_Remove_Event;
     constructor Create(PhysicsTunnel_: TC40_PhysicsTunnel; source_: TC40_Info; Param_: U_String); override;
     destructor Destroy; override;
     procedure Progress; override;
-    function GetNM(Name_: U_String): TC40_VarService_NM_Pool;
+    function GetNM(Name_: U_String): TC40_Var_Service_NM_Pool;
 
     // api
     procedure NM_Init(Name_: U_String; Open_: Boolean; NMPool_: TNumberModulePool);
     procedure NM_InitAsTemp(Name_: U_String; TimeOut_: TTimeTick; Open_: Boolean; NMPool_: TNumberModulePool);
     procedure NM_Remove(Name_: U_String; RemoveLocal: Boolean);
     procedure NM_RemoveKey(Name_, KeyName_: U_String; RemoveLocal: Boolean);
-    procedure NM_GetC(arry: U_StringArray; OnResult: TON_NM_GetC);
-    procedure NM_GetM(arry: U_StringArray; OnResult: TON_NM_GetM);
-    procedure NM_GetP(arry: U_StringArray; OnResult: TON_NM_GetP);
-    procedure NM_GetValueC(NMName_: U_String; ValueNames_: U_StringArray; OnResult: TON_NM_GetValueC);
-    procedure NM_GetValueM(NMName_: U_String; ValueNames_: U_StringArray; OnResult: TON_NM_GetValueM);
-    procedure NM_GetValueP(NMName_: U_String; ValueNames_: U_StringArray; OnResult: TON_NM_GetValueP);
-    procedure NM_OpenC(arry: U_StringArray; OnResult: TON_NM_OpenC);
-    procedure NM_OpenM(arry: U_StringArray; OnResult: TON_NM_OpenM);
-    procedure NM_OpenP(arry: U_StringArray; OnResult: TON_NM_OpenP);
+    procedure NM_Get_Bridge(arry: U_StringArray; Bridge_IO_: TPeerIO);
+    procedure NM_GetC(arry: U_StringArray; OnResult: TC40_Var_Client_NM_GetC);
+    procedure NM_GetM(arry: U_StringArray; OnResult: TC40_Var_Client_NM_GetM);
+    procedure NM_GetP(arry: U_StringArray; OnResult: TC40_Var_Client_NM_GetP);
+    procedure NM_GetValue_Bridge(NMName_: U_String; ValueNames_: U_StringArray; Bridge_IO_: TPeerIO);
+    procedure NM_GetValueC(NMName_: U_String; ValueNames_: U_StringArray; OnResult: TC40_Var_Client_NM_GetValueC);
+    procedure NM_GetValueM(NMName_: U_String; ValueNames_: U_StringArray; OnResult: TC40_Var_Client_NM_GetValueM);
+    procedure NM_GetValueP(NMName_: U_String; ValueNames_: U_StringArray; OnResult: TC40_Var_Client_NM_GetValueP);
+    procedure NM_Open_Bridge(arry: U_StringArray; Bridge_IO_: TPeerIO);
+    procedure NM_OpenC(arry: U_StringArray; OnResult: TC40_Var_Client_NM_OpenC);
+    procedure NM_OpenM(arry: U_StringArray; OnResult: TC40_Var_Client_NM_OpenM);
+    procedure NM_OpenP(arry: U_StringArray; OnResult: TC40_Var_Client_NM_OpenP);
     procedure NM_Close(arry: U_StringArray; RemoveLocal: Boolean);
     procedure NM_CloseAll(RemoveLocal: Boolean);
     procedure NM_Change(NMName_, ValueName_: U_String; Variant_: Variant);
     procedure NM_Keep(NMName_: U_String);
-    procedure NM_ScriptC(NMName_: U_String; ExpressionTexts_: U_StringArray; OnResult: TON_NM_ScriptC);
-    procedure NM_ScriptM(NMName_: U_String; ExpressionTexts_: U_StringArray; OnResult: TON_NM_ScriptM);
-    procedure NM_ScriptP(NMName_: U_String; ExpressionTexts_: U_StringArray; OnResult: TON_NM_ScriptP);
+    procedure NM_Script_Bridge(NMName_: U_String; ExpressionTexts_: U_StringArray; Bridge_IO_: TPeerIO);
+    procedure NM_ScriptC(NMName_: U_String; ExpressionTexts_: U_StringArray; OnResult: TC40_Var_Client_NM_ScriptC);
+    procedure NM_ScriptM(NMName_: U_String; ExpressionTexts_: U_StringArray; OnResult: TC40_Var_Client_NM_ScriptM);
+    procedure NM_ScriptP(NMName_: U_String; ExpressionTexts_: U_StringArray; OnResult: TC40_Var_Client_NM_ScriptP);
     // admin
     procedure NM_Save();
-    procedure NM_SearchC(filter: U_String; MaxNum: Integer; AutoOpen: Boolean; OnResult: TON_NM_SearchC);
-    procedure NM_SearchM(filter: U_String; MaxNum: Integer; AutoOpen: Boolean; OnResult: TON_NM_SearchM);
-    procedure NM_SearchP(filter: U_String; MaxNum: Integer; AutoOpen: Boolean; OnResult: TON_NM_SearchP);
+    procedure NM_Search_Bridge(filter: U_String; MaxNum: Integer; AutoOpen: Boolean; Bridge_IO_: TPeerIO);
+    procedure NM_SearchC(filter: U_String; MaxNum: Integer; AutoOpen: Boolean; OnResult: TC40_Var_Client_NM_SearchC);
+    procedure NM_SearchM(filter: U_String; MaxNum: Integer; AutoOpen: Boolean; OnResult: TC40_Var_Client_NM_SearchM);
+    procedure NM_SearchP(filter: U_String; MaxNum: Integer; AutoOpen: Boolean; OnResult: TC40_Var_Client_NM_SearchP);
     procedure NM_SearchAndRunScript(filter: U_String; ExpressionTexts_: U_StringArray);
   end;
 
+  TC40_Var_Client_List = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<TC40_Var_Client>;
+
 implementation
 
-constructor TC40_VarService_NM_Pool.Create;
+constructor TC40_Var_Service_NM_Pool.Create;
 begin
   inherited Create;
   Name := '';
@@ -257,13 +263,13 @@ begin
   OverTime := 0;
 end;
 
-destructor TC40_VarService_NM_Pool.Destroy;
+destructor TC40_Var_Service_NM_Pool.Destroy;
 begin
   DisposeObject(Service_Send_IO_ID_List);
   inherited Destroy;
 end;
 
-procedure TC40_VarService_NM_Pool.DoNMChange(Sender: TNumberModule; OLD_, New_: Variant);
+procedure TC40_Var_Service_NM_Pool.DoNMChange(Sender: TNumberModule; OLD_, New_: Variant);
 var
   d: TDFE;
   i: Integer;
@@ -311,7 +317,7 @@ var
   tmp: TObjectDataManager;
   sr: TItemSearch;
   s_: TItemStream;
-  NMPool_: TC40_VarService_NM_Pool;
+  NMPool_: TC40_Var_Service_NM_Pool;
 begin
   IsLoading := True;
 
@@ -333,7 +339,8 @@ begin
           end;
         DisposeObject(tmp);
       end;
-    DoStatus('extract variant Database done.');
+    if not C40_QuietMode then
+        DoStatus('extract variant Database done.');
   except
   end;
 
@@ -343,7 +350,7 @@ end;
 
 procedure TC40_Var_Service.SaveNMBigPoolAsOX(DB_: TObjectDataManagerOfCache);
 {$IFDEF FPC}
-  procedure fpc_Progress_(const Name: PSystemString; Obj: TC40_VarService_NM_Pool);
+  procedure fpc_Progress_(const Name: PSystemString; Obj: TC40_Var_Service_NM_Pool);
   var
     itmHnd: TItemHandle;
     s_: TItemStream;
@@ -364,7 +371,7 @@ begin
   NMBigPool.ProgressP(@fpc_Progress_);
 {$ELSE FPC}
   NMBigPool.ProgressP(
-    procedure(const Name: PSystemString; Obj: TC40_VarService_NM_Pool)
+    procedure(const Name: PSystemString; Obj: TC40_Var_Service_NM_Pool)
     var
       itmHnd: TItemHandle;
       s_: TItemStream;
@@ -383,7 +390,7 @@ end;
 function TC40_Var_Service.OP_DoSetSysNM(Sender: TOpCustomRunTime; var OP_Param: TOpParam): Variant;
 var
   NN_Name_, NM_Key_: SystemString;
-  NMPool_: TC40_VarService_NM_Pool;
+  NMPool_: TC40_Var_Service_NM_Pool;
 begin
   NN_Name_ := VarToStr(OP_Param[0]);
   NM_Key_ := VarToStr(OP_Param[1]);
@@ -398,7 +405,7 @@ end;
 function TC40_Var_Service.OP_DoGetSysNM(Sender: TOpCustomRunTime; var OP_Param: TOpParam): Variant;
 var
   NN_Name_, NM_Key_: SystemString;
-  NMPool_: TC40_VarService_NM_Pool;
+  NMPool_: TC40_Var_Service_NM_Pool;
 begin
   NN_Name_ := VarToStr(OP_Param[0]);
   NM_Key_ := VarToStr(OP_Param[1]);
@@ -438,7 +445,7 @@ var
   IODef_: TC40_Var_Service_IO_Define;
   NM_Name: U_String;
   Open_: Boolean;
-  NM: TC40_VarService_NM_Pool;
+  NM: TC40_Var_Service_NM_Pool;
 begin
   IODef_ := DTNoAuthService.GetUserDefineRecvTunnel(Sender) as TC40_Var_Service_IO_Define;
   if not IODef_.LinkOk then
@@ -467,7 +474,7 @@ var
   NM_Name: U_String;
   NM_TimeOut: TTimeTick;
   Open_: Boolean;
-  NM: TC40_VarService_NM_Pool;
+  NM: TC40_Var_Service_NM_Pool;
 begin
   IODef_ := DTNoAuthService.GetUserDefineRecvTunnel(Sender) as TC40_Var_Service_IO_Define;
   if not IODef_.LinkOk then
@@ -525,7 +532,7 @@ procedure TC40_Var_Service.cmd_NM_RemoveKey(Sender: TPeerIO; InData: TDFE);
 var
   IODef_: TC40_Var_Service_IO_Define;
   NM_Name, Key_Name: U_String;
-  NM: TC40_VarService_NM_Pool;
+  NM: TC40_Var_Service_NM_Pool;
 begin
   IODef_ := DTNoAuthService.GetUserDefineRecvTunnel(Sender) as TC40_Var_Service_IO_Define;
   if not IODef_.LinkOk then
@@ -553,7 +560,7 @@ procedure TC40_Var_Service.cmd_NM_Get(Sender: TPeerIO; InData, OutData: TDFE);
 var
   IODef_: TC40_Var_Service_IO_Define;
   NM_Name: U_String;
-  NM: TC40_VarService_NM_Pool;
+  NM: TC40_Var_Service_NM_Pool;
 begin
   IODef_ := DTNoAuthService.GetUserDefineRecvTunnel(Sender) as TC40_Var_Service_IO_Define;
   if not IODef_.LinkOk then
@@ -581,7 +588,7 @@ procedure TC40_Var_Service.cmd_NM_GetValue(Sender: TPeerIO; InData, OutData: TDF
 var
   IODef_: TC40_Var_Service_IO_Define;
   NM_Name: U_String;
-  NM: TC40_VarService_NM_Pool;
+  NM: TC40_Var_Service_NM_Pool;
   VName_: U_String;
 begin
   IODef_ := DTNoAuthService.GetUserDefineRecvTunnel(Sender) as TC40_Var_Service_IO_Define;
@@ -616,7 +623,7 @@ procedure TC40_Var_Service.cmd_NM_Open(Sender: TPeerIO; InData, OutData: TDFE);
 var
   IODef_: TC40_Var_Service_IO_Define;
   NM_Name: U_String;
-  NM: TC40_VarService_NM_Pool;
+  NM: TC40_Var_Service_NM_Pool;
 begin
   IODef_ := DTNoAuthService.GetUserDefineRecvTunnel(Sender) as TC40_Var_Service_IO_Define;
   if not IODef_.LinkOk then
@@ -648,7 +655,7 @@ procedure TC40_Var_Service.cmd_NM_Close(Sender: TPeerIO; InData: TDFE);
 var
   IODef_: TC40_Var_Service_IO_Define;
   NM_Name: U_String;
-  NM: TC40_VarService_NM_Pool;
+  NM: TC40_Var_Service_NM_Pool;
 begin
   IODef_ := DTNoAuthService.GetUserDefineRecvTunnel(Sender) as TC40_Var_Service_IO_Define;
   if not IODef_.LinkOk then
@@ -692,7 +699,7 @@ procedure TC40_Var_Service.cmd_NM_Change(Sender: TPeerIO; InData: TDFE);
 var
   IODef_: TC40_Var_Service_IO_Define;
   NM_Name: U_String;
-  NM: TC40_VarService_NM_Pool;
+  NM: TC40_Var_Service_NM_Pool;
   VName_: U_String;
   v: Variant;
 begin
@@ -723,7 +730,7 @@ procedure TC40_Var_Service.cmd_NM_Keep(Sender: TPeerIO; InData: TDFE);
 var
   IODef_: TC40_Var_Service_IO_Define;
   NM_Name: U_String;
-  NM: TC40_VarService_NM_Pool;
+  NM: TC40_Var_Service_NM_Pool;
 begin
   IODef_ := DTNoAuthService.GetUserDefineRecvTunnel(Sender) as TC40_Var_Service_IO_Define;
   if not IODef_.LinkOk then
@@ -747,7 +754,7 @@ var
   IODef_: TC40_Var_Service_IO_Define;
   NM_Name: U_String;
   found_: Boolean;
-  NM: TC40_VarService_NM_Pool;
+  NM: TC40_Var_Service_NM_Pool;
   Exp_: U_String;
   Vec_: TExpressionValueVector;
   i: Integer;
@@ -808,7 +815,7 @@ var
   MaxNum: Integer;
   AutoOpen: Boolean;
 {$IFDEF FPC}
-  procedure fpc_Progress_(const Name: PSystemString; Obj: TC40_VarService_NM_Pool);
+  procedure fpc_Progress_(const Name: PSystemString; Obj: TC40_Var_Service_NM_Pool);
   begin
     if OutData.Count shr 1 >= MaxNum then
         exit;
@@ -835,7 +842,7 @@ begin
 {$IFDEF FPC}
   NMBigPool.ProgressP(@fpc_Progress_);
 {$ELSE FPC}
-  NMBigPool.ProgressP(procedure(const Name: PSystemString; Obj: TC40_VarService_NM_Pool)
+  NMBigPool.ProgressP(procedure(const Name: PSystemString; Obj: TC40_Var_Service_NM_Pool)
     begin
       if OutData.Count shr 1 >= MaxNum then
           exit;
@@ -861,7 +868,7 @@ var
   Exp_Arry: U_StringArray;
 
 {$IFDEF FPC}
-  procedure fpc_Progress_(const Name: PSystemString; Obj: TC40_VarService_NM_Pool);
+  procedure fpc_Progress_(const Name: PSystemString; Obj: TC40_Var_Service_NM_Pool);
   var
     i: Integer;
     Exp_: U_String;
@@ -900,7 +907,7 @@ begin
 {$IFDEF FPC}
   NMBigPool.ProgressP(@fpc_Progress_);
 {$ELSE FPC}
-  NMBigPool.ProgressP(procedure(const Name: PSystemString; Obj: TC40_VarService_NM_Pool)
+  NMBigPool.ProgressP(procedure(const Name: PSystemString; Obj: TC40_Var_Service_NM_Pool)
     var
       i: Integer;
       Exp_: U_String;
@@ -926,7 +933,7 @@ begin
   SetLength(Exp_Arry, 0);
 end;
 
-procedure TC40_Var_Service.Progress_NMPool(const Name: PSystemString; Obj: TC40_VarService_NM_Pool);
+procedure TC40_Var_Service.Progress_NMPool(const Name: PSystemString; Obj: TC40_Var_Service_NM_Pool);
 begin
   if (Obj.IsTemp) and (not Obj.IsFreeing) and (Obj.OverTime < GetTimeTick) then
     begin
@@ -960,7 +967,7 @@ begin
   ParamList.SetDefaultValue('OnlyInstance', if_(ServiceInfo.OnlyInstance, 'True', 'False'));
 
   ProgressTempNMList := TC40_Var_NumberModulePool_List.Create;
-  C40_Var_FileName := umlCombineFileName(DTNoAuthService.PublicFileDirectory, PFormat('DTC40_%s.OX', [ServiceInfo.ServiceTyp.Text]));
+  C40_Var_FileName := umlCombineFileName(DTNoAuthService.PublicFileDirectory, Get_DB_FileName_Config(PFormat('DTC40_%s.OX', [ServiceInfo.ServiceTyp.Text])));
 
   NMBigPool := TVAR_Service_NMBigPool.Create(True,
     EStrToInt64(ParamList.GetDefaultValue('NM_HashPool', '1024*1024'), 1024 * 1024),
@@ -1023,12 +1030,12 @@ begin
   DisposeObject(tmp);
 end;
 
-function TC40_Var_Service.GetNM(Name_: U_String): TC40_VarService_NM_Pool;
+function TC40_Var_Service.GetNM(Name_: U_String): TC40_Var_Service_NM_Pool;
 begin
   Result := NMBigPool[Name_];
   if Result = nil then
     begin
-      Result := TC40_VarService_NM_Pool.Create;
+      Result := TC40_Var_Service_NM_Pool.Create;
       Result.Name := Name_;
       Result.Service := self;
       Result.OnNMCreateOpRunTime := {$IFDEF FPC}@{$ENDIF FPC}DoNMCreateOpRunTime;
@@ -1036,7 +1043,7 @@ begin
     end;
 end;
 
-procedure TC40_Var_Service.DoRemoveNumberModulePool(NM: TC40_VarService_NM_Pool);
+procedure TC40_Var_Service.DoRemoveNumberModulePool(NM: TC40_Var_Service_NM_Pool);
 var
   i: Integer;
   arry: TIO_Array;
@@ -1057,7 +1064,8 @@ begin
           IODef_.NM_List.Remove(NM);
         end;
     end;
-  DoStatus('remove NM "%s"', [NM.Name.Text]);
+  if not C40_QuietMode then
+      DoStatus('remove NM "%s"', [NM.Name.Text]);
 end;
 
 procedure TC40_Var_Service.PrintError(v: SystemString);
@@ -1070,7 +1078,7 @@ begin
   PrintError(PFormat(v, Args));
 end;
 
-constructor TON_NM_Get.Create;
+constructor TC40_Var_Client_NM_Get.Create;
 begin
   inherited Create;
   Client := nil;
@@ -1079,10 +1087,10 @@ begin
   OnResultP := nil;
 end;
 
-procedure TON_NM_Get.DoStreamParamEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData, Result_: TDFE);
+procedure TC40_Var_Client_NM_Get.DoStreamParamEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData, Result_: TDFE);
 var
   L: TC40_Var_NumberModulePool_List;
-  NM_Pool_: TC40_VarService_NM_Pool;
+  NM_Pool_: TC40_Var_Service_NM_Pool;
 begin
   L := TC40_Var_NumberModulePool_List.Create;
   while Result_.R.NotEnd do
@@ -1103,7 +1111,7 @@ begin
   DelayFreeObject(1.0, self, L);
 end;
 
-procedure TON_NM_Get.DoStreamFailedEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData: TDFE);
+procedure TC40_Var_Client_NM_Get.DoStreamFailedEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData: TDFE);
 var
   L: TC40_Var_NumberModulePool_List;
 begin
@@ -1120,7 +1128,7 @@ begin
   DelayFreeObject(1.0, self, L);
 end;
 
-constructor TON_NM_GetValue.Create;
+constructor TC40_Var_Client_NM_GetValue.Create;
 begin
   inherited Create;
   Client := nil;
@@ -1130,9 +1138,9 @@ begin
   OnResultP := nil;
 end;
 
-procedure TON_NM_GetValue.DoStreamParamEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData, Result_: TDFE);
+procedure TC40_Var_Client_NM_GetValue.DoStreamParamEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData, Result_: TDFE);
 var
-  NM_Pool_: TC40_VarService_NM_Pool;
+  NM_Pool_: TC40_Var_Service_NM_Pool;
   NM_: TNumberModule;
 begin
   NM_Pool_ := Client.GetNM(NM_Name);
@@ -1154,7 +1162,7 @@ begin
   DelayFreeObject(1.0, self);
 end;
 
-procedure TON_NM_GetValue.DoStreamFailedEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData: TDFE);
+procedure TC40_Var_Client_NM_GetValue.DoStreamFailedEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData: TDFE);
 begin
   try
     if Assigned(OnResultC) then
@@ -1168,7 +1176,7 @@ begin
   DelayFreeObject(1.0, self);
 end;
 
-constructor TON_NM_Open.Create;
+constructor TC40_Var_Client_NM_Open.Create;
 begin
   inherited Create;
   Client := nil;
@@ -1177,9 +1185,9 @@ begin
   OnResultP := nil;
 end;
 
-procedure TON_NM_Open.DoStreamParamEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData, Result_: TDFE);
+procedure TC40_Var_Client_NM_Open.DoStreamParamEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData, Result_: TDFE);
 var
-  NM_Pool_: TC40_VarService_NM_Pool;
+  NM_Pool_: TC40_Var_Service_NM_Pool;
 begin
   while Result_.R.NotEnd do
     begin
@@ -1199,7 +1207,7 @@ begin
   DelayFreeObject(1.0, self);
 end;
 
-procedure TON_NM_Open.DoStreamFailedEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData: TDFE);
+procedure TC40_Var_Client_NM_Open.DoStreamFailedEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData: TDFE);
 begin
   try
     if Assigned(OnResultC) then
@@ -1213,7 +1221,7 @@ begin
   DelayFreeObject(1.0, self);
 end;
 
-constructor TON_NM_Script.Create;
+constructor TC40_Var_Client_NM_Script.Create;
 begin
   inherited Create;
   Client := nil;
@@ -1222,7 +1230,7 @@ begin
   OnResultP := nil;
 end;
 
-procedure TON_NM_Script.DoStreamParamEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData, Result_: TDFE);
+procedure TC40_Var_Client_NM_Script.DoStreamParamEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData, Result_: TDFE);
 var
   tmp: TExpressionValueVector;
   i: Integer;
@@ -1243,7 +1251,7 @@ begin
   DelayFreeObject(1.0, self);
 end;
 
-procedure TON_NM_Script.DoStreamFailedEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData: TDFE);
+procedure TC40_Var_Client_NM_Script.DoStreamFailedEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData: TDFE);
 var
   tmp: TExpressionValueVector;
 begin
@@ -1260,7 +1268,7 @@ begin
   DelayFreeObject(1.0, self);
 end;
 
-constructor TON_NM_Search.Create;
+constructor TC40_Var_Client_NM_Search.Create;
 begin
   inherited Create;
   Client := nil;
@@ -1269,9 +1277,9 @@ begin
   OnResultP := nil;
 end;
 
-procedure TON_NM_Search.DoStreamParamEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData, Result_: TDFE);
+procedure TC40_Var_Client_NM_Search.DoStreamParamEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData, Result_: TDFE);
 var
-  tmp: TC40_VarService_NM_Pool;
+  tmp: TC40_Var_Service_NM_Pool;
   L: TC40_Var_NumberModulePool_List;
 begin
   L := TC40_Var_NumberModulePool_List.Create;
@@ -1295,7 +1303,7 @@ begin
   DelayFreeObject(1.0, self, L);
 end;
 
-procedure TON_NM_Search.DoStreamFailedEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData: TDFE);
+procedure TC40_Var_Client_NM_Search.DoStreamFailedEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData: TDFE);
 var
   L: TC40_Var_NumberModulePool_List;
 begin
@@ -1315,7 +1323,7 @@ end;
 procedure TC40_Var_Client.cmd_NM_Change(Sender: TPeerIO; InData: TDFE);
 var
   NMPoolName_, ValueName_: U_String;
-  NMPool_: TC40_VarService_NM_Pool;
+  NMPool_: TC40_Var_Service_NM_Pool;
   NM_: TNumberModule;
 begin
   NMPoolName_ := InData.R.ReadString;
@@ -1356,12 +1364,12 @@ begin
   inherited Progress;
 end;
 
-function TC40_Var_Client.GetNM(Name_: U_String): TC40_VarService_NM_Pool;
+function TC40_Var_Client.GetNM(Name_: U_String): TC40_Var_Service_NM_Pool;
 begin
   Result := NMBigPool[Name_];
   if Result = nil then
     begin
-      Result := TC40_VarService_NM_Pool.Create;
+      Result := TC40_Var_Service_NM_Pool.Create;
       Result.Name := Name_;
       Result.Client := self;
       NMBigPool.FastAdd(Name_, Result);
@@ -1421,16 +1429,28 @@ begin
       NMBigPool[Name_].Delete(KeyName_);
 end;
 
-procedure TC40_Var_Client.NM_GetC(arry: U_StringArray; OnResult: TON_NM_GetC);
+procedure TC40_Var_Client.NM_Get_Bridge(arry: U_StringArray; Bridge_IO_: TPeerIO);
 var
   d: TDFE;
   i: Integer;
-  tmp: TON_NM_Get;
 begin
   d := TDFE.Create;
   for i := 0 to length(arry) - 1 do
       d.WriteString(arry[i]);
-  tmp := TON_NM_Get.Create;
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('NM_Get', d, {$IFDEF FPC}@{$ENDIF FPC}TStreamEventBridge.Create(Bridge_IO_).DoStreamEvent);
+  DisposeObject(d);
+end;
+
+procedure TC40_Var_Client.NM_GetC(arry: U_StringArray; OnResult: TC40_Var_Client_NM_GetC);
+var
+  d: TDFE;
+  i: Integer;
+  tmp: TC40_Var_Client_NM_Get;
+begin
+  d := TDFE.Create;
+  for i := 0 to length(arry) - 1 do
+      d.WriteString(arry[i]);
+  tmp := TC40_Var_Client_NM_Get.Create;
   tmp.Client := self;
   tmp.OnResultC := OnResult;
   DTNoAuthClient.SendTunnel.SendStreamCmdM('NM_Get', d, nil, nil,
@@ -1438,16 +1458,16 @@ begin
   DisposeObject(d);
 end;
 
-procedure TC40_Var_Client.NM_GetM(arry: U_StringArray; OnResult: TON_NM_GetM);
+procedure TC40_Var_Client.NM_GetM(arry: U_StringArray; OnResult: TC40_Var_Client_NM_GetM);
 var
   d: TDFE;
   i: Integer;
-  tmp: TON_NM_Get;
+  tmp: TC40_Var_Client_NM_Get;
 begin
   d := TDFE.Create;
   for i := 0 to length(arry) - 1 do
       d.WriteString(arry[i]);
-  tmp := TON_NM_Get.Create;
+  tmp := TC40_Var_Client_NM_Get.Create;
   tmp.Client := self;
   tmp.OnResultM := OnResult;
   DTNoAuthClient.SendTunnel.SendStreamCmdM('NM_Get', d, nil, nil,
@@ -1455,16 +1475,16 @@ begin
   DisposeObject(d);
 end;
 
-procedure TC40_Var_Client.NM_GetP(arry: U_StringArray; OnResult: TON_NM_GetP);
+procedure TC40_Var_Client.NM_GetP(arry: U_StringArray; OnResult: TC40_Var_Client_NM_GetP);
 var
   d: TDFE;
   i: Integer;
-  tmp: TON_NM_Get;
+  tmp: TC40_Var_Client_NM_Get;
 begin
   d := TDFE.Create;
   for i := 0 to length(arry) - 1 do
       d.WriteString(arry[i]);
-  tmp := TON_NM_Get.Create;
+  tmp := TC40_Var_Client_NM_Get.Create;
   tmp.Client := self;
   tmp.OnResultP := OnResult;
   DTNoAuthClient.SendTunnel.SendStreamCmdM('NM_Get', d, nil, nil,
@@ -1472,17 +1492,30 @@ begin
   DisposeObject(d);
 end;
 
-procedure TC40_Var_Client.NM_GetValueC(NMName_: U_String; ValueNames_: U_StringArray; OnResult: TON_NM_GetValueC);
+procedure TC40_Var_Client.NM_GetValue_Bridge(NMName_: U_String; ValueNames_: U_StringArray; Bridge_IO_: TPeerIO);
 var
   d: TDFE;
   i: Integer;
-  tmp: TON_NM_GetValue;
 begin
   d := TDFE.Create;
   d.WriteString(NMName_);
   for i := 0 to length(ValueNames_) - 1 do
       d.WriteString(ValueNames_[i]);
-  tmp := TON_NM_GetValue.Create;
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('NM_GetValue', d, {$IFDEF FPC}@{$ENDIF FPC}TStreamEventBridge.Create(Bridge_IO_).DoStreamEvent);
+  DisposeObject(d);
+end;
+
+procedure TC40_Var_Client.NM_GetValueC(NMName_: U_String; ValueNames_: U_StringArray; OnResult: TC40_Var_Client_NM_GetValueC);
+var
+  d: TDFE;
+  i: Integer;
+  tmp: TC40_Var_Client_NM_GetValue;
+begin
+  d := TDFE.Create;
+  d.WriteString(NMName_);
+  for i := 0 to length(ValueNames_) - 1 do
+      d.WriteString(ValueNames_[i]);
+  tmp := TC40_Var_Client_NM_GetValue.Create;
   tmp.Client := self;
   tmp.NM_Name := NMName_;
   tmp.OnResultC := OnResult;
@@ -1491,17 +1524,17 @@ begin
   DisposeObject(d);
 end;
 
-procedure TC40_Var_Client.NM_GetValueM(NMName_: U_String; ValueNames_: U_StringArray; OnResult: TON_NM_GetValueM);
+procedure TC40_Var_Client.NM_GetValueM(NMName_: U_String; ValueNames_: U_StringArray; OnResult: TC40_Var_Client_NM_GetValueM);
 var
   d: TDFE;
   i: Integer;
-  tmp: TON_NM_GetValue;
+  tmp: TC40_Var_Client_NM_GetValue;
 begin
   d := TDFE.Create;
   d.WriteString(NMName_);
   for i := 0 to length(ValueNames_) - 1 do
       d.WriteString(ValueNames_[i]);
-  tmp := TON_NM_GetValue.Create;
+  tmp := TC40_Var_Client_NM_GetValue.Create;
   tmp.Client := self;
   tmp.NM_Name := NMName_;
   tmp.OnResultM := OnResult;
@@ -1510,17 +1543,17 @@ begin
   DisposeObject(d);
 end;
 
-procedure TC40_Var_Client.NM_GetValueP(NMName_: U_String; ValueNames_: U_StringArray; OnResult: TON_NM_GetValueP);
+procedure TC40_Var_Client.NM_GetValueP(NMName_: U_String; ValueNames_: U_StringArray; OnResult: TC40_Var_Client_NM_GetValueP);
 var
   d: TDFE;
   i: Integer;
-  tmp: TON_NM_GetValue;
+  tmp: TC40_Var_Client_NM_GetValue;
 begin
   d := TDFE.Create;
   d.WriteString(NMName_);
   for i := 0 to length(ValueNames_) - 1 do
       d.WriteString(ValueNames_[i]);
-  tmp := TON_NM_GetValue.Create;
+  tmp := TC40_Var_Client_NM_GetValue.Create;
   tmp.Client := self;
   tmp.NM_Name := NMName_;
   tmp.OnResultP := OnResult;
@@ -1529,16 +1562,28 @@ begin
   DisposeObject(d);
 end;
 
-procedure TC40_Var_Client.NM_OpenC(arry: U_StringArray; OnResult: TON_NM_OpenC);
+procedure TC40_Var_Client.NM_Open_Bridge(arry: U_StringArray; Bridge_IO_: TPeerIO);
 var
   d: TDFE;
   i: Integer;
-  tmp: TON_NM_Open;
 begin
   d := TDFE.Create;
   for i := 0 to length(arry) - 1 do
       d.WriteString(arry[i]);
-  tmp := TON_NM_Open.Create;
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('NM_Open', d, {$IFDEF FPC}@{$ENDIF FPC}TStreamEventBridge.Create(Bridge_IO_).DoStreamEvent);
+  DisposeObject(d);
+end;
+
+procedure TC40_Var_Client.NM_OpenC(arry: U_StringArray; OnResult: TC40_Var_Client_NM_OpenC);
+var
+  d: TDFE;
+  i: Integer;
+  tmp: TC40_Var_Client_NM_Open;
+begin
+  d := TDFE.Create;
+  for i := 0 to length(arry) - 1 do
+      d.WriteString(arry[i]);
+  tmp := TC40_Var_Client_NM_Open.Create;
   tmp.Client := self;
   tmp.OnResultC := OnResult;
   DTNoAuthClient.SendTunnel.SendStreamCmdM('NM_Open', d, nil, nil,
@@ -1546,16 +1591,16 @@ begin
   DisposeObject(d);
 end;
 
-procedure TC40_Var_Client.NM_OpenM(arry: U_StringArray; OnResult: TON_NM_OpenM);
+procedure TC40_Var_Client.NM_OpenM(arry: U_StringArray; OnResult: TC40_Var_Client_NM_OpenM);
 var
   d: TDFE;
   i: Integer;
-  tmp: TON_NM_Open;
+  tmp: TC40_Var_Client_NM_Open;
 begin
   d := TDFE.Create;
   for i := 0 to length(arry) - 1 do
       d.WriteString(arry[i]);
-  tmp := TON_NM_Open.Create;
+  tmp := TC40_Var_Client_NM_Open.Create;
   tmp.Client := self;
   tmp.OnResultM := OnResult;
   DTNoAuthClient.SendTunnel.SendStreamCmdM('NM_Open', d, nil, nil,
@@ -1563,16 +1608,16 @@ begin
   DisposeObject(d);
 end;
 
-procedure TC40_Var_Client.NM_OpenP(arry: U_StringArray; OnResult: TON_NM_OpenP);
+procedure TC40_Var_Client.NM_OpenP(arry: U_StringArray; OnResult: TC40_Var_Client_NM_OpenP);
 var
   d: TDFE;
   i: Integer;
-  tmp: TON_NM_Open;
+  tmp: TC40_Var_Client_NM_Open;
 begin
   d := TDFE.Create;
   for i := 0 to length(arry) - 1 do
       d.WriteString(arry[i]);
-  tmp := TON_NM_Open.Create;
+  tmp := TC40_Var_Client_NM_Open.Create;
   tmp.Client := self;
   tmp.OnResultP := OnResult;
   DTNoAuthClient.SendTunnel.SendStreamCmdM('NM_Open', d, nil, nil,
@@ -1611,7 +1656,7 @@ end;
 procedure TC40_Var_Client.NM_Change(NMName_, ValueName_: U_String; Variant_: Variant);
 var
   d: TDFE;
-  NM: TC40_VarService_NM_Pool;
+  NM: TC40_Var_Service_NM_Pool;
 begin
   d := TDFE.Create;
   d.WriteString(NMName_);
@@ -1633,17 +1678,30 @@ begin
   DisposeObject(d);
 end;
 
-procedure TC40_Var_Client.NM_ScriptC(NMName_: U_String; ExpressionTexts_: U_StringArray; OnResult: TON_NM_ScriptC);
+procedure TC40_Var_Client.NM_Script_Bridge(NMName_: U_String; ExpressionTexts_: U_StringArray; Bridge_IO_: TPeerIO);
 var
   d: TDFE;
   i: Integer;
-  tmp: TON_NM_Script;
 begin
   d := TDFE.Create;
   d.WriteString(NMName_);
   for i := 0 to length(ExpressionTexts_) - 1 do
       d.WriteString(ExpressionTexts_[i]);
-  tmp := TON_NM_Script.Create;
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('NM_Script', d, {$IFDEF FPC}@{$ENDIF FPC}TStreamEventBridge.Create(Bridge_IO_).DoStreamEvent);
+  DisposeObject(d);
+end;
+
+procedure TC40_Var_Client.NM_ScriptC(NMName_: U_String; ExpressionTexts_: U_StringArray; OnResult: TC40_Var_Client_NM_ScriptC);
+var
+  d: TDFE;
+  i: Integer;
+  tmp: TC40_Var_Client_NM_Script;
+begin
+  d := TDFE.Create;
+  d.WriteString(NMName_);
+  for i := 0 to length(ExpressionTexts_) - 1 do
+      d.WriteString(ExpressionTexts_[i]);
+  tmp := TC40_Var_Client_NM_Script.Create;
   tmp.Client := self;
   tmp.OnResultC := OnResult;
   DTNoAuthClient.SendTunnel.SendStreamCmdM('NM_Script', d, nil, nil,
@@ -1651,17 +1709,17 @@ begin
   DisposeObject(d);
 end;
 
-procedure TC40_Var_Client.NM_ScriptM(NMName_: U_String; ExpressionTexts_: U_StringArray; OnResult: TON_NM_ScriptM);
+procedure TC40_Var_Client.NM_ScriptM(NMName_: U_String; ExpressionTexts_: U_StringArray; OnResult: TC40_Var_Client_NM_ScriptM);
 var
   d: TDFE;
   i: Integer;
-  tmp: TON_NM_Script;
+  tmp: TC40_Var_Client_NM_Script;
 begin
   d := TDFE.Create;
   d.WriteString(NMName_);
   for i := 0 to length(ExpressionTexts_) - 1 do
       d.WriteString(ExpressionTexts_[i]);
-  tmp := TON_NM_Script.Create;
+  tmp := TC40_Var_Client_NM_Script.Create;
   tmp.Client := self;
   tmp.OnResultM := OnResult;
   DTNoAuthClient.SendTunnel.SendStreamCmdM('NM_Script', d, nil, nil,
@@ -1669,17 +1727,17 @@ begin
   DisposeObject(d);
 end;
 
-procedure TC40_Var_Client.NM_ScriptP(NMName_: U_String; ExpressionTexts_: U_StringArray; OnResult: TON_NM_ScriptP);
+procedure TC40_Var_Client.NM_ScriptP(NMName_: U_String; ExpressionTexts_: U_StringArray; OnResult: TC40_Var_Client_NM_ScriptP);
 var
   d: TDFE;
   i: Integer;
-  tmp: TON_NM_Script;
+  tmp: TC40_Var_Client_NM_Script;
 begin
   d := TDFE.Create;
   d.WriteString(NMName_);
   for i := 0 to length(ExpressionTexts_) - 1 do
       d.WriteString(ExpressionTexts_[i]);
-  tmp := TON_NM_Script.Create;
+  tmp := TC40_Var_Client_NM_Script.Create;
   tmp.Client := self;
   tmp.OnResultP := OnResult;
   DTNoAuthClient.SendTunnel.SendStreamCmdM('NM_Script', d, nil, nil,
@@ -1692,17 +1750,30 @@ begin
   DTNoAuthClient.SendTunnel.SendDirectStreamCmd('NM_Save');
 end;
 
-procedure TC40_Var_Client.NM_SearchC(filter: U_String; MaxNum: Integer; AutoOpen: Boolean; OnResult: TON_NM_SearchC);
+procedure TC40_Var_Client.NM_Search_Bridge(filter: U_String; MaxNum: Integer; AutoOpen: Boolean; Bridge_IO_: TPeerIO);
 var
   d: TDFE;
   i: Integer;
-  tmp: TON_NM_Search;
 begin
   d := TDFE.Create;
   d.WriteString(filter);
   d.WriteInteger(MaxNum);
   d.WriteBool(AutoOpen);
-  tmp := TON_NM_Search.Create;
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('NM_Search', d, {$IFDEF FPC}@{$ENDIF FPC}TStreamEventBridge.Create(Bridge_IO_).DoStreamEvent);
+  DisposeObject(d);
+end;
+
+procedure TC40_Var_Client.NM_SearchC(filter: U_String; MaxNum: Integer; AutoOpen: Boolean; OnResult: TC40_Var_Client_NM_SearchC);
+var
+  d: TDFE;
+  i: Integer;
+  tmp: TC40_Var_Client_NM_Search;
+begin
+  d := TDFE.Create;
+  d.WriteString(filter);
+  d.WriteInteger(MaxNum);
+  d.WriteBool(AutoOpen);
+  tmp := TC40_Var_Client_NM_Search.Create;
   tmp.Client := self;
   tmp.OnResultC := OnResult;
   DTNoAuthClient.SendTunnel.SendStreamCmdM('NM_Search', d, nil, nil,
@@ -1710,17 +1781,17 @@ begin
   DisposeObject(d);
 end;
 
-procedure TC40_Var_Client.NM_SearchM(filter: U_String; MaxNum: Integer; AutoOpen: Boolean; OnResult: TON_NM_SearchM);
+procedure TC40_Var_Client.NM_SearchM(filter: U_String; MaxNum: Integer; AutoOpen: Boolean; OnResult: TC40_Var_Client_NM_SearchM);
 var
   d: TDFE;
   i: Integer;
-  tmp: TON_NM_Search;
+  tmp: TC40_Var_Client_NM_Search;
 begin
   d := TDFE.Create;
   d.WriteString(filter);
   d.WriteInteger(MaxNum);
   d.WriteBool(AutoOpen);
-  tmp := TON_NM_Search.Create;
+  tmp := TC40_Var_Client_NM_Search.Create;
   tmp.Client := self;
   tmp.OnResultM := OnResult;
   DTNoAuthClient.SendTunnel.SendStreamCmdM('NM_Search', d, nil, nil,
@@ -1728,17 +1799,17 @@ begin
   DisposeObject(d);
 end;
 
-procedure TC40_Var_Client.NM_SearchP(filter: U_String; MaxNum: Integer; AutoOpen: Boolean; OnResult: TON_NM_SearchP);
+procedure TC40_Var_Client.NM_SearchP(filter: U_String; MaxNum: Integer; AutoOpen: Boolean; OnResult: TC40_Var_Client_NM_SearchP);
 var
   d: TDFE;
   i: Integer;
-  tmp: TON_NM_Search;
+  tmp: TC40_Var_Client_NM_Search;
 begin
   d := TDFE.Create;
   d.WriteString(filter);
   d.WriteInteger(MaxNum);
   d.WriteBool(AutoOpen);
-  tmp := TON_NM_Search.Create;
+  tmp := TC40_Var_Client_NM_Search.Create;
   tmp.Client := self;
   tmp.OnResultP := OnResult;
   DTNoAuthClient.SendTunnel.SendStreamCmdM('NM_Search', d, nil, nil,

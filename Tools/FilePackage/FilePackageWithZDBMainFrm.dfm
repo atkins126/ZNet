@@ -2,28 +2,30 @@ object FilePackageWithZDBMainForm: TFilePackageWithZDBMainForm
   Left = 0
   Top = 0
   Caption = 'File Package.'
-  ClientHeight = 430
-  ClientWidth = 1082
+  ClientHeight = 361
+  ClientWidth = 1184
   Color = clBtnFace
+  Constraints.MinHeight = 400
+  Constraints.MinWidth = 1200
   DoubleBuffered = True
-  Font.Charset = DEFAULT_CHARSET
+  Font.Charset = ANSI_CHARSET
   Font.Color = clWindowText
-  Font.Height = -11
-  Font.Name = 'Tahoma'
-  Font.Style = []
+  Font.Height = -12
+  Font.Name = 'Consolas'
+  Font.Style = [fsBold]
   KeyPreview = True
-  OldCreateOrder = False
+  OldCreateOrder = True
   Position = poDesktopCenter
   OnClose = FormClose
   OnCloseQuery = FormCloseQuery
   OnCreate = FormCreate
   OnDestroy = FormDestroy
   PixelsPerInch = 96
-  TextHeight = 13
-  object Splitter1: TSplitter
+  TextHeight = 14
+  object Log_Splitter: TSplitter
     Left = 0
-    Top = 304
-    Width = 1082
+    Top = 256
+    Width = 1184
     Height = 5
     Cursor = crVSplit
     Align = alBottom
@@ -35,13 +37,13 @@ object FilePackageWithZDBMainForm: TFilePackageWithZDBMainForm
   object TopPanel: TPanel
     Left = 0
     Top = 0
-    Width = 1082
+    Width = 1184
     Height = 41
     Align = alTop
     BorderWidth = 5
     TabOrder = 0
     object Bevel3: TBevel
-      Left = 303
+      Left = 333
       Top = 6
       Width = 10
       Height = 29
@@ -52,7 +54,7 @@ object FilePackageWithZDBMainForm: TFilePackageWithZDBMainForm
       ExplicitHeight = 39
     end
     object Bevel4: TBevel
-      Left = 133
+      Left = 143
       Top = 6
       Width = 10
       Height = 29
@@ -63,7 +65,7 @@ object FilePackageWithZDBMainForm: TFilePackageWithZDBMainForm
       ExplicitHeight = 33
     end
     object Bevel5: TBevel
-      Left = 193
+      Left = 203
       Top = 6
       Width = 10
       Height = 29
@@ -74,7 +76,7 @@ object FilePackageWithZDBMainForm: TFilePackageWithZDBMainForm
       ExplicitHeight = 33
     end
     object Bevel7: TBevel
-      Left = 841
+      Left = 1021
       Top = 6
       Width = 10
       Height = 29
@@ -85,7 +87,7 @@ object FilePackageWithZDBMainForm: TFilePackageWithZDBMainForm
       ExplicitHeight = 33
     end
     object Bevel8: TBevel
-      Left = 606
+      Left = 762
       Top = 6
       Width = 10
       Height = 29
@@ -105,7 +107,7 @@ object FilePackageWithZDBMainForm: TFilePackageWithZDBMainForm
       OnClick = NewButtonClick
     end
     object OpenButton: TButton
-      Left = 143
+      Left = 153
       Top = 6
       Width = 50
       Height = 29
@@ -115,7 +117,7 @@ object FilePackageWithZDBMainForm: TFilePackageWithZDBMainForm
       OnClick = OpenButtonClick
     end
     object SaveButton: TButton
-      Left = 203
+      Left = 213
       Top = 6
       Width = 50
       Height = 29
@@ -125,9 +127,9 @@ object FilePackageWithZDBMainForm: TFilePackageWithZDBMainForm
       OnClick = SaveButtonClick
     end
     object SaveAsButton: TButton
-      Left = 253
+      Left = 263
       Top = 6
-      Width = 50
+      Width = 70
       Height = 29
       Align = alLeft
       Caption = 'Save as'
@@ -135,46 +137,36 @@ object FilePackageWithZDBMainForm: TFilePackageWithZDBMainForm
       OnClick = SaveAsButtonClick
     end
     object MD5Edit: TMemo
-      Left = 616
+      Left = 772
       Top = 6
-      Width = 225
+      Width = 249
       Height = 29
       Align = alLeft
       ParentColor = True
       TabOrder = 5
     end
     object CacheStateMemo: TMemo
-      Left = 851
+      Left = 1031
       Top = 6
-      Width = 225
+      Width = 147
       Height = 29
       Align = alClient
       TabOrder = 7
     end
-    object RecalcMD5Button: TButton
-      Left = 313
-      Top = 6
-      Width = 36
-      Height = 29
-      Align = alLeft
-      Caption = 'MD5'
-      TabOrder = 8
-      OnClick = RecalcMD5ButtonClick
-    end
     object CompressAsButton: TButton
-      Left = 349
+      Left = 343
       Top = 6
-      Width = 70
+      Width = 84
       Height = 29
       Align = alLeft
       Caption = 'Build .OXC'
-      TabOrder = 9
+      TabOrder = 8
       OnClick = CompressAsButtonClick
     end
     object BuildIndexPackageButton: TButton
-      Left = 489
+      Left = 609
       Top = 6
-      Width = 117
+      Width = 153
       Height = 29
       Align = alLeft
       Caption = 'Build Index Package'
@@ -184,7 +176,7 @@ object FilePackageWithZDBMainForm: TFilePackageWithZDBMainForm
     object NewCustomButton: TButton
       Left = 56
       Top = 6
-      Width = 77
+      Width = 87
       Height = 29
       Align = alLeft
       Caption = 'New Custom'
@@ -192,23 +184,35 @@ object FilePackageWithZDBMainForm: TFilePackageWithZDBMainForm
       OnClick = NewCustomButtonClick
     end
     object ParallelCompressAsButton: TButton
-      Left = 419
+      Left = 427
       Top = 6
-      Width = 70
+      Width = 85
       Height = 29
       Align = alLeft
       Caption = 'Build .OXP'
-      TabOrder = 10
+      TabOrder = 9
       OnClick = ParallelCompressAsButtonClick
+    end
+    object SaveAsZDB2Button: TButton
+      Left = 512
+      Top = 6
+      Width = 97
+      Height = 29
+      Align = alLeft
+      Caption = 'Build .ZDB2'
+      TabOrder = 10
+      OnClick = SaveAsZDB2ButtonClick
     end
   end
   object Memo: TMemo
+    Tag = 100
     Left = 0
-    Top = 309
-    Width = 1082
-    Height = 121
+    Top = 261
+    Width = 1184
+    Height = 100
     Align = alBottom
     BorderStyle = bsNone
+    ScrollBars = ssVertical
     TabOrder = 1
     WordWrap = False
   end
@@ -229,6 +233,7 @@ object FilePackageWithZDBMainForm: TFilePackageWithZDBMainForm
     Top = 112
   end
   object Timer: TTimer
+    Interval = 100
     OnTimer = TimerTimer
     Left = 56
     Top = 160
@@ -246,5 +251,12 @@ object FilePackageWithZDBMainForm: TFilePackageWithZDBMainForm
     Options = [ofOverwritePrompt, ofHideReadOnly, ofPathMustExist, ofEnableSizing]
     Left = 184
     Top = 216
+  end
+  object SaveAsZDB2Dialog: TSaveDialog
+    DefaultExt = '.OX2'
+    Filter = 'Object Data(*.OX2)|*.OX2|All(*.*)|*.*'
+    Options = [ofOverwritePrompt, ofHideReadOnly, ofPathMustExist, ofEnableSizing]
+    Left = 183
+    Top = 273
   end
 end

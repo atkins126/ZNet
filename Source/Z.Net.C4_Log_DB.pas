@@ -20,7 +20,7 @@ uses
 type
   TC40_Log_DB_Service = class;
 
-  TC40_ZDB2_List_HashString = class(TZDB2_List_HashString)
+  TC40_Log_DB_ZDB2_HashString = class(TZDB2_List_HashString)
   protected
     Name: U_String;
     LastActivtTime: TTimeTick;
@@ -28,8 +28,8 @@ type
     FileName: U_String;
   end;
 
-  TLog_DB_Pool = {$IFDEF FPC}specialize {$ENDIF FPC}TGenericHashList<TC40_ZDB2_List_HashString>;
-  TLog_DB_List = {$IFDEF FPC}specialize {$ENDIF FPC}TGenericsList<TC40_ZDB2_List_HashString>;
+  TLog_DB_Pool = {$IFDEF FPC}specialize {$ENDIF FPC}TGeneric_String_Object_Hash<TC40_Log_DB_ZDB2_HashString>;
+  TLog_DB_List = {$IFDEF FPC}specialize {$ENDIF FPC}TBigList<TC40_Log_DB_ZDB2_HashString>;
 
   TC40_Log_DB_Service_RecvTunnel_NoAuth = class(TPeerClientUserDefineForRecvTunnel_NoAuth)
   public
@@ -55,8 +55,8 @@ type
   private
     WaitFreeList: TLog_DB_List;
     procedure Do_Create_ZDB2_HashString(sender: TZDB2_List_HashString; Obj: TZDB2_HashString);
-    procedure Do_DB_Pool_SafeCheck(const Name_: PSystemString; Obj_: TC40_ZDB2_List_HashString);
-    procedure Do_DB_Pool_Progress(const Name_: PSystemString; Obj_: TC40_ZDB2_List_HashString);
+    procedure Do_DB_Pool_SafeCheck(const Name_: PSystemString; Obj_: TC40_Log_DB_ZDB2_HashString);
+    procedure Do_DB_Pool_Progress(const Name_: PSystemString; Obj_: TC40_Log_DB_ZDB2_HashString);
   public
     C40_DB_Directory: U_String;
     DB_Pool: TLog_DB_Pool;
@@ -74,7 +74,7 @@ type
     procedure SafeCheck; override;
     procedure Progress; override;
 
-    function GetDB(const LogDB: SystemString): TC40_ZDB2_List_HashString;
+    function GetDB(const LogDB: SystemString): TC40_Log_DB_ZDB2_HashString;
     procedure PostLog(const LogDB, Log1_, Log2_: SystemString);
   end;
 
@@ -160,24 +160,38 @@ type
     ON_C40_Log_DB_Client_Interface: I_ON_C40_Log_DB_Client_Interface;
     constructor Create(PhysicsTunnel_: TC40_PhysicsTunnel; source_: TC40_Info; Param_: U_String); override;
     destructor Destroy; override;
+    // post log
     procedure PostLog(LogDB, Log1_, Log2_: SystemString); overload;
     procedure PostLog(LogDB, Log_: SystemString); overload;
+    // query from time+filter
+    procedure QueryLog_Bridge(LogDB: SystemString; bTime, eTime: TDateTime; filter1, filter2: U_String; Bridge_IO_: TPeerIO); overload;
     procedure QueryLogC(LogDB: SystemString; bTime, eTime: TDateTime; filter1, filter2: U_String; OnResult: TON_QueryLogC); overload;
     procedure QueryLogM(LogDB: SystemString; bTime, eTime: TDateTime; filter1, filter2: U_String; OnResult: TON_QueryLogM); overload;
     procedure QueryLogP(LogDB: SystemString; bTime, eTime: TDateTime; filter1, filter2: U_String; OnResult: TON_QueryLogP); overload;
+    // query from time
+    procedure QueryLog_Bridge(LogDB: SystemString; bTime, eTime: TDateTime; Bridge_IO_: TPeerIO); overload;
     procedure QueryLogC(LogDB: SystemString; bTime, eTime: TDateTime; OnResult: TON_QueryLogC); overload;
     procedure QueryLogM(LogDB: SystemString; bTime, eTime: TDateTime; OnResult: TON_QueryLogM); overload;
     procedure QueryLogP(LogDB: SystemString; bTime, eTime: TDateTime; OnResult: TON_QueryLogP); overload;
+    // query and remove
     procedure QueryAndRemoveLog(LogDB: SystemString; bTime, eTime: TDateTime; filter1, filter2: U_String); overload;
     procedure QueryAndRemoveLog(LogDB: SystemString; bTime, eTime: TDateTime); overload;
+    // remove
     procedure RemoveLog(LogDB: SystemString; arry_index: array of Integer);
+    // get db list
+    procedure GetLogDB_Bridge(Bridge_IO_: TPeerIO);
     procedure GetLogDBC(OnResult: TON_GetLogDBC);
     procedure GetLogDBM(OnResult: TON_GetLogDBM);
     procedure GetLogDBP(OnResult: TON_GetLogDBP);
+    // close log db
     procedure CloseDB(LogDB: SystemString);
+    // remove log db
     procedure RemoveDB(LogDB: SystemString);
+    // log monitor
     procedure Enabled_LogMonitor(Sync_Log: Boolean);
   end;
+
+  TC40_Log_DB_Client_List = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<TC40_Log_DB_Client>;
 
 function MakeNowDateStr(): SystemString;
 
@@ -289,11 +303,11 @@ var
   LogDB: SystemString;
   bTime, eTime: TDateTime;
   filter1, filter2: U_String;
-  db_: TC40_ZDB2_List_HashString;
-  i: Integer;
+  db_: TC40_Log_DB_ZDB2_HashString;
   d_: TDateTime;
   dt: SystemString;
   n1, n2: SystemString;
+  Data_is_Null_: Boolean;
 begin
   LogDB := InData.R.ReadString;
   bTime := InData.R.ReadDouble;
@@ -306,25 +320,30 @@ begin
       exit;
 
   dt := umlDateTimeToStr(umlNow);
-  for i := 0 to db_.Count - 1 do
-    begin
-      try
-        d_ := umlStrToDateTime(db_[i].Data.GetDefaultValue('Time', dt));
-        if DateTimeInRange(d_, bTime, eTime) then
-          begin
-            n1 := db_[i].Data.GetDefaultValue('Log1', '');
-            n2 := db_[i].Data.GetDefaultValue('Log2', '');
-            if umlSearchMatch(filter1, n1) and umlSearchMatch(filter2, n2) then
-              begin
-                OutData.WriteDouble(d_);
-                OutData.WriteString(n1);
-                OutData.WriteString(n2);
-                OutData.WriteInteger(i);
-              end;
-          end
-      except
-      end;
-    end;
+
+  if db_.Count > 0 then
+    with db_.Repeat_ do
+      repeat
+        try
+          Data_is_Null_ := Queue^.Data.Data_Direct = nil;
+          d_ := umlStrToDateTime(Queue^.Data.Data.GetDefaultValue('Time', dt));
+          if DateTimeInRange(d_, bTime, eTime) then
+            begin
+              n1 := Queue^.Data.Data.GetDefaultValue('Log1', '');
+              n2 := Queue^.Data.Data.GetDefaultValue('Log2', '');
+              if umlSearchMatch(filter1, n1) and umlSearchMatch(filter2, n2) then
+                begin
+                  OutData.WriteDouble(d_);
+                  OutData.WriteString(n1);
+                  OutData.WriteString(n2);
+                  OutData.WriteInteger(I__);
+                end;
+            end;
+          if Data_is_Null_ then
+              Queue^.Data.RecycleMemory;
+        except
+        end;
+      until not Next;
 end;
 
 procedure TC40_Log_DB_Service.cmd_QueryAndRemoveLog(sender: TPeerIO; InData: TDFE);
@@ -332,11 +351,12 @@ var
   LogDB: SystemString;
   bTime, eTime: TDateTime;
   filter1, filter2: U_String;
-  db_: TC40_ZDB2_List_HashString;
+  db_: TC40_Log_DB_ZDB2_HashString;
   i: Integer;
   d_: TDateTime;
   dt: SystemString;
   n1, n2: SystemString;
+  Data_is_Null_: Boolean;
 begin
   LogDB := InData.R.ReadString;
   bTime := InData.R.ReadDouble;
@@ -349,33 +369,33 @@ begin
       exit;
 
   dt := umlDateTimeToStr(umlNow);
-  i := 0;
-  while i < db_.Count do
-    begin
-      try
-        d_ := umlStrToDateTime(db_[i].Data.GetDefaultValue('Time', dt));
-        if DateTimeInRange(d_, bTime, eTime) then
-          begin
-            n1 := db_[i].Data.GetDefaultValue('Log1', '');
-            n2 := db_[i].Data.GetDefaultValue('Log2', '');
-            if umlSearchMatch(filter1, n1) and umlSearchMatch(filter2, n2) then
-                db_.Delete(i, true)
-            else
-                inc(i);
-          end
-        else
-            inc(i);
-      except
-      end;
-    end;
+
+  if db_.Count > 0 then
+    with db_.Repeat_ do
+      repeat
+        try
+          Data_is_Null_ := Queue^.Data.Data_Direct = nil;
+          d_ := umlStrToDateTime(Queue^.Data.Data.GetDefaultValue('Time', dt));
+          if DateTimeInRange(d_, bTime, eTime) then
+            begin
+              n1 := Queue^.Data.Data.GetDefaultValue('Log1', '');
+              n2 := Queue^.Data.Data.GetDefaultValue('Log2', '');
+              if umlSearchMatch(filter1, n1) and umlSearchMatch(filter2, n2) then
+                  db_.Push_To_Recycle_Pool(Queue^.Data, True);
+            end;
+          if Data_is_Null_ then
+              Queue^.Data.RecycleMemory;
+        except
+        end;
+      until not Next;
+  db_.Free_Recycle_Pool;
 end;
 
 procedure TC40_Log_DB_Service.cmd_RemoveLog(sender: TPeerIO; InData: TDFE);
 var
   LogDB: SystemString;
   arry: TDFArrayInteger;
-  db_: TC40_ZDB2_List_HashString;
-  L: TCore_ListForObj;
+  db_: TC40_Log_DB_ZDB2_HashString;
   i: Integer;
 begin
   LogDB := InData.R.ReadString;
@@ -385,19 +405,14 @@ begin
   if db_ = nil then
       exit;
 
-  L := TCore_ListForObj.Create;
-  for i := 0 to arry.Count - 1 do
-    if (arry[i] >= 0) and (arry[i] < db_.Count) then
-        L.Add(db_[arry[i]]);
-
-  i := 0;
-  while i < db_.Count do
-    if L.IndexOf(db_[i]) >= 0 then
-        db_.Delete(i, true)
-    else
-        inc(i);
-
-  disposeObject(L);
+  if db_.Count > 0 then
+    with db_.Repeat_ do
+      repeat
+        for i := 0 to arry.Count - 1 do
+          if arry[i] = I__ then
+              db_.Push_To_Recycle_Pool(Queue^.Data, True);
+      until not Next;
+  db_.Free_Recycle_Pool;
 end;
 
 procedure TC40_Log_DB_Service.cmd_GetLogDB(sender: TPeerIO; InData, OutData: TDFE);
@@ -407,7 +422,7 @@ var
 begin
   fArry := umlGetFileListWithFullPath(C40_DB_Directory);
   for fn in fArry do
-    if umlMultipleMatch(true, '*.Log_ZDB2', fn) then
+    if umlMultipleMatch(True, '*.Log_ZDB2', fn) then
         OutData.WriteString(umlChangeFileExt(umlGetFileName(fn), ''));
   SetLength(fArry, 0);
 end;
@@ -447,12 +462,12 @@ begin
 
 end;
 
-procedure TC40_Log_DB_Service.Do_DB_Pool_SafeCheck(const Name_: PSystemString; Obj_: TC40_ZDB2_List_HashString);
+procedure TC40_Log_DB_Service.Do_DB_Pool_SafeCheck(const Name_: PSystemString; Obj_: TC40_Log_DB_ZDB2_HashString);
 begin
   Obj_.Flush;
 end;
 
-procedure TC40_Log_DB_Service.Do_DB_Pool_Progress(const Name_: PSystemString; Obj_: TC40_ZDB2_List_HashString);
+procedure TC40_Log_DB_Service.Do_DB_Pool_Progress(const Name_: PSystemString; Obj_: TC40_Log_DB_ZDB2_HashString);
 begin
   Obj_.Progress;
   if GetTimeTick - Obj_.LastActivtTime > LogDBRecycleMemoryTimeOut then
@@ -465,7 +480,7 @@ begin
   // custom
   DTNoAuth.RecvTunnel.PeerClientUserDefineClass := TC40_Log_DB_Service_RecvTunnel_NoAuth;
 
-  DTNoAuthService.RecvTunnel.SendDataCompressed := true;
+  DTNoAuthService.RecvTunnel.SendDataCompressed := True;
   DTNoAuthService.RecvTunnel.RegisterDirectStream('PostLog').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_PostLog;
   DTNoAuthService.RecvTunnel.RegisterStream('QueryLog').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_QueryLog;
   DTNoAuthService.RecvTunnel.RegisterDirectStream('QueryAndRemoveLog').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_QueryAndRemoveLog;
@@ -474,17 +489,17 @@ begin
   DTNoAuthService.RecvTunnel.RegisterDirectStream('CloseDB').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_CloseDB;
   DTNoAuthService.RecvTunnel.RegisterDirectStream('RemoveDB').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_RemoveDB;
   DTNoAuthService.RecvTunnel.RegisterDirectStream('Enabled_LogMonitor').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_Enabled_LogMonitor;
-  Service.QuietMode := true;
+  Service.QuietMode := True;
   // is only instance
-  ServiceInfo.OnlyInstance := true;
+  ServiceInfo.OnlyInstance := True;
   UpdateToGlobalDispatch;
   ParamList.SetDefaultValue('OnlyInstance', if_(ServiceInfo.OnlyInstance, 'True', 'False'));
 
   WaitFreeList := TLog_DB_List.Create;
-  C40_DB_Directory := umlCombinePath(DTNoAuthService.PublicFileDirectory, PFormat('DTC40_%s', [ServiceInfo.ServiceTyp.Text]));
+  C40_DB_Directory := umlCombinePath(DTNoAuthService.PublicFileDirectory, Get_DB_FileName_Config(PFormat('DTC40_%s', [ServiceInfo.ServiceTyp.Text])));
   umlCreateDirectory(C40_DB_Directory);
 
-  DB_Pool := TLog_DB_Pool.Create(true,
+  DB_Pool := TLog_DB_Pool.Create(True,
     EStrToInt64(ParamList.GetDefaultValue('Log_DB_HashPool', '1024*1024'), 1024 * 1024),
     nil);
 
@@ -492,11 +507,11 @@ begin
   ZDB2RecycleMemoryTimeOut := EStrToInt64(ParamList.GetDefaultValue('RecycleMemory', '5*1000'), 5 * 1000);
   ZDB2DeltaSpace := EStrToInt64(ParamList.GetDefaultValue('DeltaSpace', '1*1024*1024'), 1 * 1024 * 1024);
   ZDB2BlockSize := EStrToInt(ParamList.GetDefaultValue('BlockSize', '100'), 100);
-  ZDB2EnabledCipher := EStrToBool(ParamList.GetDefaultValue('EnabledCipher', 'True'), true);
-  ZDB2CipherName := ParamList.GetDefaultValue('Cipher', TCipher.CCipherSecurityName[TCipherSecurity.csRijndael]);
+  ZDB2EnabledCipher := EStrToBool(ParamList.GetDefaultValue('EnabledCipher', 'False'), False);
+  ZDB2CipherName := ParamList.GetDefaultValue('Cipher', TCipher.CCipherSecurityName[TCipherSecurity.csNone]);
   ZDB2Password := ParamList.GetDefaultValue('Password', Z.Net.C4.C40_Password);
   if ZDB2EnabledCipher then
-      ZDB2Cipher := TZDB2_Cipher.Create(ZDB2CipherName, ZDB2Password, 1, true, true)
+      ZDB2Cipher := TZDB2_Cipher.Create(ZDB2CipherName, ZDB2Password, 1, True, True)
   else
       ZDB2Cipher := nil;
 end;
@@ -516,29 +531,24 @@ begin
 end;
 
 procedure TC40_Log_DB_Service.Progress;
-var
-  i: Integer;
-  tk: TTimeTick;
 begin
-  inherited Progress;
-
-  WaitFreeList.Clear;
   DB_Pool.ProgressM({$IFDEF FPC}@{$ENDIF FPC}Do_DB_Pool_Progress);
-  if WaitFreeList.Count > 0 then
+
+  while WaitFreeList.Count > 0 do
     begin
-      tk := GetTimeTick;
-      for i := 0 to WaitFreeList.Count - 1 do
-        begin
-          DoStatus('recycle Memory, Log Database: %s', [WaitFreeList[i].Name.Text]);
-          DB_Pool.Delete(WaitFreeList[i].Name);
-          if GetTimeTick - tk > 100 then
-              break;
-        end;
-      WaitFreeList.Clear;
+      try
+        if not C40_QuietMode then
+            DoStatus('recycle Memory, Log Database: %s', [WaitFreeList.First^.Data.Name.Text]);
+        DB_Pool.Delete(WaitFreeList.First^.Data.Name);
+      except
+      end;
+      WaitFreeList.Next;
     end;
+
+  inherited Progress;
 end;
 
-function TC40_Log_DB_Service.GetDB(const LogDB: SystemString): TC40_ZDB2_List_HashString;
+function TC40_Log_DB_Service.GetDB(const LogDB: SystemString): TC40_Log_DB_ZDB2_HashString;
 var
   fn: U_String;
   fs: TCore_FileStream;
@@ -551,11 +561,11 @@ begin
     begin
       fn := umlCombineFileName(C40_DB_Directory, LogDB_.Text + '.Log_ZDB2');
       try
-        if EStrToBool(ParamList.GetDefaultValue('ForeverSave', 'True'), true) and umlFileExists(fn) then
+        if EStrToBool(ParamList.GetDefaultValue('ForeverSave', 'True'), True) and umlFileExists(fn) then
             fs := TCore_FileStream.Create(fn, fmOpenReadWrite)
         else
             fs := TCore_FileStream.Create(fn, fmCreate);
-        Result := TC40_ZDB2_List_HashString.Create(
+        Result := TC40_Log_DB_ZDB2_HashString.Create(
           TZDB2_HashString,
 {$IFDEF FPC}@{$ENDIF FPC}Do_Create_ZDB2_HashString,
           ZDB2RecycleMemoryTimeOut,
@@ -565,7 +575,7 @@ begin
           ZDB2BlockSize,
           ZDB2Cipher);
         Result.CoreSpace.MaxCacheMemory := 1024 * 1024;
-        Result.AutoFreeStream := true;
+        Result.AutoFreeStream := True;
         Result.Name := LogDB_;
         Result.LastActivtTime := GetTimeTick;
         Result.LastPostTime := umlNow;
@@ -581,7 +591,7 @@ end;
 
 procedure TC40_Log_DB_Service.PostLog(const LogDB, Log1_, Log2_: SystemString);
 var
-  db_: TC40_ZDB2_List_HashString;
+  db_: TC40_Log_DB_ZDB2_HashString;
   hs_: TZDB2_HashString;
   t_: TDateTime;
 begin
@@ -786,7 +796,7 @@ end;
 constructor TC40_Log_DB_Client.Create(PhysicsTunnel_: TC40_PhysicsTunnel; source_: TC40_Info; Param_: U_String);
 begin
   inherited Create(PhysicsTunnel_, source_, Param_);
-  Client.QuietMode := true;
+  Client.QuietMode := True;
   DTNoAuthClient.RecvTunnel.RegisterDirectStream('Log').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_Log;
   ON_C40_Log_DB_Client_Interface := nil;
 end;
@@ -807,15 +817,30 @@ begin
   d.WriteString(Log2_);
   DTNoAuthClient.SendTunnel.SendDirectStreamCmd('PostLog', d);
   disposeObject(d);
-  if Log2_ <> '' then
-      DoStatus('Log1:%s Log2:%s -> %s', [Log1_, Log2_, LogDB])
-  else
-      DoStatus('Log:%s -> %s', [Log1_, LogDB]);
+  if not C40_QuietMode then
+    if Log2_ <> '' then
+        DoStatus('Log1:%s Log2:%s -> %s', [Log1_, Log2_, LogDB])
+    else
+        DoStatus('Log:%s -> %s', [Log1_, LogDB]);
 end;
 
 procedure TC40_Log_DB_Client.PostLog(LogDB, Log_: SystemString);
 begin
   PostLog(LogDB, Log_, '');
+end;
+
+procedure TC40_Log_DB_Client.QueryLog_Bridge(LogDB: SystemString; bTime, eTime: TDateTime; filter1, filter2: U_String; Bridge_IO_: TPeerIO);
+var
+  d: TDFE;
+begin
+  d := TDFE.Create;
+  d.WriteString(LogDB);
+  d.WriteDouble(bTime);
+  d.WriteDouble(eTime);
+  d.WriteString(filter1);
+  d.WriteString(filter2);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('QueryLog', d, {$IFDEF FPC}@{$ENDIF FPC}TStreamEventBridge.Create(Bridge_IO_).DoStreamEvent);
+  disposeObject(d);
 end;
 
 procedure TC40_Log_DB_Client.QueryLogC(LogDB: SystemString; bTime, eTime: TDateTime; filter1, filter2: U_String; OnResult: TON_QueryLogC);
@@ -878,6 +903,11 @@ begin
   disposeObject(d);
 end;
 
+procedure TC40_Log_DB_Client.QueryLog_Bridge(LogDB: SystemString; bTime, eTime: TDateTime; Bridge_IO_: TPeerIO);
+begin
+  QueryLog_Bridge(LogDB, bTime, eTime, '', '', Bridge_IO_);
+end;
+
 procedure TC40_Log_DB_Client.QueryLogC(LogDB: SystemString; bTime, eTime: TDateTime; OnResult: TON_QueryLogC);
 begin
   QueryLogC(LogDB, bTime, eTime, '', '', OnResult);
@@ -920,6 +950,15 @@ begin
   d.WriteString(LogDB);
   d.WriteArrayInteger.WriteArray(arry_index);
   DTNoAuthClient.SendTunnel.SendDirectStreamCmd('RemoveLog', d);
+  disposeObject(d);
+end;
+
+procedure TC40_Log_DB_Client.GetLogDB_Bridge(Bridge_IO_: TPeerIO);
+var
+  d: TDFE;
+begin
+  d := TDFE.Create;
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetLogDB', d, {$IFDEF FPC}@{$ENDIF FPC}TStreamEventBridge.Create(Bridge_IO_).DoStreamEvent);
   disposeObject(d);
 end;
 

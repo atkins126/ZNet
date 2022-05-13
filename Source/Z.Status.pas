@@ -1,5 +1,5 @@
 { ****************************************************************************** }
-{ * Status IO                                                                  * }
+{ * Status Output                                                              * }
 { ****************************************************************************** }
 unit Z.Status;
 
@@ -19,8 +19,6 @@ uses
   SysUtils, Classes, SyncObjs,
 {$IFDEF FPC}
   Z.FPC.GenericList, fgl,
-{$ELSE FPC}
-  System.Generics.Collections,
 {$ENDIF FPC}
   Z.PascalStrings, Z.UPascalStrings, Z.UnicodeMixedLib, Z.Core;
 
@@ -52,7 +50,6 @@ procedure DoStatus(const v: Single); overload;
 procedure DoStatus(const v: Double); overload;
 procedure DoStatus(const v: Pointer); overload;
 procedure DoStatus(const v: SystemString; const Args: array of const); overload;
-procedure DoError(v: SystemString; const Args: array of const); overload;
 procedure DoStatus(const v: SystemString); overload;
 procedure DoStatus(const v: TPascalString); overload;
 procedure DoStatus(const v: TUPascalString); overload;
@@ -63,10 +60,6 @@ procedure DoStatus; overload;
 procedure DoStatusNoLn(const v: TPascalString); overload;
 procedure DoStatusNoLn(const v: SystemString; const Args: array of const); overload;
 procedure DoStatusNoLn; overload;
-
-function StrInfo(S: TPascalString): string; overload;
-function StrInfo(S: TUPascalString): string; overload;
-function BytesInfo(S: TBytes): string; overload;
 
 var
   LastDoStatus: SystemString;
@@ -196,11 +189,6 @@ begin
   DoStatus(Format(v, Args));
 end;
 
-procedure DoError(v: SystemString; const Args: array of const);
-begin
-  DoStatus(Format(v, Args), 2);
-end;
-
 procedure DoStatus(const v: SystemString);
 begin
   DoStatus(v, 0);
@@ -306,42 +294,23 @@ function GetOrCreateStatusNoLnData_(Th_: TCore_Thread): PNo_Ln_Text;
 var
   R_: PNo_Ln_Text;
   Tick: TTimeTick;
-{$IFDEF FPC}
-  procedure do_fpc_progress_(Index_: NativeInt; p: TNo_Ln_Text_Pool__.PQueueStruct; var Aborted: Boolean);
-  begin
-    if p^.Data^.Th = Th_ then
-      begin
-        R_ := p^.Data;
-        R_^.TriggerTime := Tick;
-      end
-    else if Tick - p^.Data^.TriggerTime > C_Tick_Minute then
-      begin
-        No_Ln_Text_Pool__.Push_To_Recycle_Pool(p);
-      end;
-  end;
-{$ENDIF FPC}
-
-
 begin
   R_ := nil;
   Tick := GetTimeTick();
 
-{$IFDEF FPC}
-  No_Ln_Text_Pool__.Progress_P(@do_fpc_progress_);
-{$ELSE FPC}
-  No_Ln_Text_Pool__.Progress_P(procedure(Index_: NativeInt; p: TNo_Ln_Text_Pool__.PQueueStruct; var Aborted: Boolean)
-    begin
-      if p^.Data^.Th = Th_ then
-        begin
-          R_ := p^.Data;
-          R_^.TriggerTime := Tick;
-        end
-      else if Tick - p^.Data^.TriggerTime > C_Tick_Minute then
-        begin
-          No_Ln_Text_Pool__.Push_To_Recycle_Pool(p);
-        end;
-    end);
-{$ENDIF FPC}
+  if No_Ln_Text_Pool__.Num > 0 then
+    with No_Ln_Text_Pool__.Repeat_ do
+      repeat
+        if Queue^.Data^.Th = Th_ then
+          begin
+            R_ := Queue^.Data;
+            R_^.TriggerTime := Tick;
+          end
+        else if Tick - Queue^.Data^.TriggerTime > C_Tick_Minute then
+          begin
+            No_Ln_Text_Pool__.Push_To_Recycle_Pool(Queue);
+          end;
+      until not Next;
   No_Ln_Text_Pool__.Free_Recycle_Pool;
 
   if R_ = nil then
@@ -419,38 +388,7 @@ begin
       DoStatus(S);
 end;
 
-function StrInfo(S: TPascalString): string;
-begin
-  Result := BytesInfo(S.Bytes);
-end;
-
-function StrInfo(S: TUPascalString): string;
-begin
-  Result := BytesInfo(S.Bytes);
-end;
-
-function BytesInfo(S: TBytes): string;
-begin
-  Result := umlStringOf(S);
-end;
-
 procedure _InternalOutput(const Text_: U_String; const ID: Integer);
-{$IFDEF FPC}
-  procedure do_fpc_progress_(Index_: NativeInt; p: TEvent_Pool__.PQueueStruct; var Aborted: Boolean);
-  begin
-    try
-      if Assigned(p^.Data^.OnStatusM) then
-          p^.Data^.OnStatusM(Text_, ID);
-      if Assigned(p^.Data^.OnStatusC) then
-          p^.Data^.OnStatusC(Text_, ID);
-      if Assigned(p^.Data^.OnStatusP) then
-          p^.Data^.OnStatusP(Text_, ID);
-    except
-    end;
-  end;
-{$ENDIF FPC}
-
-
 var
   tmp: U_String;
 begin
@@ -465,26 +403,22 @@ begin
   if (Status_Active__) and (Event_Pool__.Num > 0) then
     begin
       LastDoStatus := Text_;
-{$IFDEF FPC}
-      Event_Pool__.Progress_P(@do_fpc_progress_);
-{$ELSE FPC}
-      Event_Pool__.Progress_P(procedure(Index_: NativeInt; p: TEvent_Pool__.PQueueStruct; var Aborted: Boolean)
-        begin
+      with Event_Pool__.Repeat_ do
+        repeat
           try
-            if Assigned(p^.Data^.OnStatusM) then
-                p^.Data^.OnStatusM(Text_, ID);
-            if Assigned(p^.Data^.OnStatusC) then
-                p^.Data^.OnStatusC(Text_, ID);
-            if Assigned(p^.Data^.OnStatusP) then
-                p^.Data^.OnStatusP(Text_, ID);
+            if Assigned(Queue^.Data^.OnStatusM) then
+                Queue^.Data^.OnStatusM(Text_, ID);
+            if Assigned(Queue^.Data^.OnStatusC) then
+                Queue^.Data^.OnStatusC(Text_, ID);
+            if Assigned(Queue^.Data^.OnStatusP) then
+                Queue^.Data^.OnStatusP(Text_, ID);
           except
           end;
-        end);
-{$ENDIF FPC}
+        until not Next;
     end;
 
 {$IFDEF DELPHI}
-  if (Status_Active__) and ((IDEOutput) or (ID = 2)) and (DebugHook <> 0) then
+  if Status_Active__ and IDEOutput and (DebugHook <> 0) then
     begin
 {$IF Defined(WIN32) or Defined(WIN64)}
       OutputDebugString(PWideChar('"' + Text_.Text + '"'));
@@ -493,8 +427,14 @@ begin
 {$ENDIF}
     end;
 {$ENDIF DELPHI}
-  if (Status_Active__) and ((ConsoleOutput) or (ID = 2)) and (IsConsole) then
+  if Status_Active__ and ConsoleOutput and IsConsole then
+    begin
+{$IFDEF FPC}
+      Writeln(UTF8Decode(Text_.Text));
+{$ELSE FPC}
       Writeln(Text_.Text);
+{$ENDIF FPC}
+    end;
 end;
 
 procedure CheckDoStatus(Th: TCore_Thread);
@@ -588,26 +528,14 @@ begin
 end;
 
 procedure DeleteDoStatusHook(TokenObj: TCore_Object);
-{$IFDEF FPC}
-  procedure do_fpc_progress_(Index_: NativeInt; p: TEvent_Pool__.PQueueStruct; var Aborted: Boolean);
-  begin
-    if p^.Data^.TokenObj = TokenObj then
-        Event_Pool__.Push_To_Recycle_Pool(p);
-  end;
-{$ENDIF FPC}
-
-
 begin
   Event_Pool__.Free_Recycle_Pool;
-{$IFDEF FPC}
-  Event_Pool__.Progress_P(@do_fpc_progress_);
-{$ELSE FPC}
-  Event_Pool__.Progress_P(procedure(Index_: NativeInt; p: TEvent_Pool__.PQueueStruct; var Aborted: Boolean)
-    begin
-      if p^.Data^.TokenObj = TokenObj then
-          Event_Pool__.Push_To_Recycle_Pool(p);
-    end);
-{$ENDIF FPC}
+  if Event_Pool__.Num > 0 then
+    with Event_Pool__.Repeat_ do
+      repeat
+        if Queue^.Data^.TokenObj = TokenObj then
+            Event_Pool__.Push_To_Recycle_Pool(Queue);
+      until not Next;
   Event_Pool__.Free_Recycle_Pool;
 end;
 
@@ -642,7 +570,7 @@ begin
 
   Status_Active__ := True;
   LastDoStatus := '';
-  IDEOutput := {$IFDEF FPC}False{$ELSE FPC}DebugHook > 0{$ENDIF FPC};
+  IDEOutput := False;
   ConsoleOutput := True;
   OnDoStatusHook := {$IFDEF FPC}@{$ENDIF FPC}InternalDoStatus;
   StatusThreadID := True;

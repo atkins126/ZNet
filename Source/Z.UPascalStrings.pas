@@ -28,8 +28,6 @@ type
   PUSystemChar = ^USystemChar;
   TUOrdChar = (uc0to9, uc1to9, uc0to32, uc0to32no10, ucLoAtoF, ucHiAtoF, ucLoAtoZ, ucHiAtoZ, ucHex, ucAtoF, ucAtoZ, ucVisibled);
   TUOrdChars = set of TUOrdChar;
-  TUHash = Cardinal;
-  TUHash64 = UInt64;
 
   TUPascalString = record
   private
@@ -110,8 +108,8 @@ type
     function GetCharCount(c: USystemChar): Integer;
     function IsVisibledASCII: Boolean;
 
-    function hash: TUHash;
-    function Hash64: TUHash64;
+    function hash: THash;
+    function Hash64: THash64;
 
     property Last: USystemChar read GetLast write SetLast;
     property First: USystemChar read GetFirst write SetFirst;
@@ -184,15 +182,12 @@ function UCharIn(c: USystemChar; const SomeCharsets: TUOrdChars; const p: PUPasc
 function TextIs(t: TUPascalString; const SomeCharsets: TUOrdChars): Boolean; overload;
 function TextIs(t: TUPascalString; const SomeCharsets: TUOrdChars; const SomeChars: TUPascalString): Boolean; overload;
 
-function UFastHashPSystemString(const s: PUSystemString): TUHash; overload;
-function UFastHash64PSystemString(const s: PUSystemString): TUHash64; overload;
-
-function UFastHashSystemString(const s: USystemString): TUHash; overload;
-function UFastHash64SystemString(const s: USystemString): TUHash64; overload;
-
-function UFastHashPPascalString(const s: PUPascalString): TUHash;
-function UFastHash64PPascalString(const s: PUPascalString): TUHash64;
-
+function UFastHashPSystemString(const s: PUSystemString): THash; overload;
+function UFastHash64PSystemString(const s: PUSystemString): THash64; overload;
+function UFastHashSystemString(const s: USystemString): THash; overload;
+function UFastHash64SystemString(const s: USystemString): THash64; overload;
+function UFastHashPPascalString(const s: PUPascalString): THash;
+function UFastHash64PPascalString(const s: PUPascalString): THash64;
 function UFormat(const Fmt: USystemString; const Args: array of const): USystemString;
 
 {$IFDEF FPC}
@@ -262,17 +257,17 @@ const
 var
 {$IFDEF CPU64}
   UMaxSmithWatermanMatrix: NativeInt = 10000 * 10;
-{$ELSE}
+{$ELSE CPU64}
   UMaxSmithWatermanMatrix: NativeInt = 8192;
-{$ENDIF}
+{$ENDIF CPU64}
 
 
 const
 {$IFDEF FirstCharInZero}
   UFirstCharPos = 0;
-{$ELSE}
+{$ELSE FirstCharInZero}
   UFirstCharPos = 1;
-{$ENDIF}
+{$ENDIF FirstCharInZero}
 
 implementation
 
@@ -447,7 +442,7 @@ begin
   Result := True;
 end;
 
-function UFastHashPSystemString(const s: PUSystemString): TUHash;
+function UFastHashPSystemString(const s: PUSystemString): THash;
 var
   i: Integer;
   c: USystemChar;
@@ -456,18 +451,18 @@ begin
 
 {$IFDEF FirstCharInZero}
   for i := 0 to length(s^) - 1 do
-{$ELSE}
+{$ELSE FirstCharInZero}
   for i := 1 to length(s^) do
-{$ENDIF}
+{$ENDIF FirstCharInZero}
     begin
       c := s^[i];
       if UCharIn(c, ucHiAtoZ) then
           inc(c, 32);
-      Result := ((Result shl 7) or (Result shr 25)) + TUHash(c);
+      Result := ((Result shl 7) or (Result shr 25)) + THash(c);
     end;
 end;
 
-function UFastHash64PSystemString(const s: PUSystemString): TUHash64;
+function UFastHash64PSystemString(const s: PUSystemString): THash64;
 var
   i: Integer;
   c: USystemChar;
@@ -476,28 +471,28 @@ begin
 
 {$IFDEF FirstCharInZero}
   for i := 0 to length(s^) - 1 do
-{$ELSE}
+{$ELSE FirstCharInZero}
   for i := 1 to length(s^) do
-{$ENDIF}
+{$ENDIF FirstCharInZero}
     begin
       c := s^[i];
       if UCharIn(c, ucHiAtoZ) then
           inc(c, 32);
-      Result := ((Result shl 7) or (Result shr 57)) + TUHash64(c);
+      Result := ((Result shl 7) or (Result shr 57)) + THash64(c);
     end;
 end;
 
-function UFastHashSystemString(const s: USystemString): TUHash;
+function UFastHashSystemString(const s: USystemString): THash;
 begin
   Result := UFastHashPSystemString(@s);
 end;
 
-function UFastHash64SystemString(const s: USystemString): TUHash64;
+function UFastHash64SystemString(const s: USystemString): THash64;
 begin
   Result := UFastHash64PSystemString(@s);
 end;
 
-function UFastHashPPascalString(const s: PUPascalString): TUHash;
+function UFastHashPPascalString(const s: PUPascalString): THash;
 var
   i: Integer;
   c: USystemChar;
@@ -508,11 +503,11 @@ begin
       c := s^[i];
       if UCharIn(c, ucHiAtoZ) then
           inc(c, 32);
-      Result := ((Result shl 7) or (Result shr 25)) + TUHash(c);
+      Result := ((Result shl 7) or (Result shr 25)) + THash(c);
     end;
 end;
 
-function UFastHash64PPascalString(const s: PUPascalString): TUHash64;
+function UFastHash64PPascalString(const s: PUPascalString): THash64;
 var
   i: Integer;
   c: USystemChar;
@@ -523,7 +518,7 @@ begin
       c := s^[i];
       if UCharIn(c, ucHiAtoZ) then
           inc(c, 32);
-      Result := ((Result shl 7) or (Result shr 57)) + TUHash64(c);
+      Result := ((Result shl 7) or (Result shr 57)) + THash64(c);
     end;
 end;
 
@@ -1916,12 +1911,12 @@ begin
   Result := GetPos(@s, 1) > 0;
 end;
 
-function TUPascalString.hash: TUHash;
+function TUPascalString.hash: THash;
 begin
   Result := UFastHashPPascalString(@Self);
 end;
 
-function TUPascalString.Hash64: TUHash64;
+function TUPascalString.Hash64: THash64;
 begin
   Result := UFastHash64PPascalString(@Self);
 end;

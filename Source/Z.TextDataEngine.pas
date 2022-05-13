@@ -118,6 +118,9 @@ type
 
   THashTextEngineList_Decl = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<THashTextEngine>;
 
+  THashTextEngineList = class(THashTextEngineList_Decl)
+  end;
+
 implementation
 
 function THashTextEngine.GetNames(N_: SystemString): TCore_Strings;
@@ -409,11 +412,27 @@ begin
 end;
 
 procedure THashTextEngine.DeleteKey(Section_, Key_: SystemString);
+var
+  found_: Boolean;
 begin
+  found_ := False;
   if FSectionHashVariantList.Exists(Section_) then
+    begin
+      found_ := THashVariantList(FSectionHashVariantList[Section_]).Exists(Key_);
       THashVariantList(FSectionHashVariantList[Section_]).Delete(Key_);
+    end;
   if FSectionHashStringList.Exists(Section_) then
+    begin
+      found_ := THashStringList(FSectionHashStringList[Section_]).Exists(Key_);
       THashStringList(FSectionHashStringList[Section_]).Delete(Key_);
+    end;
+  if not found_ then
+    begin
+      Rebuild;
+      HStringList[Section_].Delete(Key_);
+      Rebuild;
+    end;
+
   FIsChanged := True;
 end;
 
@@ -429,6 +448,11 @@ begin
       Result := THashVariantList(FSectionHashVariantList[Section_]).Exists(Key_) or Result;
   if FSectionHashStringList.Exists(Section_) then
       Result := THashStringList(FSectionHashStringList[Section_]).Exists(Key_) or Result;
+  if (not Result) and FSectionList.Exists(Section_) then
+    begin
+      Result := GetHStringList(Section_).Exists(Key_);
+      FSectionHashStringList.Delete(Section_);
+    end;
 end;
 
 function THashTextEngine.GetDefaultValue(const SectionName, KeyName: SystemString; const DefaultValue: Variant): Variant;

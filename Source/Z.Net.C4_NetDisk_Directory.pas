@@ -60,7 +60,7 @@ type
     procedure ReadInfo;
   end;
 
-  TDirectory_Service_MD5_DataPool = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericHashList<TDirectory_Service_MD5_Data_Frag>;
+  TDirectory_Service_MD5_DataPool = {$IFDEF FPC}specialize {$ENDIF FPC} TGeneric_String_Object_Hash<TDirectory_Service_MD5_Data_Frag>;
 
   TDirectory_Service_User_File_DB = class
   public
@@ -77,7 +77,7 @@ type
     procedure ComputeFragSpace;
   end;
 
-  TDirectory_Service_User_File_DB_Pool = {$IFDEF FPC}specialize {$ENDIF FPC}TGenericHashList<TDirectory_Service_User_File_DB>;
+  TDirectory_Service_User_File_DB_Pool = {$IFDEF FPC}specialize {$ENDIF FPC}TGeneric_String_Object_Hash<TDirectory_Service_User_File_DB>;
 
   TTemp_Compute_SpaceInfo = class
   public
@@ -110,7 +110,8 @@ type
     procedure Add_Item_Data(DB_Name, DB_Field, DB_Item: SystemString; Item_Size: Int64; Item_Time: TDateTime);
   end;
 
-  TOpti_Directory_File_Hash = {$IFDEF FPC}specialize {$ENDIF FPC}TGenericHashList<TOpti_Directory_File_Hash_Item_Data_List>;
+  TOpti_Directory_File_Hash = {$IFDEF FPC}specialize {$ENDIF FPC}TGeneric_String_Object_Hash<TOpti_Directory_File_Hash_Item_Data_List>;
+  TDirectory_Service_Num_Hash = {$IFDEF FPC}specialize {$ENDIF FPC}TString_Big_Hash_Pair_Pool<Integer>;
 
 {$ENDREGION 'service struct define'}
 
@@ -130,17 +131,18 @@ type
     procedure cmd_NewField(Sender: TPeerIO; InData: TDFE);
     procedure cmd_SpaceInfo(Sender: TPeerIO; InData, OutData: TDFE);
     procedure cmd_SearchItem(Sender: TPeerIO; InData, OutData: TDFE);
+    procedure cmd_SearchField(Sender: TPeerIO; InData, OutData: TDFE);
     procedure cmd_CopyItem(Sender: TPeerIO; InData: TDFE);
     procedure cmd_CopyField(Sender: TPeerIO; InData: TDFE);
+    procedure cmd_RenameField(Sender: TPeerIO; InData: TDFE);
+    procedure cmd_RenameItem(Sender: TPeerIO; InData: TDFE);
     procedure cmd_SearchInvalidFrag(Sender: TPeerIO; InData, OutData: TDFE);
     procedure cmd_SearchSameItem(Sender: TPeerIO; InData, OutData: TDFE);
   protected
     // optimize
     Opti_RunNum: Int64;
-    Opti_IsBusy: Boolean;
     Opti_Directory_File_Hash: TOpti_Directory_File_Hash;
-    Opti_Directory_Frag_Hash: THashVariantList;
-    Opti_Directory_Progress_Index: Integer;
+    Opti_Directory_Frag_Hash: TDirectory_Service_Num_Hash;
     procedure Init_Opti;
     procedure Free_Opti;
     procedure Opti_Remove_invalid_MD5_and_Rebuild_Frag_Hash;
@@ -223,12 +225,12 @@ type
 
   TItemList_Data_Array = array of TItemList_Data;
 
-  TON_GetItemList_C = procedure(Sender: TC40_NetDisk_Directory_Client; arry: TItemList_Data_Array);
-  TON_GetItemList_M = procedure(Sender: TC40_NetDisk_Directory_Client; arry: TItemList_Data_Array) of object;
+  TON_GetItemList_C = procedure(Sender: TC40_NetDisk_Directory_Client; Successed: Boolean; Field_Path: U_String; arry: TItemList_Data_Array);
+  TON_GetItemList_M = procedure(Sender: TC40_NetDisk_Directory_Client; Successed: Boolean; Field_Path: U_String; arry: TItemList_Data_Array) of object;
 {$IFDEF FPC}
-  TON_GetItemList_P = procedure(Sender: TC40_NetDisk_Directory_Client; arry: TItemList_Data_Array) is nested;
+  TON_GetItemList_P = procedure(Sender: TC40_NetDisk_Directory_Client; Successed: Boolean; Field_Path: U_String; arry: TItemList_Data_Array) is nested;
 {$ELSE FPC}
-  TON_GetItemList_P = reference to procedure(Sender: TC40_NetDisk_Directory_Client; arry: TItemList_Data_Array);
+  TON_GetItemList_P = reference to procedure(Sender: TC40_NetDisk_Directory_Client; Successed: Boolean; Field_Path: U_String; arry: TItemList_Data_Array);
 {$ENDIF FPC}
 
   TON_Temp_GetItemList = class(TOnResultBridge)
@@ -332,18 +334,19 @@ type
   end;
 
   TON_SearchItem_Data = record
-    DB_Field, DB_Item: SystemString;
+    Current_Field, FieldOrItem: SystemString;
+    Num: Int64;
     ModificationTime: TDateTime;
   end;
 
-  TON_SearchItem_Data_array = array of TON_SearchItem_Data;
+  TSearchItem_Data_array = array of TON_SearchItem_Data;
 
-  TON_SearchItem_C = procedure(Sender: TC40_NetDisk_Directory_Client; SearchResult: TON_SearchItem_Data_array);
-  TON_SearchItem_M = procedure(Sender: TC40_NetDisk_Directory_Client; SearchResult: TON_SearchItem_Data_array) of object;
+  TON_SearchItem_C = procedure(Sender: TC40_NetDisk_Directory_Client; SearchResult: TSearchItem_Data_array);
+  TON_SearchItem_M = procedure(Sender: TC40_NetDisk_Directory_Client; SearchResult: TSearchItem_Data_array) of object;
 {$IFDEF FPC}
-  TON_SearchItem_P = procedure(Sender: TC40_NetDisk_Directory_Client; SearchResult: TON_SearchItem_Data_array) is nested;
+  TON_SearchItem_P = procedure(Sender: TC40_NetDisk_Directory_Client; SearchResult: TSearchItem_Data_array) is nested;
 {$ELSE FPC}
-  TON_SearchItem_P = reference to procedure(Sender: TC40_NetDisk_Directory_Client; SearchResult: TON_SearchItem_Data_array);
+  TON_SearchItem_P = reference to procedure(Sender: TC40_NetDisk_Directory_Client; SearchResult: TSearchItem_Data_array);
 {$ENDIF FPC}
 
   TON_Temp_SearchItem = class(TOnResultBridge)
@@ -356,17 +359,53 @@ type
     procedure DoStreamEvent(Sender: TPeerIO; Result_: TDFE); override;
   end;
 
+  TON_SearchField_C = procedure(Sender: TC40_NetDisk_Directory_Client; SearchResult: U_StringArray);
+  TON_SearchField_M = procedure(Sender: TC40_NetDisk_Directory_Client; SearchResult: U_StringArray) of object;
+{$IFDEF FPC}
+  TON_SearchField_P = procedure(Sender: TC40_NetDisk_Directory_Client; SearchResult: U_StringArray) is nested;
+{$ELSE FPC}
+  TON_SearchField_P = reference to procedure(Sender: TC40_NetDisk_Directory_Client; SearchResult: U_StringArray);
+{$ENDIF FPC}
+
+  TON_Temp_SearchField = class(TOnResultBridge)
+  public
+    Client: TC40_NetDisk_Directory_Client;
+    OnResultC: TON_SearchField_C;
+    OnResultM: TON_SearchField_M;
+    OnResultP: TON_SearchField_P;
+    constructor Create;
+    procedure DoStreamEvent(Sender: TPeerIO; Result_: TDFE); override;
+  end;
+
   TCopyItem_Info = record
     Sour_DB_Name, Sour_DB_Field, Sour_DB_Item, Dest_DB_Name, Dest_DB_Field: SystemString;
   end;
 
   TCopyItem_Info_Array = array of TCopyItem_Info;
 
+  TCopyItem_Info_Tool_Decl = {$IFDEF FPC}specialize {$ENDIF FPC} TBigList<TCopyItem_Info>;
+
+  TCopyItem_Info_Tool = class(TCopyItem_Info_Tool_Decl)
+  public
+    procedure DoFree(var Data: TCopyItem_Info); override;
+    procedure Add_CopyItem_Info(Sour_DB_Name, Sour_DB_Field, Sour_DB_Item, Dest_DB_Name, Dest_DB_Field: SystemString);
+    function Build_Array: TCopyItem_Info_Array;
+  end;
+
   TCopyField_Info = record
     Sour_DB_Name, Sour_DB_Field, Dest_DB_Name, Dest_DB_Field: SystemString;
   end;
 
   TCopyField_Info_Array = array of TCopyField_Info;
+
+  TCopyField_Info_Tool_Decl = {$IFDEF FPC}specialize {$ENDIF FPC} TBigList<TCopyField_Info>;
+
+  TCopyField_Info_Tool = class(TCopyField_Info_Tool_Decl)
+  public
+    procedure DoFree(var Data: TCopyField_Info); override;
+    procedure Add_CopyField_Info(Sour_DB_Name, Sour_DB_Field, Dest_DB_Name, Dest_DB_Field: SystemString);
+    function Build_Array: TCopyField_Info_Array;
+  end;
 
   TON_SearchInvalidFrag_C = procedure(Sender: TC40_NetDisk_Directory_Client; SearchResult: U_StringArray);
   TON_SearchInvalidFrag_M = procedure(Sender: TC40_NetDisk_Directory_Client; SearchResult: U_StringArray) of object;
@@ -484,13 +523,20 @@ type
     procedure SpaceInfo_C(DB_Name: U_String; OnResult: TON_SpaceInfo_C);
     procedure SpaceInfo_M(DB_Name: U_String; OnResult: TON_SpaceInfo_M);
     procedure SpaceInfo_P(DB_Name: U_String; OnResult: TON_SpaceInfo_P);
-    // search
+    // search item
     procedure SearchItem_C(DB_Name, DB_Field, DB_Search: U_String; OnResult: TON_SearchItem_C);
     procedure SearchItem_M(DB_Name, DB_Field, DB_Search: U_String; OnResult: TON_SearchItem_M);
     procedure SearchItem_P(DB_Name, DB_Field, DB_Search: U_String; OnResult: TON_SearchItem_P);
+    // search all field
+    procedure SearchField_C(DB_Name, DB_Field: U_String; OnResult: TON_SearchField_C);
+    procedure SearchField_M(DB_Name, DB_Field: U_String; OnResult: TON_SearchField_M);
+    procedure SearchField_P(DB_Name, DB_Field: U_String; OnResult: TON_SearchField_P);
     // copy
     procedure CopyItem(arry: TCopyItem_Info_Array);
     procedure CopyField(arry: TCopyField_Info_Array);
+    // rename
+    procedure RenameField(DB_Name, DB_Field, New_Field_Name: U_String);
+    procedure RenameItem(DB_Name, DB_Field, Old_Item_Name, New_Item_Name: U_String);
     // SearchInvalidFrag
     procedure SearchInvalidFrag_C(frag_arry: U_StringArray; OnResult: TON_SearchInvalidFrag_C);
     procedure SearchInvalidFrag_M(frag_arry: U_StringArray; OnResult: TON_SearchInvalidFrag_M);
@@ -500,6 +546,8 @@ type
     procedure SearchSameItem_M(DB_Name, DB_Field, DB_Item: U_String; OnResult: TON_SearchSameItem_M);
     procedure SearchSameItem_P(DB_Name, DB_Field, DB_Item: U_String; OnResult: TON_SearchSameItem_P);
   end;
+
+  TC40_NetDisk_Directory_Client_List = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<TC40_NetDisk_Directory_Client>;
 
 implementation
 
@@ -897,6 +945,7 @@ var
   DB_Name: U_String;
   DB_Field: U_String;
   fd: TDirectory_Service_User_File_DB;
+  Field_Pos: Int64;
   fr: TFieldSearch;
   ir: TItemSearch;
   itm_stream: TItemStream;
@@ -907,7 +956,20 @@ begin
   DB_Field := InData.R.ReadString;
   fd := Directory_HashPool[DB_Name];
   if fd = nil then
+    begin
+      OutData.WriteBool(False);
       exit;
+    end;
+
+  if not fd.Stream.Data.GetPathField(DB_Field, Field_Pos) then
+    begin
+      OutData.WriteBool(False);
+      exit;
+    end;
+
+  DB_Field := fd.Stream.Data.GetFieldPath(Field_Pos);
+  OutData.WriteBool(True);
+  OutData.WriteString(DB_Field);
 
   if fd.Stream.Data.FieldFindFirst(DB_Field, '*', fr) then
     begin
@@ -998,6 +1060,7 @@ var
   md5_frag: TDirectory_Service_MD5_Data_Frag;
   itmHnd: TItemHandle;
   itm_stream: TItemStream;
+  i: Integer;
 begin
   DB_Name := InData.R.ReadString;
   DB_Field := InData.R.ReadString;
@@ -1021,7 +1084,7 @@ begin
 
   fd.Stream.Data.CreateField(DB_Field, '');
   // check
-  if fd.Stream.Data.ItemCreate(DB_Field, DB_Item, '', itmHnd) then
+  if fd.Stream.Data.ItemCreate(DB_Field, DB_Item, frag_md5_name, itmHnd) then
     begin
       // frag data
       md5_frag := TDirectory_Service_MD5_Data_Frag.Create(self, MD5_Database.NewData);
@@ -1079,7 +1142,7 @@ begin
 
   fd.Stream.Data.CreateField(DB_Field, '');
   // check
-  if fd.Stream.Data.ItemCreate(DB_Field, DB_Item, '', itmHnd) then
+  if fd.Stream.Data.ItemCreate(DB_Field, DB_Item, frag_md5_name, itmHnd) then
     begin
       // write item
       itm_stream := TItemStream.Create(fd.Stream.Data, itmHnd);
@@ -1186,6 +1249,11 @@ var
   DB_Name, DB_Field, DB_Search: U_String;
   fd: TDirectory_Service_User_File_DB;
   ir: TItemRecursionSearch;
+  Field_Pos: Int64;
+  field_data: TField;
+  itm_stream: TItemStream;
+  md5_name_: U_String;
+  Size_: Int64;
 begin
   DB_Name := InData.R.ReadString;
   DB_Field := InData.R.ReadString;
@@ -1193,16 +1261,58 @@ begin
   fd := Directory_HashPool[DB_Name];
   if fd = nil then
       exit;
+  if not fd.Stream.Data.GetPathField(DB_Field, Field_Pos) then
+      exit;
 
   if fd.Stream.Data.RecursionSearchFirst(DB_Field, DB_Search, ir) then
     begin
       repeat
-        if ir.ReturnHeader.ID = DB_Header_Item_ID then
-          begin
-            OutData.WriteString(fd.Stream.Data.GetFieldPath(ir.CurrentField.RHeader.CurrentHeader));
-            OutData.WriteString(ir.ReturnHeader.Name);
-            OutData.WriteDouble(ir.ReturnHeader.ModificationTime);
-          end;
+        case ir.ReturnHeader.ID of
+          DB_Header_Field_ID:
+            begin
+              fd.Stream.Data.GetFieldData(ir.ReturnHeader.CurrentHeader, field_data);
+              OutData.WriteString(fd.Stream.Data.GetFieldPath(ir.ReturnHeader.CurrentHeader, Field_Pos));
+              OutData.WriteString('f:' + ir.ReturnHeader.Name);
+              OutData.WriteInt64(field_data.HeaderCount);
+              OutData.WriteDouble(ir.ReturnHeader.ModificationTime);
+            end;
+          DB_Header_Item_ID:
+            begin
+              itm_stream := TItemStream.Create(fd.Stream.Data, ir.ReturnHeader.CurrentHeader);
+              md5_name_ := StreamReadString(itm_stream);
+              Size_ := StreamReadInt64(itm_stream);
+              OutData.WriteString(fd.Stream.Data.GetFieldPath(ir.CurrentField.RHeader.CurrentHeader, Field_Pos));
+              OutData.WriteString('i:' + ir.ReturnHeader.Name);
+              OutData.WriteInt64(Size_);
+              OutData.WriteDouble(ir.ReturnHeader.ModificationTime);
+              DisposeObject(itm_stream);
+            end;
+        end;
+      until not fd.Stream.Data.RecursionSearchNext(ir);
+    end;
+end;
+
+procedure TC40_NetDisk_Directory_Service.cmd_SearchField(Sender: TPeerIO; InData, OutData: TDFE);
+var
+  DB_Name, DB_Field: U_String;
+  fd: TDirectory_Service_User_File_DB;
+  ir: TItemRecursionSearch;
+  Field_Pos: Int64;
+begin
+  DB_Name := InData.R.ReadString;
+  DB_Field := InData.R.ReadString;
+  fd := Directory_HashPool[DB_Name];
+  if fd = nil then
+      exit;
+  if not fd.Stream.Data.GetPathField(DB_Field, Field_Pos) then
+      exit;
+
+  if fd.Stream.Data.RecursionSearchFirst(DB_Field, '*', ir) then
+    begin
+      repeat
+        case ir.ReturnHeader.ID of
+          DB_Header_Field_ID: OutData.WriteString(fd.Stream.Data.GetFieldPath(ir.ReturnHeader.CurrentHeader, Field_Pos));
+        end;
       until not fd.Stream.Data.RecursionSearchNext(ir);
     end;
 end;
@@ -1260,6 +1370,53 @@ begin
     end;
 end;
 
+procedure TC40_NetDisk_Directory_Service.cmd_RenameField(Sender: TPeerIO; InData: TDFE);
+var
+  DB_Name: U_String;
+  DB_Field: U_String;
+  New_Field_Name: U_String;
+  fd: TDirectory_Service_User_File_DB;
+  field_data: TFieldHandle;
+begin
+  DB_Name := InData.R.ReadString;
+  DB_Field := InData.R.ReadString;
+  New_Field_Name := InData.R.ReadString;
+  fd := Directory_HashPool[DB_Name];
+  if fd = nil then
+      exit;
+  if not fd.Stream.Data.GetPathField(DB_Field, field_data) then
+      exit;
+  fd.Stream.Data.FieldRename(field_data.RHeader.CurrentHeader, New_Field_Name, field_data.Description);
+  fd.IsChanged := True;
+end;
+
+procedure TC40_NetDisk_Directory_Service.cmd_RenameItem(Sender: TPeerIO; InData: TDFE);
+var
+  DB_Name: U_String;
+  DB_Field: U_String;
+  Old_Item_Name: U_String;
+  New_Item_Name: U_String;
+  fd: TDirectory_Service_User_File_DB;
+  field_data: TFieldHandle;
+  item_hnd: TItemHandle;
+begin
+  DB_Name := InData.R.ReadString;
+  DB_Field := InData.R.ReadString;
+  Old_Item_Name := InData.R.ReadString;
+  New_Item_Name := InData.R.ReadString;
+  fd := Directory_HashPool[DB_Name];
+  if fd = nil then
+      exit;
+  if not fd.Stream.Data.GetPathField(DB_Field, field_data) then
+      exit;
+  if fd.Stream.Data.ItemOpen(DB_Field, Old_Item_Name, item_hnd) then
+    begin
+      fd.Stream.Data.ItemRename(field_data.RHeader.CurrentHeader, item_hnd, New_Item_Name, item_hnd.Description);
+      fd.Stream.Data.ItemClose(item_hnd);
+    end;
+  fd.IsChanged := True;
+end;
+
 procedure TC40_NetDisk_Directory_Service.cmd_SearchInvalidFrag(Sender: TPeerIO; InData, OutData: TDFE);
 var
   frag_: SystemString;
@@ -1268,7 +1425,7 @@ begin
     while InData.R.NotEnd do
       begin
         frag_ := InData.R.ReadString;
-        if not Opti_Directory_Frag_Hash.Exists(frag_) then
+        if not Opti_Directory_Frag_Hash.Exists_Key(frag_) then
             OutData.WriteString(frag_);
       end;
 end;
@@ -1335,10 +1492,8 @@ end;
 procedure TC40_NetDisk_Directory_Service.Init_Opti;
 begin
   Opti_RunNum := 0;
-  Opti_IsBusy := False;
   Opti_Directory_File_Hash := TOpti_Directory_File_Hash.Create(True, 1024 * 1024, nil);
-  Opti_Directory_Frag_Hash := THashVariantList.CustomCreate(1024 * 1024);
-  Opti_Directory_Progress_Index := 0;
+  Opti_Directory_Frag_Hash := TDirectory_Service_Num_Hash.Create(1024 * 1024, 0);
 end;
 
 procedure TC40_NetDisk_Directory_Service.Free_Opti;
@@ -1358,7 +1513,8 @@ var
     if Opti_Directory_File_Hash.Exists(Name_^) then
       begin
         for i := 0 to Obj_.Frag_Pool.count - 1 do
-            Opti_Directory_Frag_Hash.IncValue(Obj_.Frag_Pool[i]^.FS_File, 1);
+          with Obj_.Frag_Pool[i]^ do
+              Opti_Directory_Frag_Hash[FS_File] := Opti_Directory_Frag_Hash[FS_File] + 1;
       end
     else
         Temp_Invalid_MD5_List.Add(Name_^, Obj_);
@@ -1379,21 +1535,32 @@ var
 
     for i := 0 to Temp_Invalid_MD5_List.count - 1 do
       begin
-        d.WriteString(Temp_Invalid_MD5_List[i]);
-        Obj_ := TDirectory_Service_MD5_Data_Frag(Temp_Invalid_MD5_List.Objects[i]);
-        for j := 0 to Obj_.Frag_Pool.count - 1 do
-          if not Opti_Directory_Frag_Hash.Exists(Obj_.Frag_Pool[j]^.FS_File) then
+        try
+          Obj_ := MD5_Pool[Temp_Invalid_MD5_List[i]];
+          if Obj_ <> nil then
             begin
-              invalid_Frag.Add(Obj_.Frag_Pool[j]^.FS_File, nil);
-              DoStatus('%s recycle fragment "%s" size:%d', [ServiceInfo.ServiceTyp.Text, Obj_.Frag_Pool[j]^.FS_File.Text, Obj_.Frag_Pool[j]^.Size_]);
-            end;
-        DoStatus('%s recycle data space "%s" size:%d', [ServiceInfo.ServiceTyp.Text, Temp_Invalid_MD5_List[i].Text, Obj_.Frag_Pool.Size]);
+              d.WriteString(Temp_Invalid_MD5_List[i]);
+              for j := 0 to Obj_.Frag_Pool.count - 1 do
+                if not Opti_Directory_Frag_Hash.Exists_Key(Obj_.Frag_Pool[j]^.FS_File) then
+                  begin
+                    invalid_Frag.Add(Obj_.Frag_Pool[j]^.FS_File, nil);
+                    if not C40_QuietMode then
+                        DoStatus('%s recycle fragment "%s" size:%d', [ServiceInfo.ServiceTyp.Text, Obj_.Frag_Pool[j]^.FS_File.Text, Obj_.Frag_Pool[j]^.Size_]);
+                  end;
+              if not C40_QuietMode then
+                  DoStatus('%s recycle data space "%s" size:%d', [ServiceInfo.ServiceTyp.Text, Temp_Invalid_MD5_List[i].Text, Obj_.Frag_Pool.Size]);
 
-        Obj_.Stream.Remove;
-        Obj_.Stream := nil;
-        MD5_Pool.Delete(Temp_Invalid_MD5_List[i]);
+              MD5_Pool.Delete(Temp_Invalid_MD5_List[i]);
+            end
+          else
+            begin
+              // error
+              if not C40_QuietMode then
+                  DoStatus('no found Temp_Invalid_MD5: %s', [Temp_Invalid_MD5_List[i].Text]);
+            end;
+        except
+        end;
       end;
-    MD5_Database.Flush(False);
 
     Service.SendTunnel.BroadcastDirectStreamCmd('Remove_Directory_MD5', d);
     DisposeObject(d);
@@ -1424,7 +1591,8 @@ begin
       if Opti_Directory_File_Hash.Exists(Name_^) then
         begin
           for i := 0 to Obj_.Frag_Pool.count - 1 do
-              Opti_Directory_Frag_Hash.IncValue(Obj_.Frag_Pool[i]^.FS_File, 1);
+            with Obj_.Frag_Pool[i]^ do
+                Opti_Directory_Frag_Hash[FS_File] := Opti_Directory_Frag_Hash[FS_File] + 1;
         end
       else
           Temp_Invalid_MD5_List.Add(Name_^, Obj_);
@@ -1436,34 +1604,31 @@ begin
 end;
 
 procedure TC40_NetDisk_Directory_Service.Opti_Progress();
-var
-  tk: TTimeTick;
-  Eng_: TZDB2_ObjectDataManager;
-  Eng_Is_Activted: Boolean;
-  ir: TItemRecursionSearch;
-  itm_stream: TItemStream;
-  hash_Name: SystemString;
-  itm_size: Int64;
-  info_L: TOpti_Directory_File_Hash_Item_Data_List;
-begin
-  if not Opti_IsBusy then
-      exit;
+{$IFDEF FPC}
+  procedure do_fpc_progress(const Name_: PSystemString; Obj_: TDirectory_Service_User_File_DB);
+  var
+    Eng_Is_Activted: Boolean;
+    ir: TItemRecursionSearch;
+    itm_stream: TItemStream;
+    hash_Name: SystemString;
+    itm_size: Int64;
+    info_L: TOpti_Directory_File_Hash_Item_Data_List;
+    Loss_List: TItem_Pos_Info_List;
+    Loss_Ptr: TItem_Pos_Info_List.PQueueStruct;
+  begin
+    Eng_Is_Activted := Obj_.Stream.Data_Direct <> nil;
 
-  tk := GetTimeTick();
-  while Opti_Directory_Progress_Index < Directory_Database.count do
-    begin
-      try
-        Eng_ := Directory_Database[Opti_Directory_Progress_Index];
-        Eng_Is_Activted := Eng_.Data_Direct <> nil;
-
-        if Eng_.Data.RecursionSearchFirst('/', '*', ir) then
-          begin
-            repeat
-              if ir.ReturnHeader.ID = DB_Header_Item_ID then
-                begin
-                  try
-                    itm_stream := TItemStream.Create(Eng_.Data, ir.ReturnHeader.CurrentHeader);
-                    hash_Name := StreamReadString(itm_stream);
+    Loss_List := TItem_Pos_Info_List.Create;
+    if Obj_.Stream.Data.RecursionSearchFirst('/', '*', ir) then
+      begin
+        repeat
+          if ir.ReturnHeader.ID = DB_Header_Item_ID then
+            begin
+              try
+                itm_stream := TItemStream.Create(Obj_.Stream.Data, ir.ReturnHeader.CurrentHeader);
+                hash_Name := StreamReadString(itm_stream);
+                if MD5_Pool.Exists(hash_Name) then
+                  begin
                     itm_size := StreamReadInt64(itm_stream);
                     info_L := Opti_Directory_File_Hash[hash_Name];
                     if info_L = nil then
@@ -1472,36 +1637,134 @@ begin
                         Opti_Directory_File_Hash.FastAdd(hash_Name, info_L);
                       end;
                     info_L.Add_Item_Data(
-                      Reserved_To_String(Eng_.Data.Reserved),
-                      Eng_.Data.GetFieldPath(ir.CurrentField.RHeader.CurrentHeader),
+                      Reserved_To_String(Obj_.Stream.Data.Reserved),
+                      Obj_.Stream.Data.GetFieldPath(ir.CurrentField.RHeader.CurrentHeader),
                       itm_stream.Hnd^.Name,
                       itm_size,
                       itm_stream.Hnd^.ModificationTime);
-                    DisposeObject(itm_stream);
-                  except
+                  end
+                else
+                  begin
+                    // error
+                    if not C40_QuietMode then
+                        DoStatus('error: DB "%s" field "%s" Item "%s" Loss "%s"',
+                        [Obj_.DB_Name.Text,
+                        Obj_.Stream.Data.GetFieldPath(ir.CurrentField.RHeader.CurrentHeader),
+                        ir.ReturnHeader.Name.Text,
+                        hash_Name]);
+                    Loss_Ptr := Loss_List.Add_Null;
+                    Loss_Ptr^.Data.Field_Pos := ir.CurrentField.RHeader.CurrentHeader;
+                    Loss_Ptr^.Data.Item_Pos := ir.ReturnHeader.CurrentHeader;
                   end;
-                end;
-            until not Eng_.Data.RecursionSearchNext(ir);
-          end;
-        if not Eng_Is_Activted then
-            Eng_.RecycleMemory;
-        inc(Opti_Directory_Progress_Index);
-      except
+                DisposeObject(itm_stream);
+              except
+              end;
+            end;
+        until not Obj_.Stream.Data.RecursionSearchNext(ir);
       end;
 
-      if GetTimeTick() - tk > 10 then
-          exit;
-    end;
+    if Loss_List.Num > 0 then
+      begin
+        while Loss_List.Num > 0 do
+          begin
+            Obj_.Stream.Data.ItemDelete2(Loss_List.First^.Data.Field_Pos, Loss_List.First^.Data.Item_Pos);
+            Loss_List.Next;
+          end;
+        Obj_.Stream.Save;
+      end
+    else if not Eng_Is_Activted then
+        Obj_.Stream.RecycleMemory;
+
+    Loss_List.Free;
+  end;
+{$ENDIF FPC}
+
+
+begin
+  Opti_Directory_File_Hash.Clear;
+{$IFDEF FPC}
+  Directory_HashPool.ProgressP(@do_fpc_progress);
+{$ELSE FPC}
+  Directory_HashPool.ProgressP(procedure(const Name_: PSystemString; Obj_: TDirectory_Service_User_File_DB)
+    var
+      Eng_Is_Activted: Boolean;
+      ir: TItemRecursionSearch;
+      itm_stream: TItemStream;
+      hash_Name: SystemString;
+      itm_size: Int64;
+      info_L: TOpti_Directory_File_Hash_Item_Data_List;
+      Loss_List: TItem_Pos_Info_List;
+      Loss_Ptr: TItem_Pos_Info_List.PQueueStruct;
+    begin
+      Eng_Is_Activted := Obj_.Stream.Data_Direct <> nil;
+
+      Loss_List := TItem_Pos_Info_List.Create;
+      if Obj_.Stream.Data.RecursionSearchFirst('/', '*', ir) then
+        begin
+          repeat
+            if ir.ReturnHeader.ID = DB_Header_Item_ID then
+              begin
+                try
+                  itm_stream := TItemStream.Create(Obj_.Stream.Data, ir.ReturnHeader.CurrentHeader);
+                  hash_Name := StreamReadString(itm_stream);
+                  if MD5_Pool.Exists(hash_Name) then
+                    begin
+                      itm_size := StreamReadInt64(itm_stream);
+                      info_L := Opti_Directory_File_Hash[hash_Name];
+                      if info_L = nil then
+                        begin
+                          info_L := TOpti_Directory_File_Hash_Item_Data_List.Create;
+                          Opti_Directory_File_Hash.FastAdd(hash_Name, info_L);
+                        end;
+                      info_L.Add_Item_Data(
+                        Reserved_To_String(Obj_.Stream.Data.Reserved),
+                        Obj_.Stream.Data.GetFieldPath(ir.CurrentField.RHeader.CurrentHeader),
+                        itm_stream.Hnd^.Name,
+                        itm_size,
+                        itm_stream.Hnd^.ModificationTime);
+                    end
+                  else
+                    begin
+                      // error
+                      if not C40_QuietMode then
+                          DoStatus('error: DB "%s" field "%s" Item "%s" Loss "%s"',
+                          [Obj_.DB_Name.Text,
+                          Obj_.Stream.Data.GetFieldPath(ir.CurrentField.RHeader.CurrentHeader),
+                          ir.ReturnHeader.Name.Text,
+                          hash_Name]);
+                      Loss_Ptr := Loss_List.Add_Null;
+                      Loss_Ptr^.Data.Field_Pos := ir.CurrentField.RHeader.CurrentHeader;
+                      Loss_Ptr^.Data.Item_Pos := ir.ReturnHeader.CurrentHeader;
+                    end;
+                  DisposeObject(itm_stream);
+                except
+                end;
+              end;
+          until not Obj_.Stream.Data.RecursionSearchNext(ir);
+        end;
+
+      if Loss_List.Num > 0 then
+        begin
+          while Loss_List.Num > 0 do
+            begin
+              Obj_.Stream.Data.ItemDelete2(Loss_List.First^.Data.Field_Pos, Loss_List.First^.Data.Item_Pos);
+              Loss_List.Next;
+            end;
+          Obj_.Stream.Save;
+        end
+      else if not Eng_Is_Activted then
+          Obj_.Stream.RecycleMemory;
+
+      Loss_List.Free;
+    end);
+{$ENDIF FPC}
   Opti_Remove_invalid_MD5_and_Rebuild_Frag_Hash;
-  Opti_IsBusy := False;
-  Opti_Directory_Progress_Index := 0;
 end;
 
 constructor TC40_NetDisk_Directory_Service.Create(PhysicsService_: TC40_PhysicsService; ServiceTyp, Param_: U_String);
 var
   Directory_FS: TCore_Stream;
   fd: TDirectory_Service_User_File_DB;
-  i: Integer;
   MD5_FS: TCore_Stream;
   md5_frag: TDirectory_Service_MD5_Data_Frag;
 begin
@@ -1520,8 +1783,11 @@ begin
   DTNoAuthService.RecvTunnel.RegisterDirectStream('NewField').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_NewField;
   DTNoAuthService.RecvTunnel.RegisterStream('SpaceInfo').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_SpaceInfo;
   DTNoAuthService.RecvTunnel.RegisterStream('SearchItem').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_SearchItem;
+  DTNoAuthService.RecvTunnel.RegisterStream('SearchField').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_SearchField;
   DTNoAuthService.RecvTunnel.RegisterDirectStream('CopyItem').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_CopyItem;
   DTNoAuthService.RecvTunnel.RegisterDirectStream('CopyField').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_CopyField;
+  DTNoAuthService.RecvTunnel.RegisterDirectStream('RenameField').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_RenameField;
+  DTNoAuthService.RecvTunnel.RegisterDirectStream('RenameItem').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_RenameItem;
   DTNoAuthService.RecvTunnel.RegisterStream('SearchInvalidFrag').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_SearchInvalidFrag;
   DTNoAuthService.RecvTunnel.RegisterStream('SearchSameItem').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_SearchSameItem;
 
@@ -1534,15 +1800,15 @@ begin
   Directory_ZDB2_RecycleMemoryTimeOut := EStrToInt64(ParamList.GetDefaultValue('Directory_RecycleMemory', '30*1000'), 30 * 1000);
   Directory_ZDB2_DeltaSpace := EStrToInt64(ParamList.GetDefaultValue('Directory_DeltaSpace', '128*1024*1024'), 128 * 1024 * 1024);
   Directory_ZDB2_BlockSize := EStrToInt(ParamList.GetDefaultValue('Directory_BlockSize', '8192'), 8192);
-  Directory_ZDB2_EnabledCipher := EStrToBool(ParamList.GetDefaultValue('Directory_EnabledCipher', 'True'), True);
-  Directory_ZDB2_CipherName := ParamList.GetDefaultValue('Directory_Cipher', TCipher.CCipherSecurityName[TCipherSecurity.csRijndael]);
+  Directory_ZDB2_EnabledCipher := EStrToBool(ParamList.GetDefaultValue('Directory_EnabledCipher', 'False'), False);
+  Directory_ZDB2_CipherName := ParamList.GetDefaultValue('Directory_Cipher', TCipher.CCipherSecurityName[TCipherSecurity.csNone]);
   Directory_ZDB2_Password := ParamList.GetDefaultValue('Directory_Password', Z.Net.C4.C40_Password);
 
   if Directory_ZDB2_EnabledCipher then
       Directory_ZDB2_Cipher := TZDB2_Cipher.Create(Directory_ZDB2_CipherName, Directory_ZDB2_Password, 1, True, True)
   else
       Directory_ZDB2_Cipher := nil;
-  C40_Directory_Database_File := umlCombineFileName(DTNoAuthService.PublicFileDirectory, PFormat('DTC40_%s.Directory', [ServiceInfo.ServiceTyp.Text]));
+  C40_Directory_Database_File := umlCombineFileName(DTNoAuthService.PublicFileDirectory, Get_DB_FileName_Config(PFormat('DTC40_%s.Directory', [ServiceInfo.ServiceTyp.Text])));
 
   Directory_HashPool := TDirectory_Service_User_File_DB_Pool.Create(True,
     EStrToInt64(ParamList.GetDefaultValue('Directory_HashPool', '4*1024*1024'), 4 * 1024 * 1024),
@@ -1565,36 +1831,35 @@ begin
     Directory_ZDB2_Cipher);
   Directory_Database.AutoFreeStream := True;
 
-  i := 0;
-  while i < Directory_Database.count do
-    begin
-      fd := TDirectory_Service_User_File_DB.Create(self, Directory_Database[i]);
-      inc(i);
-      fd.DB_Name := Reserved_To_String(fd.Stream.Data.Reserved);
-      if fd.DB_Name <> '' then
-        begin
-          fd.IsChanged := True;
-          fd.ComputeFragSpace;
-          fd.Stream.RecycleMemory;
-          Directory_HashPool.Add(fd.DB_Name, fd);
-        end
-      else
-          DisposeObject(fd);
-    end;
+  if Directory_Database.count > 0 then
+    with Directory_Database.Repeat_ do
+      repeat
+        fd := TDirectory_Service_User_File_DB.Create(self, Queue^.Data);
+        fd.DB_Name := Reserved_To_String(fd.Stream.Data.Reserved);
+        if fd.DB_Name <> '' then
+          begin
+            fd.IsChanged := True;
+            fd.ComputeFragSpace;
+            fd.Stream.RecycleMemory;
+            Directory_HashPool.Add(fd.DB_Name, fd);
+          end
+        else
+            DisposeObject(fd);
+      until not Next;
 
   // md5 frag database
   MD5_ZDB2_RecycleMemoryTimeOut := EStrToInt64(ParamList.GetDefaultValue('MD5_RecycleMemory', '1*1000'), 1 * 1000);
   MD5_ZDB2_DeltaSpace := EStrToInt64(ParamList.GetDefaultValue('MD5_DeltaSpace', '16*1024*1024'), 16 * 1024 * 1024);
   MD5_ZDB2_BlockSize := EStrToInt(ParamList.GetDefaultValue('MD5_BlockSize', '100'), 100);
-  MD5_ZDB2_EnabledCipher := EStrToBool(ParamList.GetDefaultValue('MD5_EnabledCipher', 'True'), True);
-  MD5_ZDB2_CipherName := ParamList.GetDefaultValue('MD5_Cipher', TCipher.CCipherSecurityName[TCipherSecurity.csRijndael]);
+  MD5_ZDB2_EnabledCipher := EStrToBool(ParamList.GetDefaultValue('MD5_EnabledCipher', 'False'), False);
+  MD5_ZDB2_CipherName := ParamList.GetDefaultValue('MD5_Cipher', TCipher.CCipherSecurityName[TCipherSecurity.csNone]);
   MD5_ZDB2_Password := ParamList.GetDefaultValue('MD5_Password', Z.Net.C4.C40_Password);
 
   if MD5_ZDB2_EnabledCipher then
       MD5_ZDB2_Cipher := TZDB2_Cipher.Create(MD5_ZDB2_CipherName, MD5_ZDB2_Password, 1, True, True)
   else
       MD5_ZDB2_Cipher := nil;
-  C40_MD5_Database_File := umlCombineFileName(DTNoAuthService.PublicFileDirectory, PFormat('DTC40_%s.MD5_Frag', [ServiceInfo.ServiceTyp.Text]));
+  C40_MD5_Database_File := umlCombineFileName(DTNoAuthService.PublicFileDirectory, Get_DB_FileName_Config(PFormat('DTC40_%s.MD5_Frag', [ServiceInfo.ServiceTyp.Text])));
 
   MD5_Pool := TDirectory_Service_MD5_DataPool.Create(True,
     EStrToInt64(ParamList.GetDefaultValue('MD5_HashPool', '16*1024*1024'), 16 * 1024 * 1024),
@@ -1616,15 +1881,14 @@ begin
     MD5_ZDB2_Cipher);
   MD5_Database.AutoFreeStream := True;
 
-  i := 0;
-  while i < MD5_Database.count do
-    begin
-      md5_frag := TDirectory_Service_MD5_Data_Frag.Create(self, MD5_Database[i]);
-      inc(i);
-      md5_frag.ReadInfo;
-      md5_frag.Stream.RecycleMemory;
-      MD5_Pool.Add(umlMD5ToStr(md5_frag.Frag_Pool.MD5), md5_frag);
-    end;
+  if MD5_Database.List.Num > 0 then
+    with MD5_Database.List.Repeat_ do
+      repeat
+        md5_frag := TDirectory_Service_MD5_Data_Frag.Create(self, Queue^.Data);
+        md5_frag.ReadInfo;
+        md5_frag.Stream.RecycleMemory;
+        MD5_Pool.Add(umlMD5ToStr(md5_frag.Frag_Pool.MD5), md5_frag);
+      until not Next;
 
   Init_Opti();
 end;
@@ -1673,12 +1937,7 @@ begin
   inherited SafeCheck;
   Directory_Database.Flush;
   MD5_Database.Flush;
-  if not Opti_IsBusy then
-    begin
-      Opti_IsBusy := True;
-      Opti_Directory_File_Hash.Clear;
-      Opti_Directory_Progress_Index := 0;
-    end;
+  Opti_Progress;
 end;
 
 procedure TC40_NetDisk_Directory_Service.Progress;
@@ -1686,7 +1945,6 @@ begin
   inherited Progress;
   Directory_Database.Progress;
   MD5_Database.Progress;
-  Opti_Progress;
 end;
 
 constructor TON_Temp_ExistsDB.Create;
@@ -1755,29 +2013,42 @@ end;
 
 procedure TON_Temp_GetItemList.DoStreamEvent(Sender: TPeerIO; Result_: TDFE);
 var
+  Successed: Boolean;
+  Field_Path: U_String;
   arry: TItemList_Data_Array;
   i: Integer;
 begin
-  SetLength(arry, Result_.count div 3);
-  i := 0;
-  while Result_.R.NotEnd do
+  Successed := Result_.R.ReadBool;
+  if Successed then
     begin
-      arry[i].Name := Result_.R.ReadString;
-      arry[i].Num := Result_.R.ReadInt64;
-      arry[i].Time_ := Result_.R.ReadDouble;
-      inc(i);
+      Field_Path := Result_.R.ReadString;
+      i := 0;
+      SetLength(arry, (Result_.count - 2) div 3);
+      while Result_.R.NotEnd do
+        begin
+          arry[i].Name := Result_.R.ReadString;
+          arry[i].Num := Result_.R.ReadInt64;
+          arry[i].Time_ := Result_.R.ReadDouble;
+          inc(i);
+        end;
+    end
+  else
+    begin
+      Field_Path := '';
+      SetLength(arry, 0);
     end;
 
   try
     if Assigned(OnResultC) then
-        OnResultC(Client, arry);
+        OnResultC(Client, Successed, Field_Path, arry);
     if Assigned(OnResultM) then
-        OnResultM(Client, arry);
+        OnResultM(Client, Successed, Field_Path, arry);
     if Assigned(OnResultP) then
-        OnResultP(Client, arry);
+        OnResultP(Client, Successed, Field_Path, arry);
   except
   end;
 
+  Field_Path := '';
   for i := low(arry) to high(arry) do
       arry[i].Name := '';
   SetLength(arry, 0);
@@ -1809,6 +2080,7 @@ begin
       DisposeObject(tmp);
     end
   else
+    if not C40_QuietMode then
       DoStatus(Result_.R.ReadString);
 
   try
@@ -1946,14 +2218,16 @@ end;
 
 procedure TON_Temp_SearchItem.DoStreamEvent(Sender: TPeerIO; Result_: TDFE);
 var
-  SearchResult: TON_SearchItem_Data_array;
+  SearchResult: TSearchItem_Data_array;
   i: Integer;
 begin
-  SetLength(SearchResult, Result_.count div 3);
+  i := 0;
+  SetLength(SearchResult, Result_.count shr 2);
   while Result_.R.NotEnd do
     begin
-      SearchResult[i].DB_Field := Result_.R.ReadString;
-      SearchResult[i].DB_Item := Result_.R.ReadString;
+      SearchResult[i].Current_Field := Result_.R.ReadString;
+      SearchResult[i].FieldOrItem := Result_.R.ReadString;
+      SearchResult[i].Num := Result_.R.ReadInt64;
       SearchResult[i].ModificationTime := Result_.R.ReadDouble;
       inc(i);
     end;
@@ -1969,6 +2243,109 @@ begin
   end;
   SetLength(SearchResult, 0);
   DelayFreeObject(1.0, self);
+end;
+
+constructor TON_Temp_SearchField.Create;
+begin
+  inherited Create;
+  Client := nil;
+  OnResultC := nil;
+  OnResultM := nil;
+  OnResultP := nil;
+end;
+
+procedure TON_Temp_SearchField.DoStreamEvent(Sender: TPeerIO; Result_: TDFE);
+var
+  SearchResult: U_StringArray;
+  i: Integer;
+begin
+  i := 0;
+  SetLength(SearchResult, Result_.count);
+  while Result_.R.NotEnd do
+    begin
+      SearchResult[i] := Result_.R.ReadString;
+      inc(i);
+    end;
+
+  try
+    if Assigned(OnResultC) then
+        OnResultC(Client, SearchResult);
+    if Assigned(OnResultM) then
+        OnResultM(Client, SearchResult);
+    if Assigned(OnResultP) then
+        OnResultP(Client, SearchResult);
+  except
+  end;
+  SetLength(SearchResult, 0);
+  DelayFreeObject(1.0, self);
+end;
+
+procedure TCopyItem_Info_Tool.DoFree(var Data: TCopyItem_Info);
+begin
+  Data.Sour_DB_Name := '';
+  Data.Sour_DB_Field := '';
+  Data.Sour_DB_Item := '';
+  Data.Dest_DB_Name := '';
+  Data.Dest_DB_Field := '';
+end;
+
+procedure TCopyItem_Info_Tool.Add_CopyItem_Info(Sour_DB_Name, Sour_DB_Field, Sour_DB_Item, Dest_DB_Name, Dest_DB_Field: SystemString);
+var
+  p: TCopyItem_Info_Tool_Decl.PQueueStruct;
+begin
+  p := Add_Null;
+  p^.Data.Sour_DB_Name := Sour_DB_Name;
+  p^.Data.Sour_DB_Field := Sour_DB_Field;
+  p^.Data.Sour_DB_Item := Sour_DB_Item;
+  p^.Data.Dest_DB_Name := Dest_DB_Name;
+  p^.Data.Dest_DB_Field := Dest_DB_Field;
+end;
+
+function TCopyItem_Info_Tool.Build_Array: TCopyItem_Info_Array;
+var
+  __repeat__: TCopyItem_Info_Tool_Decl.TRepeat___;
+begin
+  SetLength(Result, Num);
+  if Num > 0 then
+    begin
+      __repeat__ := Repeat_();
+      repeat
+          Result[__repeat__.I__] := __repeat__.Queue^.Data;
+      until not __repeat__.Next;
+    end;
+end;
+
+procedure TCopyField_Info_Tool.DoFree(var Data: TCopyField_Info);
+begin
+  Data.Sour_DB_Name := '';
+  Data.Sour_DB_Field := '';
+  Data.Dest_DB_Name := '';
+  Data.Dest_DB_Field := '';
+end;
+
+procedure TCopyField_Info_Tool.Add_CopyField_Info(Sour_DB_Name, Sour_DB_Field, Dest_DB_Name, Dest_DB_Field: SystemString);
+var
+  p: TCopyField_Info_Tool_Decl.PQueueStruct;
+begin
+  p := Add_Null;
+  p^.Data.Sour_DB_Name := Sour_DB_Name;
+  p^.Data.Sour_DB_Field := Sour_DB_Field;
+  p^.Data.Dest_DB_Name := Dest_DB_Name;
+  p^.Data.Dest_DB_Field := Dest_DB_Field;
+end;
+
+function TCopyField_Info_Tool.Build_Array: TCopyField_Info_Array;
+var
+  __repeat__: TCopyField_Info_Tool_Decl.TRepeat___;
+begin
+  SetLength(Result, Num);
+  if Num > 0 then
+    begin
+      __repeat__ := Repeat_();
+      repeat
+          Result[__repeat__.I__] := __repeat__.Queue^.Data;
+      until not __repeat__.Next;
+    end;
 end;
 
 constructor TON_Temp_SearchInvalidFrag.Create;
@@ -2678,6 +3055,54 @@ begin
   DisposeObject(d);
 end;
 
+procedure TC40_NetDisk_Directory_Client.SearchField_C(DB_Name, DB_Field: U_String; OnResult: TON_SearchField_C);
+var
+  tmp: TON_Temp_SearchField;
+  d: TDFE;
+begin
+  tmp := TON_Temp_SearchField.Create;
+  tmp.Client := self;
+  tmp.OnResultC := OnResult;
+
+  d := TDFE.Create;
+  d.WriteString(DB_Name);
+  d.WriteString(DB_Field);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('SearchField', d, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamEvent);
+  DisposeObject(d);
+end;
+
+procedure TC40_NetDisk_Directory_Client.SearchField_M(DB_Name, DB_Field: U_String; OnResult: TON_SearchField_M);
+var
+  tmp: TON_Temp_SearchField;
+  d: TDFE;
+begin
+  tmp := TON_Temp_SearchField.Create;
+  tmp.Client := self;
+  tmp.OnResultM := OnResult;
+
+  d := TDFE.Create;
+  d.WriteString(DB_Name);
+  d.WriteString(DB_Field);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('SearchField', d, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamEvent);
+  DisposeObject(d);
+end;
+
+procedure TC40_NetDisk_Directory_Client.SearchField_P(DB_Name, DB_Field: U_String; OnResult: TON_SearchField_P);
+var
+  tmp: TON_Temp_SearchField;
+  d: TDFE;
+begin
+  tmp := TON_Temp_SearchField.Create;
+  tmp.Client := self;
+  tmp.OnResultP := OnResult;
+
+  d := TDFE.Create;
+  d.WriteString(DB_Name);
+  d.WriteString(DB_Field);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('SearchField', d, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamEvent);
+  DisposeObject(d);
+end;
+
 procedure TC40_NetDisk_Directory_Client.CopyItem(arry: TCopyItem_Info_Array);
 var
   i: Integer;
@@ -2710,6 +3135,31 @@ begin
       d.WriteString(arry[i].Dest_DB_Field);
     end;
   DTNoAuthClient.SendTunnel.SendDirectStreamCmd('CopyField', d);
+  DisposeObject(d);
+end;
+
+procedure TC40_NetDisk_Directory_Client.RenameField(DB_Name, DB_Field, New_Field_Name: U_String);
+var
+  d: TDFE;
+begin
+  d := TDFE.Create;
+  d.WriteString(DB_Name);
+  d.WriteString(DB_Field);
+  d.WriteString(New_Field_Name);
+  DTNoAuthClient.SendTunnel.SendDirectStreamCmd('RenameField', d);
+  DisposeObject(d);
+end;
+
+procedure TC40_NetDisk_Directory_Client.RenameItem(DB_Name, DB_Field, Old_Item_Name, New_Item_Name: U_String);
+var
+  d: TDFE;
+begin
+  d := TDFE.Create;
+  d.WriteString(DB_Name);
+  d.WriteString(DB_Field);
+  d.WriteString(Old_Item_Name);
+  d.WriteString(New_Item_Name);
+  DTNoAuthClient.SendTunnel.SendDirectStreamCmd('RenameItem', d);
   DisposeObject(d);
 end;
 

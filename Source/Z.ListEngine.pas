@@ -7,7 +7,8 @@ unit Z.ListEngine;
 
 interface
 
-uses SysUtils, Classes, Variants, Z.Core,
+uses SysUtils, Classes, Variants,
+  Z.Core,
 {$IFDEF FPC}
   Z.FPC.GenericList,
 {$ENDIF FPC}
@@ -974,10 +975,11 @@ type
   end;
 
   PListPascalStringData = ^TListPascalStringData;
+  TListPascalStringData_List = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<PListPascalStringData>;
 
   TListPascalString = class(TCore_Object)
   private
-    FList: TCore_List;
+    FList: TListPascalStringData_List;
   protected
     function GetText: SystemString;
     procedure SetText(const Value: SystemString);
@@ -993,6 +995,7 @@ type
     constructor Create;
     destructor Destroy; override;
 
+    function Add(const Fmt: SystemString; const Args: array of const): Integer; overload;
     function Add(Value: SystemString): Integer; overload;
     function Add(Value: TPascalString): Integer; overload;
     function Add(Value: TUPascalString): Integer; overload;
@@ -1006,6 +1009,7 @@ type
     function Count: Integer;
     function ExistsValue(Value: TPascalString): Integer;
     procedure Exchange(const idx1, idx2: Integer);
+    function ReplaceSum(Pattern: TPascalString; OnlyWord, IgnoreCase: Boolean; bPos, ePos: Integer): Integer;
 
     procedure Assign(SameObj: TListPascalString); overload;
     procedure Assign(sour: TCore_Strings); overload;
@@ -1029,7 +1033,7 @@ type
     property Items_PPascalString[idx: Integer]: PPascalString read GetItems_PPascalString;
     property Objects[idx: Integer]: TCore_Object read GetObjects write SetObjects;
 
-    property List: TCore_List read FList;
+    property List: TListPascalStringData_List read FList;
   end;
 {$ENDREGION 'TListPascalString'}
 {$REGION 'TBackcall_Pool'}
@@ -1085,6 +1089,20 @@ type
 {$ENDREGION 'TBackcall_Pool'}
 {$REGION 'Generics decl'}
 
+  TStringBigList_Decl = {$IFDEF FPC}specialize {$ENDIF FPC} TBigList<SystemString>;
+
+  TStringBigList = class(TStringBigList_Decl)
+  public
+    procedure DoFree(var Data: SystemString); override;
+  end;
+
+  TPascalStringBigList_Decl = {$IFDEF FPC}specialize {$ENDIF FPC} TBigList<TPascalString>;
+
+  TPascalStringBigList = class(TPascalStringBigList_Decl)
+  public
+    procedure DoFree(var Data: TPascalString); override;
+  end;
+
   TUInt8List = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<Byte>;
   TByteList = TUInt8List;
   TInt8List = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<ShortInt>;
@@ -1131,28 +1149,28 @@ end;
 function MakeHashS(const S: PSystemString): THash;
 begin
   Result := FastHashPSystemString(S);
-  Result := umlCRC32(@Result, SizeOf(THash));
+  Result := Get_CRC32(@Result, SizeOf(THash));
 end;
 
 function MakeHashPas(const S: PPascalString): THash;
 begin
   Result := FastHashPPascalString(S);
-  Result := umlCRC32(@Result, SizeOf(THash));
+  Result := Get_CRC32(@Result, SizeOf(THash));
 end;
 
 function MakeHashI64(const i64: Int64): THash;
 begin
-  Result := umlCRC32(@i64, C_Int64_Size);
+  Result := Get_CRC32(@i64, C_Int64_Size);
 end;
 
 function MakeHashU32(const c32: Cardinal): THash;
 begin
-  Result := umlCRC32(@c32, C_Cardinal_Size);
+  Result := Get_CRC32(@c32, C_Cardinal_Size);
 end;
 
 function MakeHashP(const p: Pointer): THash;
 begin
-  Result := umlCRC32(@p, C_Pointer_Size);
+  Result := Get_CRC32(@p, C_Pointer_Size);
 end;
 
 procedure DoStatusL(const V: TListPascalString);
@@ -6760,11 +6778,11 @@ begin
         Result := body.Text;
       end
     else if n.ComparePos(1, 'exp') and umlMultipleMatch([
-      'expression(*)', 'expression[*]', 'expression<*>', 'expression"*"', 'expression'#39'*'#39,
-      'exp(*)', 'exp[*]', 'exp<*>', 'exp"*"', 'exp'#39'*'#39,
-      'expr(*)', 'expr[*]', 'expr<*>', 'expr"*"', 'expr'#39'*'#39,
-      'express(*)', 'express[*]', 'express<*>', 'express"*"', 'exp'#39'*'#39
-      ], n) then
+        'expression(*)', 'expression[*]', 'expression<*>', 'expression"*"', 'expression'#39'*'#39,
+        'exp(*)', 'exp[*]', 'exp<*>', 'exp"*"', 'exp'#39'*'#39,
+        'expr(*)', 'expr[*]', 'expr<*>', 'expr"*"', 'expr'#39'*'#39,
+        'express(*)', 'express[*]', 'express<*>', 'express"*"', 'exp'#39'*'#39
+        ], n) then
       begin
         body := umlDeleteFirstStr_Discontinuity(n, '([<"'#39);
         body.DeleteLast;
@@ -7880,11 +7898,11 @@ begin
         Result := body.Text;
       end
     else if n.ComparePos(1, 'exp') and umlMultipleMatch([
-      'expression(*)', 'expression[*]', 'expression<*>', 'expression"*"', 'expression'#39'*'#39,
-      'exp(*)', 'exp[*]', 'exp<*>', 'exp"*"', 'exp'#39'*'#39,
-      'expr(*)', 'expr[*]', 'expr<*>', 'expr"*"', 'expr'#39'*'#39,
-      'express(*)', 'express[*]', 'express<*>', 'express"*"', 'exp'#39'*'#39
-      ], n) then
+        'expression(*)', 'expression[*]', 'expression<*>', 'expression"*"', 'expression'#39'*'#39,
+        'exp(*)', 'exp[*]', 'exp<*>', 'exp"*"', 'exp'#39'*'#39,
+        'expr(*)', 'expr[*]', 'expr<*>', 'expr"*"', 'expr'#39'*'#39,
+        'express(*)', 'express[*]', 'express<*>', 'express"*"', 'exp'#39'*'#39
+        ], n) then
       begin
         body := umlDeleteFirstStr_Discontinuity(n, '([<"'#39);
         body.DeleteLast;
@@ -8315,27 +8333,28 @@ end;
 procedure TListPascalString.SetText(const Value: SystemString);
 var
   n: TPascalString;
-  b: TBytes;
+  buff_: TBytes;
   m64: TMS64;
 begin
   n.Text := Value;
-  b := n.Bytes;
+  buff_ := n.Bytes;
   n := '';
   m64 := TMS64.Create;
-  m64.SetPointerWithProtectedMode(@b[0], Length(b));
+  if Length(buff_) > 0 then
+      m64.SetPointerWithProtectedMode(@buff_[0], Length(buff_));
   LoadFromStream(m64);
   DisposeObject(m64);
-  SetLength(b, 0);
+  SetLength(buff_, 0);
 end;
 
 function TListPascalString.GetItems(idx: Integer): TPascalString;
 begin
-  Result := PListPascalStringData(FList[idx])^.Data;
+  Result := FList[idx]^.Data;
 end;
 
 procedure TListPascalString.SetItems(idx: Integer; Value: TPascalString);
 begin
-  with PListPascalStringData(FList[idx])^ do
+  with FList[idx]^ do
     begin
       Data := Value;
       hash := MakeHashPas(@Value);
@@ -8344,23 +8363,23 @@ end;
 
 function TListPascalString.GetItems_PPascalString(idx: Integer): PPascalString;
 begin
-  Result := @(PListPascalStringData(FList[idx])^.Data);
+  Result := @FList[idx]^.Data;
 end;
 
 function TListPascalString.GetObjects(idx: Integer): TCore_Object;
 begin
-  Result := PListPascalStringData(FList[idx])^.Obj;
+  Result := FList[idx]^.Obj;
 end;
 
 procedure TListPascalString.SetObjects(idx: Integer; Value: TCore_Object);
 begin
-  PListPascalStringData(FList[idx])^.Obj := Value;
+  FList[idx]^.Obj := Value;
 end;
 
 constructor TListPascalString.Create;
 begin
   inherited Create;
-  FList := TCore_List.Create;
+  FList := TListPascalStringData_List.Create;
 end;
 
 destructor TListPascalString.Destroy;
@@ -8368,6 +8387,11 @@ begin
   Clear;
   DisposeObject(FList);
   inherited Destroy;
+end;
+
+function TListPascalString.Add(const Fmt: SystemString; const Args: array of const): Integer;
+begin
+  Result := Add(PFormat(Fmt, Args));
 end;
 
 function TListPascalString.Add(Value: SystemString): Integer;
@@ -8461,7 +8485,7 @@ begin
   h := MakeHashPas(@Value);
   while i < FList.Count do
     begin
-      if (PListPascalStringData(FList[i])^.hash = h) and (PListPascalStringData(FList[i])^.Data.Same(Value)) then
+      if (FList[i]^.hash = h) and (FList[i]^.Data.Same(@Value)) then
           Delete(i)
       else
           inc(i);
@@ -8476,7 +8500,7 @@ var
 begin
   for i := 0 to FList.Count - 1 do
     begin
-      p := PListPascalStringData(FList[i]);
+      p := FList[i];
       p^.Data := '';
       Dispose(p);
     end;
@@ -8497,7 +8521,7 @@ begin
   Result := -1;
 
   for i := 0 to FList.Count - 1 do
-    if (PListPascalStringData(FList[i])^.hash = h) and (PListPascalStringData(FList[i])^.Data.Same(@Value)) then
+    if (FList[i]^.hash = h) and (FList[i]^.Data.Same(@Value)) then
       begin
         Result := i;
         Break;
@@ -8513,6 +8537,19 @@ begin
   FList[idx2] := tmp;
 end;
 
+function TListPascalString.ReplaceSum(Pattern: TPascalString; OnlyWord, IgnoreCase: Boolean; bPos, ePos: Integer): Integer;
+var
+  i: Integer;
+  p: PListPascalStringData;
+begin
+  Result := 0;
+  for i := 0 to Count - 1 do
+    begin
+      p := FList[i];
+      inc(Result, umlReplaceSum(@p^.Data, Pattern, OnlyWord, IgnoreCase, bPos, ePos, nil));
+    end;
+end;
+
 procedure TListPascalString.Assign(SameObj: TListPascalString);
 var
   i: Integer;
@@ -8521,7 +8558,7 @@ begin
   Clear;
   for i := 0 to SameObj.Count - 1 do
     begin
-      P2 := PListPascalStringData(SameObj.FList[i]);
+      P2 := SameObj.FList[i];
       new(P1);
       P1^ := P2^;
       FList.Add(P1);
@@ -8621,7 +8658,7 @@ var
 begin
   for i := 0 to FList.Count - 1 do
     begin
-      n := PListPascalStringData(FList[i])^.Data.Text + #13#10;
+      n := FList[i]^.Data.Text + #13#10;
       b := n.Bytes;
       stream.write(b[0], Length(b));
       n := '';
@@ -8801,6 +8838,16 @@ begin
       if (i >= 0) and (i < FList.Count) and (FList[i] = p) then
           inc(i);
     end;
+end;
+
+procedure TStringBigList.DoFree(var Data: SystemString);
+begin
+  Data := '';
+end;
+
+procedure TPascalStringBigList.DoFree(var Data: TPascalString);
+begin
+  Data := '';
 end;
 
 end.

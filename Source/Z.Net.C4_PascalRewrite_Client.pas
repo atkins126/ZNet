@@ -74,6 +74,8 @@ type
     function Build_CodePool: TPascal_Rewrite_Tool_CodePool;
   end;
 
+  TC40_Pascal_Rewrite_Tool_List = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<TC40_Pascal_Rewrite_Tool>;
+
 implementation
 
 constructor TPascal_Source_.Create;
@@ -218,7 +220,8 @@ end;
 
 procedure TC40_Pascal_Rewrite_Tool.cmd_Rewrite_Status(Sender: TPeerIO; InData: SystemString);
 begin
-  DoStatus(InData);
+  if not C40_QuietMode then
+      DoStatus(InData);
 end;
 
 constructor TC40_Pascal_Rewrite_Tool.Create(PhysicsTunnel_: TC40_PhysicsTunnel; source_: TC40_Info; Param_: U_String);

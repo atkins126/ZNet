@@ -351,6 +351,8 @@ type
 
     function Connected: Boolean; virtual;
 
+    function IOBusy: Boolean;
+
     procedure SwitchAsMaxPerformance;
     procedure SwitchAsMaxSecurity;
     procedure SwitchAsDefaultPerformance;
@@ -1846,7 +1848,6 @@ begin
       fs := TCore_FileStream.Create(fullfn, fmOpenRead or fmShareDenyNone);
   except
     ThOutData.WriteBool(False);
-    DisposeObject(fs);
     Exit;
   end;
 
@@ -1926,7 +1927,6 @@ begin
       fs := TCore_FileStream.Create(fullfn, fmOpenRead or fmShareDenyNone);
   except
     ThOutData.WriteBool(False);
-    DisposeObject(fs);
     Exit;
   end;
 
@@ -2514,7 +2514,6 @@ begin
       fs := TCore_FileStream.Create(fullfn, fmOpenRead or fmShareDenyNone);
   except
     OutData.WriteBool(False);
-    DisposeObject(fs);
     Exit;
   end;
 
@@ -2583,7 +2582,6 @@ begin
       fs := TCore_FileStream.Create(fullfn, fmOpenRead or fmShareDenyNone);
   except
     OutData.WriteBool(False);
-    DisposeObject(fs);
     Exit;
   end;
 
@@ -4026,7 +4024,20 @@ end;
 
 function TDTClient.Connected: Boolean;
 begin
-  Result := FSendTunnel.Connected and FRecvTunnel.Connected;
+  try
+      Result := FSendTunnel.Connected and FRecvTunnel.Connected;
+  except
+      Result := False;
+  end;
+end;
+
+function TDTClient.IOBusy: Boolean;
+begin
+  try
+      Result := FSendTunnel.IOBusy and FRecvTunnel.IOBusy;
+  except
+      Result := True;
+  end;
 end;
 
 procedure TDTClient.SwitchAsMaxPerformance;

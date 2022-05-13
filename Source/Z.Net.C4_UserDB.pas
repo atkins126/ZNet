@@ -20,7 +20,7 @@ uses
 type
   TC40_UserDB_Service = class;
 
-  TJsonHashList = {$IFDEF FPC}specialize {$ENDIF FPC}TGenericHashList<TZDB2_Json>;
+  TC40_UserDB_Json_Hash_Pool = {$IFDEF FPC}specialize {$ENDIF FPC}TGeneric_String_Object_Hash<TZDB2_Json>;
 
   TC40_UserDB_Service_SendTunnel_NoAuth = class(TPeerClientUserDefineForSendTunnel_NoAuth)
   public
@@ -30,7 +30,7 @@ type
 
   TC40_UserDB_Service_RecvTunnel_NoAuth = class(TPeerClientUserDefineForRecvTunnel_NoAuth)
   public
-    OpenUserIdentifier: TJsonHashList;
+    OpenUserIdentifier: TC40_UserDB_Json_Hash_Pool;
     constructor Create(Owner_: TPeerIO); override;
     destructor Destroy; override;
     procedure SendUser_Msg(FromUserName_, ToUserName_, Msg_: U_String);
@@ -41,15 +41,6 @@ type
   end;
 
   TC40_UserDB_Service_RecvTunnel_NoAuth_List = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<TC40_UserDB_Service_RecvTunnel_NoAuth>;
-
-  TC40_UserDB_Search_Bridge = class(TCustomEventBridge)
-  public
-    Service: TC40_UserDB_Service;
-    SearchText: U_String;
-    MaxNum: Integer;
-    Index: Integer;
-    procedure Progress(Sender: TZNet_Progress); override;
-  end;
 
   TC40_UserDB_Service = class(TC40_Base_NoAuth_Service)
   protected
@@ -83,7 +74,7 @@ type
     procedure cmd_Usr_Remove(Sender: TPeerIO; InData: TDFE);
   public
     C40_UserDB_FileName: U_String;
-    UserIdentifierHash: TJsonHashList;
+    UserIdentifierHash: TC40_UserDB_Json_Hash_Pool;
     ZDB2RecycleMemoryTimeOut: TTimeTick;
     ZDB2DeltaSpace: Int64;
     ZDB2BlockSize: Word;
@@ -91,12 +82,12 @@ type
     ZDB2CipherName: U_String;
     ZDB2Password: U_String;
     ZDB2Cipher: TZDB2_Cipher;
+    Max_Reg_Identifier_Size: Integer;
     JsonDatabase: TZDB2_List_Json;
     constructor Create(PhysicsService_: TC40_PhysicsService; ServiceTyp, Param_: U_String); override;
     destructor Destroy; override;
     procedure SafeCheck; override;
     procedure Progress; override;
-    function RegUser(UserName_, passwd_: U_String): TZDB2_Json;
     procedure SendMsg(FromUserName_, ToUserName_, Msg_: U_String);
   end;
 
@@ -112,210 +103,210 @@ type
 
 {$REGION 'bridge_define'}
 
-  TON_Usr_IsOpenC = procedure(Sender: TC40_UserDB_Client; State_: TArrayBool);
-  TON_Usr_IsOpenM = procedure(Sender: TC40_UserDB_Client; State_: TArrayBool) of object;
+  TC40_UserDB_On_IsOpenC = procedure(Sender: TC40_UserDB_Client; State_: TArrayBool);
+  TC40_UserDB_On_IsOpenM = procedure(Sender: TC40_UserDB_Client; State_: TArrayBool) of object;
 {$IFDEF FPC}
-  TON_Usr_IsOpenP = procedure(Sender: TC40_UserDB_Client; State_: TArrayBool) is nested;
+  TC40_UserDB_On_IsOpenP = procedure(Sender: TC40_UserDB_Client; State_: TArrayBool) is nested;
 {$ELSE FPC}
-  TON_Usr_IsOpenP = reference to procedure(Sender: TC40_UserDB_Client; State_: TArrayBool);
+  TC40_UserDB_On_IsOpenP = reference to procedure(Sender: TC40_UserDB_Client; State_: TArrayBool);
 {$ENDIF FPC}
 
-  TON_Usr_IsOpen = class(TOnResultBridge)
+  TC40_UserDB_On_IsOpen = class(TOnResultBridge)
   public
     Client: TC40_UserDB_Client;
-    OnResultC: TON_Usr_IsOpenC;
-    OnResultM: TON_Usr_IsOpenM;
-    OnResultP: TON_Usr_IsOpenP;
+    OnResultC: TC40_UserDB_On_IsOpenC;
+    OnResultM: TC40_UserDB_On_IsOpenM;
+    OnResultP: TC40_UserDB_On_IsOpenP;
     constructor Create;
     procedure DoStreamParamEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData, Result_: TDFE); override;
     procedure DoStreamFailedEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData: TDFE); override;
   end;
 
-  TON_Usr_GetFriendsC = procedure(Sender: TC40_UserDB_Client; FriendArry: U_StringArray);
-  TON_Usr_GetFriendsM = procedure(Sender: TC40_UserDB_Client; FriendArry: U_StringArray) of object;
+  TC40_UserDB_On_GetFriendsC = procedure(Sender: TC40_UserDB_Client; FriendArry: U_StringArray);
+  TC40_UserDB_On_GetFriendsM = procedure(Sender: TC40_UserDB_Client; FriendArry: U_StringArray) of object;
 {$IFDEF FPC}
-  TON_Usr_GetFriendsP = procedure(Sender: TC40_UserDB_Client; FriendArry: U_StringArray) is nested;
+  TC40_UserDB_On_GetFriendsP = procedure(Sender: TC40_UserDB_Client; FriendArry: U_StringArray) is nested;
 {$ELSE FPC}
-  TON_Usr_GetFriendsP = reference to procedure(Sender: TC40_UserDB_Client; FriendArry: U_StringArray);
+  TC40_UserDB_On_GetFriendsP = reference to procedure(Sender: TC40_UserDB_Client; FriendArry: U_StringArray);
 {$ENDIF FPC}
 
-  TON_Usr_GetFriends = class(TOnResultBridge)
+  TC40_UserDB_On_GetFriends = class(TOnResultBridge)
   public
     Client: TC40_UserDB_Client;
-    OnResultC: TON_Usr_GetFriendsC;
-    OnResultM: TON_Usr_GetFriendsM;
-    OnResultP: TON_Usr_GetFriendsP;
+    OnResultC: TC40_UserDB_On_GetFriendsC;
+    OnResultM: TC40_UserDB_On_GetFriendsM;
+    OnResultP: TC40_UserDB_On_GetFriendsP;
     constructor Create;
     procedure DoStreamParamEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData, Result_: TDFE); override;
     procedure DoStreamFailedEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData: TDFE); override;
   end;
 
-  TON_Usr_OnlineNumC = procedure(Sender: TC40_UserDB_Client; Online_Num, User_Num: Integer);
-  TON_Usr_OnlineNumM = procedure(Sender: TC40_UserDB_Client; Online_Num, User_Num: Integer) of object;
+  TC40_UserDB_On_OnlineNumC = procedure(Sender: TC40_UserDB_Client; Online_Num, User_Num: Integer);
+  TC40_UserDB_On_OnlineNumM = procedure(Sender: TC40_UserDB_Client; Online_Num, User_Num: Integer) of object;
 {$IFDEF FPC}
-  TON_Usr_OnlineNumP = procedure(Sender: TC40_UserDB_Client; Online_Num, User_Num: Integer) is nested;
+  TC40_UserDB_On_OnlineNumP = procedure(Sender: TC40_UserDB_Client; Online_Num, User_Num: Integer) is nested;
 {$ELSE FPC}
-  TON_Usr_OnlineNumP = reference to procedure(Sender: TC40_UserDB_Client; Online_Num, User_Num: Integer);
+  TC40_UserDB_On_OnlineNumP = reference to procedure(Sender: TC40_UserDB_Client; Online_Num, User_Num: Integer);
 {$ENDIF FPC}
 
-  TON_Usr_OnlineNum = class(TOnResultBridge)
+  TC40_UserDB_On_OnlineNum = class(TOnResultBridge)
   public
     Client: TC40_UserDB_Client;
-    OnResultC: TON_Usr_OnlineNumC;
-    OnResultM: TON_Usr_OnlineNumM;
-    OnResultP: TON_Usr_OnlineNumP;
+    OnResultC: TC40_UserDB_On_OnlineNumC;
+    OnResultM: TC40_UserDB_On_OnlineNumM;
+    OnResultP: TC40_UserDB_On_OnlineNumP;
     constructor Create;
     procedure DoStreamParamEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData, Result_: TDFE); override;
     procedure DoStreamFailedEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData: TDFE); override;
   end;
 
-  TON_Usr_OnlineListC = procedure(Sender: TC40_UserDB_Client; arry: U_StringArray);
-  TON_Usr_OnlineListM = procedure(Sender: TC40_UserDB_Client; arry: U_StringArray) of object;
+  TC40_UserDB_On_OnlineListC = procedure(Sender: TC40_UserDB_Client; arry: U_StringArray);
+  TC40_UserDB_On_OnlineListM = procedure(Sender: TC40_UserDB_Client; arry: U_StringArray) of object;
 {$IFDEF FPC}
-  TON_Usr_OnlineListP = procedure(Sender: TC40_UserDB_Client; arry: U_StringArray) is nested;
+  TC40_UserDB_On_OnlineListP = procedure(Sender: TC40_UserDB_Client; arry: U_StringArray) is nested;
 {$ELSE FPC}
-  TON_Usr_OnlineListP = reference to procedure(Sender: TC40_UserDB_Client; arry: U_StringArray);
+  TC40_UserDB_On_OnlineListP = reference to procedure(Sender: TC40_UserDB_Client; arry: U_StringArray);
 {$ENDIF FPC}
 
-  TON_Usr_OnlineList = class(TOnResultBridge)
+  TC40_UserDB_On_OnlineList = class(TOnResultBridge)
   public
     Client: TC40_UserDB_Client;
-    OnResultC: TON_Usr_OnlineListC;
-    OnResultM: TON_Usr_OnlineListM;
-    OnResultP: TON_Usr_OnlineListP;
+    OnResultC: TC40_UserDB_On_OnlineListC;
+    OnResultM: TC40_UserDB_On_OnlineListM;
+    OnResultP: TC40_UserDB_On_OnlineListP;
     constructor Create;
     procedure DoStreamParamEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData, Result_: TDFE); override;
     procedure DoStreamFailedEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData: TDFE); override;
   end;
 
-  TON_Usr_RegC = procedure(Sender: TC40_UserDB_Client; State_: Boolean; info_: SystemString);
-  TON_Usr_RegM = procedure(Sender: TC40_UserDB_Client; State_: Boolean; info_: SystemString) of object;
+  TC40_UserDB_On_RegC = procedure(Sender: TC40_UserDB_Client; State_: Boolean; info_: SystemString);
+  TC40_UserDB_On_RegM = procedure(Sender: TC40_UserDB_Client; State_: Boolean; info_: SystemString) of object;
 {$IFDEF FPC}
-  TON_Usr_RegP = procedure(Sender: TC40_UserDB_Client; State_: Boolean; info_: SystemString) is nested;
+  TC40_UserDB_On_RegP = procedure(Sender: TC40_UserDB_Client; State_: Boolean; info_: SystemString) is nested;
 {$ELSE FPC}
-  TON_Usr_RegP = reference to procedure(Sender: TC40_UserDB_Client; State_: Boolean; info_: SystemString);
+  TC40_UserDB_On_RegP = reference to procedure(Sender: TC40_UserDB_Client; State_: Boolean; info_: SystemString);
 {$ENDIF FPC}
 
-  TON_Usr_Reg = class(TOnResultBridge)
+  TC40_UserDB_On_Reg = class(TOnResultBridge)
   public
     Client: TC40_UserDB_Client;
-    OnResultC: TON_Usr_RegC;
-    OnResultM: TON_Usr_RegM;
-    OnResultP: TON_Usr_RegP;
+    OnResultC: TC40_UserDB_On_RegC;
+    OnResultM: TC40_UserDB_On_RegM;
+    OnResultP: TC40_UserDB_On_RegP;
     constructor Create;
     procedure DoStreamParamEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData, Result_: TDFE); override;
     procedure DoStreamFailedEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData: TDFE); override;
   end;
 
-  TON_Usr_ExistsC = procedure(Sender: TC40_UserDB_Client; State_: Boolean);
-  TON_Usr_ExistsM = procedure(Sender: TC40_UserDB_Client; State_: Boolean) of object;
+  TC40_UserDB_On_ExistsC = procedure(Sender: TC40_UserDB_Client; State_: Boolean);
+  TC40_UserDB_On_ExistsM = procedure(Sender: TC40_UserDB_Client; State_: Boolean) of object;
 {$IFDEF FPC}
-  TON_Usr_ExistsP = procedure(Sender: TC40_UserDB_Client; State_: Boolean) is nested;
+  TC40_UserDB_On_ExistsP = procedure(Sender: TC40_UserDB_Client; State_: Boolean) is nested;
 {$ELSE FPC}
-  TON_Usr_ExistsP = reference to procedure(Sender: TC40_UserDB_Client; State_: Boolean);
+  TC40_UserDB_On_ExistsP = reference to procedure(Sender: TC40_UserDB_Client; State_: Boolean);
 {$ENDIF FPC}
 
-  TON_Usr_Exists = class(TOnResultBridge)
+  TC40_UserDB_On_Exists = class(TOnResultBridge)
   public
     Client: TC40_UserDB_Client;
-    OnResultC: TON_Usr_ExistsC;
-    OnResultM: TON_Usr_ExistsM;
-    OnResultP: TON_Usr_ExistsP;
+    OnResultC: TC40_UserDB_On_ExistsC;
+    OnResultM: TC40_UserDB_On_ExistsM;
+    OnResultP: TC40_UserDB_On_ExistsP;
     constructor Create;
     procedure DoStreamParamEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData, Result_: TDFE); override;
     procedure DoStreamFailedEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData: TDFE); override;
   end;
 
-  TON_Usr_AuthC = procedure(Sender: TC40_UserDB_Client; State_: Boolean; info_: SystemString);
-  TON_Usr_AuthM = procedure(Sender: TC40_UserDB_Client; State_: Boolean; info_: SystemString) of object;
+  TC40_UserDB_On_AuthC = procedure(Sender: TC40_UserDB_Client; State_: Boolean; info_: SystemString);
+  TC40_UserDB_On_AuthM = procedure(Sender: TC40_UserDB_Client; State_: Boolean; info_: SystemString) of object;
 {$IFDEF FPC}
-  TON_Usr_AuthP = procedure(Sender: TC40_UserDB_Client; State_: Boolean; info_: SystemString) is nested;
+  TC40_UserDB_On_AuthP = procedure(Sender: TC40_UserDB_Client; State_: Boolean; info_: SystemString) is nested;
 {$ELSE FPC}
-  TON_Usr_AuthP = reference to procedure(Sender: TC40_UserDB_Client; State_: Boolean; info_: SystemString);
+  TC40_UserDB_On_AuthP = reference to procedure(Sender: TC40_UserDB_Client; State_: Boolean; info_: SystemString);
 {$ENDIF FPC}
 
-  TON_Usr_Auth = class(TOnResultBridge)
+  TC40_UserDB_On_Auth = class(TOnResultBridge)
   public
     Client: TC40_UserDB_Client;
-    OnResultC: TON_Usr_AuthC;
-    OnResultM: TON_Usr_AuthM;
-    OnResultP: TON_Usr_AuthP;
+    OnResultC: TC40_UserDB_On_AuthC;
+    OnResultM: TC40_UserDB_On_AuthM;
+    OnResultP: TC40_UserDB_On_AuthP;
     constructor Create;
     procedure DoStreamParamEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData, Result_: TDFE); override;
     procedure DoStreamFailedEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData: TDFE); override;
   end;
 
-  TON_Usr_ChangePasswordC = procedure(Sender: TC40_UserDB_Client; State_: Boolean; info_: SystemString);
-  TON_Usr_ChangePasswordM = procedure(Sender: TC40_UserDB_Client; State_: Boolean; info_: SystemString) of object;
+  TC40_UserDB_On_ChangePasswordC = procedure(Sender: TC40_UserDB_Client; State_: Boolean; info_: SystemString);
+  TC40_UserDB_On_ChangePasswordM = procedure(Sender: TC40_UserDB_Client; State_: Boolean; info_: SystemString) of object;
 {$IFDEF FPC}
-  TON_Usr_ChangePasswordP = procedure(Sender: TC40_UserDB_Client; State_: Boolean; info_: SystemString) is nested;
+  TC40_UserDB_On_ChangePasswordP = procedure(Sender: TC40_UserDB_Client; State_: Boolean; info_: SystemString) is nested;
 {$ELSE FPC}
-  TON_Usr_ChangePasswordP = reference to procedure(Sender: TC40_UserDB_Client; State_: Boolean; info_: SystemString);
+  TC40_UserDB_On_ChangePasswordP = reference to procedure(Sender: TC40_UserDB_Client; State_: Boolean; info_: SystemString);
 {$ENDIF FPC}
 
-  TON_Usr_ChangePassword = class(TOnResultBridge)
+  TC40_UserDB_On_ChangePassword = class(TOnResultBridge)
   public
     Client: TC40_UserDB_Client;
-    OnResultC: TON_Usr_ChangePasswordC;
-    OnResultM: TON_Usr_ChangePasswordM;
-    OnResultP: TON_Usr_ChangePasswordP;
+    OnResultC: TC40_UserDB_On_ChangePasswordC;
+    OnResultM: TC40_UserDB_On_ChangePasswordM;
+    OnResultP: TC40_UserDB_On_ChangePasswordP;
     constructor Create;
     procedure DoStreamParamEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData, Result_: TDFE); override;
     procedure DoStreamFailedEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData: TDFE); override;
   end;
 
-  TON_Usr_NewIdentifierC = procedure(Sender: TC40_UserDB_Client; State_: Boolean; info_: SystemString);
-  TON_Usr_NewIdentifierM = procedure(Sender: TC40_UserDB_Client; State_: Boolean; info_: SystemString) of object;
+  TC40_UserDB_On_NewIdentifierC = procedure(Sender: TC40_UserDB_Client; State_: Boolean; info_: SystemString);
+  TC40_UserDB_On_NewIdentifierM = procedure(Sender: TC40_UserDB_Client; State_: Boolean; info_: SystemString) of object;
 {$IFDEF FPC}
-  TON_Usr_NewIdentifierP = procedure(Sender: TC40_UserDB_Client; State_: Boolean; info_: SystemString) is nested;
+  TC40_UserDB_On_NewIdentifierP = procedure(Sender: TC40_UserDB_Client; State_: Boolean; info_: SystemString) is nested;
 {$ELSE FPC}
-  TON_Usr_NewIdentifierP = reference to procedure(Sender: TC40_UserDB_Client; State_: Boolean; info_: SystemString);
+  TC40_UserDB_On_NewIdentifierP = reference to procedure(Sender: TC40_UserDB_Client; State_: Boolean; info_: SystemString);
 {$ENDIF FPC}
 
-  TON_Usr_NewIdentifier = class(TOnResultBridge)
+  TC40_UserDB_On_NewIdentifier = class(TOnResultBridge)
   public
     Client: TC40_UserDB_Client;
-    OnResultC: TON_Usr_NewIdentifierC;
-    OnResultM: TON_Usr_NewIdentifierM;
-    OnResultP: TON_Usr_NewIdentifierP;
+    OnResultC: TC40_UserDB_On_NewIdentifierC;
+    OnResultM: TC40_UserDB_On_NewIdentifierM;
+    OnResultP: TC40_UserDB_On_NewIdentifierP;
     constructor Create;
     procedure DoStreamParamEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData, Result_: TDFE); override;
     procedure DoStreamFailedEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData: TDFE); override;
   end;
 
-  TON_Usr_GetC = procedure(Sender: TC40_UserDB_Client; State_: Boolean; info_: SystemString; Json_: TZJ);
-  TON_Usr_GetM = procedure(Sender: TC40_UserDB_Client; State_: Boolean; info_: SystemString; Json_: TZJ) of object;
+  TC40_UserDB_On_GetC = procedure(Sender: TC40_UserDB_Client; State_: Boolean; info_: SystemString; Json_: TZJ);
+  TC40_UserDB_On_GetM = procedure(Sender: TC40_UserDB_Client; State_: Boolean; info_: SystemString; Json_: TZJ) of object;
 {$IFDEF FPC}
-  TON_Usr_GetP = procedure(Sender: TC40_UserDB_Client; State_: Boolean; info_: SystemString; Json_: TZJ) is nested;
+  TC40_UserDB_On_GetP = procedure(Sender: TC40_UserDB_Client; State_: Boolean; info_: SystemString; Json_: TZJ) is nested;
 {$ELSE FPC}
-  TON_Usr_GetP = reference to procedure(Sender: TC40_UserDB_Client; State_: Boolean; info_: SystemString; Json_: TZJ);
+  TC40_UserDB_On_GetP = reference to procedure(Sender: TC40_UserDB_Client; State_: Boolean; info_: SystemString; Json_: TZJ);
 {$ENDIF FPC}
 
-  TON_Usr_Get = class(TOnResultBridge)
+  TC40_UserDB_On_Get = class(TOnResultBridge)
   public
     Client: TC40_UserDB_Client;
-    OnResultC: TON_Usr_GetC;
-    OnResultM: TON_Usr_GetM;
-    OnResultP: TON_Usr_GetP;
+    OnResultC: TC40_UserDB_On_GetC;
+    OnResultM: TC40_UserDB_On_GetM;
+    OnResultP: TC40_UserDB_On_GetP;
     constructor Create;
     procedure DoStreamParamEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData, Result_: TDFE); override;
     procedure DoStreamFailedEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData: TDFE); override;
   end;
 
-  TON_Usr_GetPrimaryIdentifierC = procedure(Sender: TC40_UserDB_Client; State_: Boolean; info_, PrimaryIdentifier_: SystemString);
-  TON_Usr_GetPrimaryIdentifierM = procedure(Sender: TC40_UserDB_Client; State_: Boolean; info_, PrimaryIdentifier_: SystemString) of object;
+  TC40_UserDB_On_GetPrimaryIdentifierC = procedure(Sender: TC40_UserDB_Client; State_: Boolean; info_, PrimaryIdentifier_: SystemString);
+  TC40_UserDB_On_GetPrimaryIdentifierM = procedure(Sender: TC40_UserDB_Client; State_: Boolean; info_, PrimaryIdentifier_: SystemString) of object;
 {$IFDEF FPC}
-  TON_Usr_GetPrimaryIdentifierP = procedure(Sender: TC40_UserDB_Client; State_: Boolean; info_, PrimaryIdentifier_: SystemString) is nested;
+  TC40_UserDB_On_GetPrimaryIdentifierP = procedure(Sender: TC40_UserDB_Client; State_: Boolean; info_, PrimaryIdentifier_: SystemString) is nested;
 {$ELSE FPC}
-  TON_Usr_GetPrimaryIdentifierP = reference to procedure(Sender: TC40_UserDB_Client; State_: Boolean; info_, PrimaryIdentifier_: SystemString);
+  TC40_UserDB_On_GetPrimaryIdentifierP = reference to procedure(Sender: TC40_UserDB_Client; State_: Boolean; info_, PrimaryIdentifier_: SystemString);
 {$ENDIF FPC}
 
-  TON_Usr_GetPrimaryIdentifier = class(TOnResultBridge)
+  TC40_UserDB_On_GetPrimaryIdentifier = class(TOnResultBridge)
   public
     Client: TC40_UserDB_Client;
-    OnResultC: TON_Usr_GetPrimaryIdentifierC;
-    OnResultM: TON_Usr_GetPrimaryIdentifierM;
-    OnResultP: TON_Usr_GetPrimaryIdentifierP;
+    OnResultC: TC40_UserDB_On_GetPrimaryIdentifierC;
+    OnResultM: TC40_UserDB_On_GetPrimaryIdentifierM;
+    OnResultP: TC40_UserDB_On_GetPrimaryIdentifierP;
     constructor Create;
     procedure DoStreamParamEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData, Result_: TDFE); override;
     procedure DoStreamFailedEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData: TDFE); override;
@@ -338,57 +329,82 @@ type
     // IM
     procedure Usr_Open(UserName_: U_String);
     procedure Usr_Close(UserName_: U_String);
-    procedure Usr_IsOpenC(UserName_: U_String; OnResult: TON_Usr_IsOpenC); overload;
-    procedure Usr_IsOpenM(UserName_: U_String; OnResult: TON_Usr_IsOpenM); overload;
-    procedure Usr_IsOpenP(UserName_: U_String; OnResult: TON_Usr_IsOpenP); overload;
-    procedure Usr_IsOpenC(UserName_: U_StringArray; OnResult: TON_Usr_IsOpenC); overload;
-    procedure Usr_IsOpenM(UserName_: U_StringArray; OnResult: TON_Usr_IsOpenM); overload;
-    procedure Usr_IsOpenP(UserName_: U_StringArray; OnResult: TON_Usr_IsOpenP); overload;
+    // is open for one
+    procedure Usr_IsOpen_Bridge(UserName_: U_String; Bridge_IO_: TPeerIO); overload;
+    procedure Usr_IsOpenC(UserName_: U_String; OnResult: TC40_UserDB_On_IsOpenC); overload;
+    procedure Usr_IsOpenM(UserName_: U_String; OnResult: TC40_UserDB_On_IsOpenM); overload;
+    procedure Usr_IsOpenP(UserName_: U_String; OnResult: TC40_UserDB_On_IsOpenP); overload;
+    // is open for multi
+    procedure Usr_IsOpen_Bridge(UserName_: U_StringArray; Bridge_IO_: TPeerIO); overload;
+    procedure Usr_IsOpenC(UserName_: U_StringArray; OnResult: TC40_UserDB_On_IsOpenC); overload;
+    procedure Usr_IsOpenM(UserName_: U_StringArray; OnResult: TC40_UserDB_On_IsOpenM); overload;
+    procedure Usr_IsOpenP(UserName_: U_StringArray; OnResult: TC40_UserDB_On_IsOpenP); overload;
+    // send msg
     procedure Usr_Msg(FromUserName_, ToUserName_, Msg_: U_String);
-    procedure Usr_GetFriendsC(UserName_: U_String; OnResult: TON_Usr_GetFriendsC);
-    procedure Usr_GetFriendsM(UserName_: U_String; OnResult: TON_Usr_GetFriendsM);
-    procedure Usr_GetFriendsP(UserName_: U_String; OnResult: TON_Usr_GetFriendsP);
+    // get friends
+    procedure Usr_GetFriends_Bridge(UserName_: U_String; Bridge_IO_: TPeerIO);
+    procedure Usr_GetFriendsC(UserName_: U_String; OnResult: TC40_UserDB_On_GetFriendsC);
+    procedure Usr_GetFriendsM(UserName_: U_String; OnResult: TC40_UserDB_On_GetFriendsM);
+    procedure Usr_GetFriendsP(UserName_: U_String; OnResult: TC40_UserDB_On_GetFriendsP);
+    // remove friend
     procedure Usr_RemoveFriend(UserName_, DestFriendUserName_: U_String);
+    // request add friend
     procedure Usr_RequestAddFriend(FromUserName_, DestFriendUserName_, Msg_: U_String);
+    // reponse add friend
     procedure Usr_ReponseAddFriend(FromUserName_, DestFriendUserName_, Msg_: U_String; Accept_: Boolean);
-    procedure Usr_OnlineNumC(OnResult: TON_Usr_OnlineNumC);
-    procedure Usr_OnlineNumM(OnResult: TON_Usr_OnlineNumM);
-    procedure Usr_OnlineNumP(OnResult: TON_Usr_OnlineNumP);
-    procedure Usr_OnlineListC(Max_Num: Integer; OnResult: TON_Usr_OnlineListC);
-    procedure Usr_OnlineListM(Max_Num: Integer; OnResult: TON_Usr_OnlineListM);
-    procedure Usr_OnlineListP(Max_Num: Integer; OnResult: TON_Usr_OnlineListP);
+    // get online num
+    procedure Usr_OnlineNum_Bridge(Bridge_IO_: TPeerIO);
+    procedure Usr_OnlineNumC(OnResult: TC40_UserDB_On_OnlineNumC);
+    procedure Usr_OnlineNumM(OnResult: TC40_UserDB_On_OnlineNumM);
+    procedure Usr_OnlineNumP(OnResult: TC40_UserDB_On_OnlineNumP);
+    // get online list
+    procedure Usr_OnlineList_Bridge(Max_Num: Integer; Bridge_IO_: TPeerIO);
+    procedure Usr_OnlineListC(Max_Num: Integer; OnResult: TC40_UserDB_On_OnlineListC);
+    procedure Usr_OnlineListM(Max_Num: Integer; OnResult: TC40_UserDB_On_OnlineListM);
+    procedure Usr_OnlineListP(Max_Num: Integer; OnResult: TC40_UserDB_On_OnlineListP);
+    // kick user
     procedure Usr_Kick(UserName_: U_String);
+    // enabled user
     procedure Usr_Enabled(UserName_: U_String);
+    // disable usere
     procedure Usr_Disable(UserName_: U_String);
     // user registration
-    procedure Usr_RegC(UserName_, passwd_: U_String; OnResult: TON_Usr_RegC);
-    procedure Usr_RegM(UserName_, passwd_: U_String; OnResult: TON_Usr_RegM);
-    procedure Usr_RegP(UserName_, passwd_: U_String; OnResult: TON_Usr_RegP);
+    procedure Usr_Reg_Bridge(UserName_, passwd_: U_String; Bridge_IO_: TPeerIO);
+    procedure Usr_RegC(UserName_, passwd_: U_String; OnResult: TC40_UserDB_On_RegC);
+    procedure Usr_RegM(UserName_, passwd_: U_String; OnResult: TC40_UserDB_On_RegM);
+    procedure Usr_RegP(UserName_, passwd_: U_String; OnResult: TC40_UserDB_On_RegP);
     // find user
-    procedure Usr_ExistsC(UserName_: U_String; OnResult: TON_Usr_ExistsC);
-    procedure Usr_ExistsM(UserName_: U_String; OnResult: TON_Usr_ExistsM);
-    procedure Usr_ExistsP(UserName_: U_String; OnResult: TON_Usr_ExistsP);
+    procedure Usr_Exists_Bridge(UserName_: U_String; Bridge_IO_: TPeerIO);
+    procedure Usr_ExistsC(UserName_: U_String; OnResult: TC40_UserDB_On_ExistsC);
+    procedure Usr_ExistsM(UserName_: U_String; OnResult: TC40_UserDB_On_ExistsM);
+    procedure Usr_ExistsP(UserName_: U_String; OnResult: TC40_UserDB_On_ExistsP);
     // auth: Quantum Cryptography Password
-    procedure Usr_AuthC(UserName_, passwd_: U_String; OnResult: TON_Usr_AuthC);
-    procedure Usr_AuthM(UserName_, passwd_: U_String; OnResult: TON_Usr_AuthM);
-    procedure Usr_AuthP(UserName_, passwd_: U_String; OnResult: TON_Usr_AuthP);
+    procedure Usr_Auth_Bridge(UserName_, passwd_: U_String; Bridge_IO_: TPeerIO);
+    procedure Usr_AuthC(UserName_, passwd_: U_String; OnResult: TC40_UserDB_On_AuthC);
+    procedure Usr_AuthM(UserName_, passwd_: U_String; OnResult: TC40_UserDB_On_AuthM);
+    procedure Usr_AuthP(UserName_, passwd_: U_String; OnResult: TC40_UserDB_On_AuthP);
     // change password
-    procedure Usr_ChangePasswordC(UserName_, passwd_, NewPasswd_: U_String; OnResult: TON_Usr_ChangePasswordC);
-    procedure Usr_ChangePasswordM(UserName_, passwd_, NewPasswd_: U_String; OnResult: TON_Usr_ChangePasswordM);
-    procedure Usr_ChangePasswordP(UserName_, passwd_, NewPasswd_: U_String; OnResult: TON_Usr_ChangePasswordP);
+    procedure Usr_ChangePassword_Bridge(UserName_, passwd_, NewPasswd_: U_String; Bridge_IO_: TPeerIO);
+    procedure Usr_ChangePasswordC(UserName_, passwd_, NewPasswd_: U_String; OnResult: TC40_UserDB_On_ChangePasswordC);
+    procedure Usr_ChangePasswordM(UserName_, passwd_, NewPasswd_: U_String; OnResult: TC40_UserDB_On_ChangePasswordM);
+    procedure Usr_ChangePasswordP(UserName_, passwd_, NewPasswd_: U_String; OnResult: TC40_UserDB_On_ChangePasswordP);
     // reset password
     procedure Usr_ResetPassword(UserName_, NewPasswd_: U_String);
-    // user Identifier
-    procedure Usr_NewIdentifierC(UserName_, NewIdentifier_: U_String; OnResult: TON_Usr_NewIdentifierC);
-    procedure Usr_NewIdentifierM(UserName_, NewIdentifier_: U_String; OnResult: TON_Usr_NewIdentifierM);
-    procedure Usr_NewIdentifierP(UserName_, NewIdentifier_: U_String; OnResult: TON_Usr_NewIdentifierP);
-    procedure Usr_GetPrimaryIdentifierC(UserName_: U_String; OnResult: TON_Usr_GetPrimaryIdentifierC);
-    procedure Usr_GetPrimaryIdentifierM(UserName_: U_String; OnResult: TON_Usr_GetPrimaryIdentifierM);
-    procedure Usr_GetPrimaryIdentifierP(UserName_: U_String; OnResult: TON_Usr_GetPrimaryIdentifierP);
+    // new user Identifier
+    procedure Usr_NewIdentifier_Bridge(UserName_, NewIdentifier_: U_String; Bridge_IO_: TPeerIO);
+    procedure Usr_NewIdentifierC(UserName_, NewIdentifier_: U_String; OnResult: TC40_UserDB_On_NewIdentifierC);
+    procedure Usr_NewIdentifierM(UserName_, NewIdentifier_: U_String; OnResult: TC40_UserDB_On_NewIdentifierM);
+    procedure Usr_NewIdentifierP(UserName_, NewIdentifier_: U_String; OnResult: TC40_UserDB_On_NewIdentifierP);
+    // get identifier
+    procedure Usr_GetPrimaryIdentifier_Bridge(UserName_: U_String; Bridge_IO_: TPeerIO);
+    procedure Usr_GetPrimaryIdentifierC(UserName_: U_String; OnResult: TC40_UserDB_On_GetPrimaryIdentifierC);
+    procedure Usr_GetPrimaryIdentifierM(UserName_: U_String; OnResult: TC40_UserDB_On_GetPrimaryIdentifierM);
+    procedure Usr_GetPrimaryIdentifierP(UserName_: U_String; OnResult: TC40_UserDB_On_GetPrimaryIdentifierP);
     // get json object
-    procedure Usr_GetC(UserName_, ObjName_: U_String; OnResult: TON_Usr_GetC);
-    procedure Usr_GetM(UserName_, ObjName_: U_String; OnResult: TON_Usr_GetM);
-    procedure Usr_GetP(UserName_, ObjName_: U_String; OnResult: TON_Usr_GetP);
+    procedure Usr_Get_Bridge(UserName_, ObjName_: U_String; Bridge_IO_: TPeerIO);
+    procedure Usr_GetC(UserName_, ObjName_: U_String; OnResult: TC40_UserDB_On_GetC);
+    procedure Usr_GetM(UserName_, ObjName_: U_String; OnResult: TC40_UserDB_On_GetM);
+    procedure Usr_GetP(UserName_, ObjName_: U_String; OnResult: TC40_UserDB_On_GetP);
     // set json object
     procedure Usr_Set(UserName_, ObjName_: U_String; Json_: TZJ);
     // admin
@@ -399,6 +415,8 @@ type
     procedure Usr_Remove(UserName_: U_String); overload;
     procedure Usr_Remove(L_: TPascalStringList); overload;
   end;
+
+  TC40_UserDB_Client_List = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<TC40_UserDB_Client>;
 
 implementation
 
@@ -415,7 +433,7 @@ end;
 constructor TC40_UserDB_Service_RecvTunnel_NoAuth.Create(Owner_: TPeerIO);
 begin
   inherited Create(Owner_);
-  OpenUserIdentifier := TJsonHashList.Create(False, 1024 * 1024, nil);
+  OpenUserIdentifier := TC40_UserDB_Json_Hash_Pool.Create(False, 1024, nil);
 end;
 
 destructor TC40_UserDB_Service_RecvTunnel_NoAuth.Destroy;
@@ -832,8 +850,6 @@ begin
           end;
       if not found_ then
           friend_arry.Add(FromUserName_);
-
-      SendMsg(FromUserName_, DestFriendUserName_, PFormat('"%s" Accept Friend Request: %s', [FromUserName_.Text, Msg_.Text]));
     end
   else
     begin
@@ -854,8 +870,6 @@ begin
             friend_arry.Delete(i)
         else
             inc(i);
-
-      SendMsg(FromUserName_, DestFriendUserName_, PFormat('"%s" Reject Friend Request: %s', [FromUserName_.Text, Msg_.Text]));
     end;
 end;
 
@@ -952,6 +966,7 @@ begin
           Send_IO_Def := Recv_IO_Def.SendTunnel as TC40_UserDB_Service_SendTunnel_NoAuth;
           if Recv_IO_Def.OpenUserIdentifier.Exists(UserName_) then
             begin
+              Recv_IO_Def.OpenUserIdentifier.Delete(UserName_);
               Recv_IO_Def.SendUser_Kick(UserName_);
             end;
         end;
@@ -975,12 +990,34 @@ procedure TC40_UserDB_Service.cmd_Usr_Disable(Sender: TPeerIO; InData: TDFE);
 var
   UserName_: U_String;
   Json: TZDB2_Json;
+  Arry_: TIO_Array;
+  ID_: Cardinal;
+  IO_: TPeerIO;
+  Recv_IO_Def: TC40_UserDB_Service_RecvTunnel_NoAuth;
+  Send_IO_Def: TC40_UserDB_Service_SendTunnel_NoAuth;
 begin
   UserName_ := InData.R.ReadString;
   if not UserIdentifierHash.Exists(UserName_) then
       exit;
   Json := UserIdentifierHash[UserName_];
   Json.Data.B['Enabled'] := False;
+
+  DTNoAuthService.RecvTunnel.GetIO_Array(Arry_);
+  for ID_ in Arry_ do
+    begin
+      IO_ := DTNoAuthService.RecvTunnel[ID_];
+      if (IO_ <> nil) and TC40_UserDB_Service_RecvTunnel_NoAuth(IO_.UserDefine).LinkOk then
+        begin
+          Recv_IO_Def := IO_.IODefine as TC40_UserDB_Service_RecvTunnel_NoAuth;
+          Send_IO_Def := Recv_IO_Def.SendTunnel as TC40_UserDB_Service_SendTunnel_NoAuth;
+          if Recv_IO_Def.OpenUserIdentifier.Exists(UserName_) then
+            begin
+              Recv_IO_Def.OpenUserIdentifier.Delete(UserName_);
+              Recv_IO_Def.SendUser_Kick(UserName_);
+            end;
+        end;
+    end;
+  SetLength(Arry_, 0);
 end;
 
 procedure TC40_UserDB_Service.cmd_Usr_Reg(Sender: TPeerIO; InData, OutData: TDFE);
@@ -1003,6 +1040,13 @@ begin
     begin
       OutData.WriteBool(False);
       OutData.WriteString('User name "%s" illegal symbols', [UserName_.Text]);
+      exit;
+    end;
+
+  if (length(UserName_.Bytes) > Max_Reg_Identifier_Size) then
+    begin
+      OutData.WriteBool(False);
+      OutData.WriteString('User name "%s" is too long', [UserName_.Text]);
       exit;
     end;
 
@@ -1222,51 +1266,35 @@ begin
   InData.R.ReadJson(Json.Data.O[ObjName_]);
 end;
 
-procedure TC40_UserDB_Search_Bridge.Progress(Sender: TZNet_Progress);
-var
-  tk: TTimeTick;
-  Json: TZDB2_Json;
-  n: U_String;
-  IO_: TPeerIO;
-begin
-  IO_ := IO;
-  if IO_ <> nil then
-    begin
-      tk := GetTimeTick;
-      if index > Service.JsonDatabase.Count - 1 then
-          index := Service.JsonDatabase.Count - 1;
-      while index >= 0 do
-        begin
-          Json := Service.JsonDatabase[index];
-          n := Json.Data.ToJSONString(False);
-          if (SearchText.L = 0) or (n.GetPos(@SearchText) > 0) then
-            begin
-              IO_.OutDFE.WriteString(n);
-              if (MaxNum > 0) and (IO_.OutDFE.Count > MaxNum) then
-                  break;
-            end;
-          dec(index);
-          if GetTimeTick - tk > 10 then
-              exit;
-        end;
-    end;
-  if IO_ <> nil then
-      IO_.ContinueResultSend;
-
-  Sender.NextProgressDoFree := True;
-  DelayFreeObj(1.0, self);
-end;
-
 procedure TC40_UserDB_Service.cmd_Usr_Search(Sender: TPeerIO; InData, OutData: TDFE);
 var
-  tmp: TC40_UserDB_Search_Bridge;
+  SearchText: U_String;
+  MaxNum: Integer;
+  Json: TZDB2_Json;
+  n: U_String;
 begin
-  tmp := TC40_UserDB_Search_Bridge.Create(Sender);
-  tmp.Service := self;
-  tmp.SearchText := InData.R.ReadString;
-  tmp.MaxNum := InData.R.ReadInteger;
-  tmp.Index := JsonDatabase.Count - 1;
-  Sender.PauseResultSend;
+  SearchText := InData.R.ReadString;
+  MaxNum := InData.R.ReadInteger;
+  if JsonDatabase.Count > 0 then
+    with JsonDatabase.Invert_Repeat_ do
+      repeat
+        Json := Queue^.Data;
+        if Json.Data_Direct = nil then
+          begin
+            n := Json.Data.ToJSONString(False);
+            Json.RecycleMemory;
+          end
+        else
+          begin
+            n := Json.Data.ToJSONString(False);
+          end;
+        if (SearchText.L = 0) or (n.GetPos(@SearchText) > 0) then
+          begin
+            OutData.WriteString(n);
+            if (MaxNum > 0) and (OutData.Count > MaxNum) then
+                break;
+          end;
+      until not Prev;
 end;
 
 procedure TC40_UserDB_Service.cmd_Usr_Upload(Sender: TPeerIO; InData: TDFE);
@@ -1305,7 +1333,8 @@ begin
                 UserIdentifierHash.Add(arry.S[i], Json);
                 if Json.Data.IndexOf('PrimaryIdentifier') < 0 then
                     Json.Data.S['PrimaryIdentifier'] := arry.S[i];
-                DoStatus('user "%s" import done.', [arry.S[i]]);
+                if not C40_QuietMode then
+                    DoStatus('user "%s" import done.', [arry.S[i]]);
               end;
           end;
       except
@@ -1393,9 +1422,9 @@ begin
   UpdateToGlobalDispatch;
   ParamList.SetDefaultValue('OnlyInstance', if_(ServiceInfo.OnlyInstance, 'True', 'False'));
 
-  C40_UserDB_FileName := umlCombineFileName(DTNoAuthService.PublicFileDirectory, PFormat('DTC40_%s.Space', [ServiceInfo.ServiceTyp.Text]));
+  C40_UserDB_FileName := umlCombineFileName(DTNoAuthService.PublicFileDirectory, Get_DB_FileName_Config(PFormat('DTC40_%s.Space', [ServiceInfo.ServiceTyp.Text])));
 
-  UserIdentifierHash := TJsonHashList.Create(False,
+  UserIdentifierHash := TC40_UserDB_Json_Hash_Pool.Create(False,
     EStrToInt64(ParamList.GetDefaultValue('Identifier_HashPool', '4*1024*1024'), 4 * 1024 * 1024),
     nil);
   UserIdentifierHash.AccessOptimization := True;
@@ -1409,9 +1438,10 @@ begin
   ZDB2RecycleMemoryTimeOut := EStrToInt64(ParamList.GetDefaultValue('RecycleMemory', '60*1000'), 60 * 1000);
   ZDB2DeltaSpace := EStrToInt64(ParamList.GetDefaultValue('DeltaSpace', '16*1024*1024'), 16 * 1024 * 1024);
   ZDB2BlockSize := EStrToInt(ParamList.GetDefaultValue('BlockSize', '1024'), 1024);
-  ZDB2EnabledCipher := EStrToBool(ParamList.GetDefaultValue('EnabledCipher', 'True'), True);
-  ZDB2CipherName := ParamList.GetDefaultValue('Cipher', TCipher.CCipherSecurityName[TCipherSecurity.csRijndael]);
+  ZDB2EnabledCipher := EStrToBool(ParamList.GetDefaultValue('EnabledCipher', 'False'), False);
+  ZDB2CipherName := ParamList.GetDefaultValue('Cipher', TCipher.CCipherSecurityName[TCipherSecurity.csNone]);
   ZDB2Password := ParamList.GetDefaultValue('Password', Z.Net.C4.C40_Password);
+  Max_Reg_Identifier_Size := EStrToInt(ParamList.GetDefaultValue('Max_Reg_Identifier_Size', '30'), 30);
 
   if ZDB2EnabledCipher then
       ZDB2Cipher := TZDB2_Cipher.Create(ZDB2CipherName, ZDB2Password, 1, True, True)
@@ -1421,25 +1451,29 @@ begin
   JsonDatabase := TZDB2_List_Json.Create(TZDB2_Json, nil, ZDB2RecycleMemoryTimeOut, fs, False, ZDB2DeltaSpace, ZDB2BlockSize, ZDB2Cipher);
   JsonDatabase.AutoFreeStream := True;
 
-  DoStatus('extract user Database.');
-  for j := 0 to JsonDatabase.Count - 1 do
-    begin
-      Json := JsonDatabase[j];
-      identifier_arry := Json.Data.A['Identifier'];
-      for i := 0 to identifier_arry.Count - 1 do
-        begin
-          if UserIdentifierHash.Exists(identifier_arry.S[i]) then
-            begin
-              DoStatus('repeat user %s', [identifier_arry.S[i]]);
-              UserIdentifierHash.Add(identifier_arry.S[i], Json);
-            end
-          else
-              UserIdentifierHash.FastAdd(identifier_arry.S[i], Json);
-        end;
-      Json.RecycleMemory;
-    end;
+  if not C40_QuietMode then
+      DoStatus('extract user Database.');
+  if JsonDatabase.Count > 0 then
+    with JsonDatabase.Repeat_ do
+      repeat
+        Json := Queue^.Data;
+        identifier_arry := Json.Data.A['Identifier'];
+        for i := 0 to identifier_arry.Count - 1 do
+          begin
+            if UserIdentifierHash.Exists(identifier_arry.S[i]) then
+              begin
+                if not C40_QuietMode then
+                    DoStatus('repeat user %s', [identifier_arry.S[i]]);
+                UserIdentifierHash.Add(identifier_arry.S[i], Json);
+              end
+            else
+                UserIdentifierHash.FastAdd(identifier_arry.S[i], Json);
+          end;
+        Json.RecycleMemory;
+      until not Next;
   JsonDatabase.Flush;
-  DoStatus('extract user Database done.');
+  if not C40_QuietMode then
+      DoStatus('extract user Database done.');
 end;
 
 destructor TC40_UserDB_Service.Destroy;
@@ -1460,45 +1494,6 @@ procedure TC40_UserDB_Service.Progress;
 begin
   inherited Progress;
   JsonDatabase.Progress;
-end;
-
-function TC40_UserDB_Service.RegUser(UserName_, passwd_: U_String): TZDB2_Json;
-var
-  Json: TZDB2_Json;
-  arry: TZJArry;
-  i: Integer;
-begin
-  Result := nil;
-  if (length(UserName_.Bytes) < 4) then
-    begin
-      DoStatus('User name "%s" is too short', [UserName_.Text]);
-      exit;
-    end;
-
-  if (length(passwd_.Bytes) < 6) then
-    begin
-      DoStatus('password is too short');
-      exit;
-    end;
-
-  if UserIdentifierHash.Exists(UserName_) then
-    begin
-      DoStatus('repeat user "%s"', [UserName_.Text]);
-      exit;
-    end;
-
-  Json := JsonDatabase.NewData;
-  arry := Json.Data.A['Identifier'];
-  arry.Add(UserName_);
-  Json.Data.S['PrimaryIdentifier'] := UserName_;
-  Json.Data.S['Password'] := GenerateQuantumCryptographyPassword(passwd_.LowerText);
-  Json.Data.D['RegTime'] := umlNow;
-  Json.Data.D['LastAuth'] := umlNow;
-  Json.Data.B['Enabled'] := True;
-  for i := 0 to arry.Count - 1 do
-      UserIdentifierHash.Add(arry.S[i], Json);
-  DoStatus('user "%s" registration done.', [UserName_.Text]);
-  Result := Json;
 end;
 
 procedure TC40_UserDB_Service.SendMsg(FromUserName_, ToUserName_, Msg_: U_String);
@@ -1543,7 +1538,7 @@ begin
     end;
 end;
 
-constructor TON_Usr_IsOpen.Create;
+constructor TC40_UserDB_On_IsOpen.Create;
 begin
   inherited Create;
   Client := nil;
@@ -1552,7 +1547,7 @@ begin
   OnResultP := nil;
 end;
 
-procedure TON_Usr_IsOpen.DoStreamParamEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData, Result_: TDFE);
+procedure TC40_UserDB_On_IsOpen.DoStreamParamEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData, Result_: TDFE);
 var
   State_: TArrayBool;
   i: Integer;
@@ -1573,7 +1568,7 @@ begin
   DelayFreeObject(1.0, self);
 end;
 
-procedure TON_Usr_IsOpen.DoStreamFailedEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData: TDFE);
+procedure TC40_UserDB_On_IsOpen.DoStreamFailedEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData: TDFE);
 var
   State_: TArrayBool;
   i: Integer;
@@ -1594,7 +1589,7 @@ begin
   DelayFreeObject(1.0, self);
 end;
 
-constructor TON_Usr_GetFriends.Create;
+constructor TC40_UserDB_On_GetFriends.Create;
 begin
   inherited Create;
   Client := nil;
@@ -1603,7 +1598,7 @@ begin
   OnResultP := nil;
 end;
 
-procedure TON_Usr_GetFriends.DoStreamParamEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData, Result_: TDFE);
+procedure TC40_UserDB_On_GetFriends.DoStreamParamEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData, Result_: TDFE);
 var
   FriendArry: U_StringArray;
   i: Integer;
@@ -1625,7 +1620,7 @@ begin
   DelayFreeObject(1.0, self);
 end;
 
-procedure TON_Usr_GetFriends.DoStreamFailedEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData: TDFE);
+procedure TC40_UserDB_On_GetFriends.DoStreamFailedEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData: TDFE);
 var
   FriendArry: U_StringArray;
 begin
@@ -1643,7 +1638,7 @@ begin
   DelayFreeObject(1.0, self);
 end;
 
-constructor TON_Usr_OnlineNum.Create;
+constructor TC40_UserDB_On_OnlineNum.Create;
 begin
   inherited Create;
   Client := nil;
@@ -1652,7 +1647,7 @@ begin
   OnResultP := nil;
 end;
 
-procedure TON_Usr_OnlineNum.DoStreamParamEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData, Result_: TDFE);
+procedure TC40_UserDB_On_OnlineNum.DoStreamParamEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData, Result_: TDFE);
 var
   Online_Num, User_Num: Integer;
   i: Integer;
@@ -1672,7 +1667,7 @@ begin
   DelayFreeObject(1.0, self);
 end;
 
-procedure TON_Usr_OnlineNum.DoStreamFailedEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData: TDFE);
+procedure TC40_UserDB_On_OnlineNum.DoStreamFailedEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData: TDFE);
 var
   Online_Num, User_Num: Integer;
   i: Integer;
@@ -1692,7 +1687,7 @@ begin
   DelayFreeObject(1.0, self);
 end;
 
-constructor TON_Usr_OnlineList.Create;
+constructor TC40_UserDB_On_OnlineList.Create;
 begin
   inherited Create;
   Client := nil;
@@ -1701,7 +1696,7 @@ begin
   OnResultP := nil;
 end;
 
-procedure TON_Usr_OnlineList.DoStreamParamEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData, Result_: TDFE);
+procedure TC40_UserDB_On_OnlineList.DoStreamParamEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData, Result_: TDFE);
 var
   arry: U_StringArray;
   i: Integer;
@@ -1723,7 +1718,7 @@ begin
   DelayFreeObject(1.0, self);
 end;
 
-procedure TON_Usr_OnlineList.DoStreamFailedEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData: TDFE);
+procedure TC40_UserDB_On_OnlineList.DoStreamFailedEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData: TDFE);
 var
   arry: U_StringArray;
 begin
@@ -1741,7 +1736,7 @@ begin
   DelayFreeObject(1.0, self);
 end;
 
-constructor TON_Usr_Reg.Create;
+constructor TC40_UserDB_On_Reg.Create;
 begin
   inherited Create;
   Client := nil;
@@ -1750,7 +1745,7 @@ begin
   OnResultP := nil;
 end;
 
-procedure TON_Usr_Reg.DoStreamParamEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData, Result_: TDFE);
+procedure TC40_UserDB_On_Reg.DoStreamParamEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData, Result_: TDFE);
 var
   State_: Boolean;
   info_: SystemString;
@@ -1775,7 +1770,7 @@ begin
   DelayFreeObject(1.0, self);
 end;
 
-procedure TON_Usr_Reg.DoStreamFailedEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData: TDFE);
+procedure TC40_UserDB_On_Reg.DoStreamFailedEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData: TDFE);
 var
   State_: Boolean;
   info_: SystemString;
@@ -1795,7 +1790,7 @@ begin
   DelayFreeObject(1.0, self);
 end;
 
-constructor TON_Usr_Exists.Create;
+constructor TC40_UserDB_On_Exists.Create;
 begin
   inherited Create;
   Client := nil;
@@ -1804,7 +1799,7 @@ begin
   OnResultP := nil;
 end;
 
-procedure TON_Usr_Exists.DoStreamParamEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData, Result_: TDFE);
+procedure TC40_UserDB_On_Exists.DoStreamParamEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData, Result_: TDFE);
 var
   State_: Boolean;
 begin
@@ -1826,7 +1821,7 @@ begin
   DelayFreeObject(1.0, self);
 end;
 
-procedure TON_Usr_Exists.DoStreamFailedEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData: TDFE);
+procedure TC40_UserDB_On_Exists.DoStreamFailedEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData: TDFE);
 var
   State_: Boolean;
 begin
@@ -1844,7 +1839,7 @@ begin
   DelayFreeObject(1.0, self);
 end;
 
-constructor TON_Usr_Auth.Create;
+constructor TC40_UserDB_On_Auth.Create;
 begin
   inherited Create;
   Client := nil;
@@ -1853,7 +1848,7 @@ begin
   OnResultP := nil;
 end;
 
-procedure TON_Usr_Auth.DoStreamParamEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData, Result_: TDFE);
+procedure TC40_UserDB_On_Auth.DoStreamParamEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData, Result_: TDFE);
 var
   State_: Boolean;
   info_: SystemString;
@@ -1878,7 +1873,7 @@ begin
   DelayFreeObject(1.0, self);
 end;
 
-procedure TON_Usr_Auth.DoStreamFailedEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData: TDFE);
+procedure TC40_UserDB_On_Auth.DoStreamFailedEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData: TDFE);
 var
   State_: Boolean;
   info_: SystemString;
@@ -1898,7 +1893,7 @@ begin
   DelayFreeObject(1.0, self);
 end;
 
-constructor TON_Usr_ChangePassword.Create;
+constructor TC40_UserDB_On_ChangePassword.Create;
 begin
   inherited Create;
   Client := nil;
@@ -1907,7 +1902,7 @@ begin
   OnResultP := nil;
 end;
 
-procedure TON_Usr_ChangePassword.DoStreamParamEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData, Result_: TDFE);
+procedure TC40_UserDB_On_ChangePassword.DoStreamParamEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData, Result_: TDFE);
 var
   State_: Boolean;
   info_: SystemString;
@@ -1932,7 +1927,7 @@ begin
   DelayFreeObject(1.0, self);
 end;
 
-procedure TON_Usr_ChangePassword.DoStreamFailedEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData: TDFE);
+procedure TC40_UserDB_On_ChangePassword.DoStreamFailedEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData: TDFE);
 var
   State_: Boolean;
   info_: SystemString;
@@ -1952,7 +1947,7 @@ begin
   DelayFreeObject(1.0, self);
 end;
 
-constructor TON_Usr_NewIdentifier.Create;
+constructor TC40_UserDB_On_NewIdentifier.Create;
 begin
   inherited Create;
   Client := nil;
@@ -1961,7 +1956,7 @@ begin
   OnResultP := nil;
 end;
 
-procedure TON_Usr_NewIdentifier.DoStreamParamEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData, Result_: TDFE);
+procedure TC40_UserDB_On_NewIdentifier.DoStreamParamEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData, Result_: TDFE);
 var
   State_: Boolean;
   info_: SystemString;
@@ -1986,7 +1981,7 @@ begin
   DelayFreeObject(1.0, self);
 end;
 
-procedure TON_Usr_NewIdentifier.DoStreamFailedEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData: TDFE);
+procedure TC40_UserDB_On_NewIdentifier.DoStreamFailedEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData: TDFE);
 var
   State_: Boolean;
   info_: SystemString;
@@ -2006,7 +2001,7 @@ begin
   DelayFreeObject(1.0, self);
 end;
 
-constructor TON_Usr_Get.Create;
+constructor TC40_UserDB_On_Get.Create;
 begin
   inherited Create;
   Client := nil;
@@ -2015,7 +2010,7 @@ begin
   OnResultP := nil;
 end;
 
-procedure TON_Usr_Get.DoStreamParamEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData, Result_: TDFE);
+procedure TC40_UserDB_On_Get.DoStreamParamEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData, Result_: TDFE);
 var
   State_: Boolean;
   info_: SystemString;
@@ -2044,7 +2039,7 @@ begin
   DelayFreeObject(1.0, self, Json);
 end;
 
-procedure TON_Usr_Get.DoStreamFailedEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData: TDFE);
+procedure TC40_UserDB_On_Get.DoStreamFailedEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData: TDFE);
 var
   State_: Boolean;
   info_: SystemString;
@@ -2066,7 +2061,7 @@ begin
   DelayFreeObject(1.0, self, Json);
 end;
 
-constructor TON_Usr_GetPrimaryIdentifier.Create;
+constructor TC40_UserDB_On_GetPrimaryIdentifier.Create;
 begin
   inherited Create;
   Client := nil;
@@ -2075,7 +2070,7 @@ begin
   OnResultP := nil;
 end;
 
-procedure TON_Usr_GetPrimaryIdentifier.DoStreamParamEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData, Result_: TDFE);
+procedure TC40_UserDB_On_GetPrimaryIdentifier.DoStreamParamEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData, Result_: TDFE);
 var
   State_: Boolean;
   info_, PrimaryIdentifier_: SystemString;
@@ -2103,7 +2098,7 @@ begin
   DelayFreeObject(1.0, self);
 end;
 
-procedure TON_Usr_GetPrimaryIdentifier.DoStreamFailedEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData: TDFE);
+procedure TC40_UserDB_On_GetPrimaryIdentifier.DoStreamFailedEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData: TDFE);
 var
   State_: Boolean;
   info_, PrimaryIdentifier_: SystemString;
@@ -2227,12 +2222,22 @@ begin
   DisposeObject(D);
 end;
 
-procedure TC40_UserDB_Client.Usr_IsOpenC(UserName_: U_String; OnResult: TON_Usr_IsOpenC);
+procedure TC40_UserDB_Client.Usr_IsOpen_Bridge(UserName_: U_String; Bridge_IO_: TPeerIO);
 var
-  tmp: TON_Usr_IsOpen;
   D: TDFE;
 begin
-  tmp := TON_Usr_IsOpen.Create;
+  D := TDFE.Create;
+  D.WriteString(UserName_);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_IsOpen', D, {$IFDEF FPC}@{$ENDIF FPC}TStreamEventBridge.Create(Bridge_IO_).DoStreamEvent);
+  DisposeObject(D);
+end;
+
+procedure TC40_UserDB_Client.Usr_IsOpenC(UserName_: U_String; OnResult: TC40_UserDB_On_IsOpenC);
+var
+  tmp: TC40_UserDB_On_IsOpen;
+  D: TDFE;
+begin
+  tmp := TC40_UserDB_On_IsOpen.Create;
   tmp.Client := self;
   tmp.OnResultC := OnResult;
 
@@ -2243,12 +2248,12 @@ begin
   DisposeObject(D);
 end;
 
-procedure TC40_UserDB_Client.Usr_IsOpenM(UserName_: U_String; OnResult: TON_Usr_IsOpenM);
+procedure TC40_UserDB_Client.Usr_IsOpenM(UserName_: U_String; OnResult: TC40_UserDB_On_IsOpenM);
 var
-  tmp: TON_Usr_IsOpen;
+  tmp: TC40_UserDB_On_IsOpen;
   D: TDFE;
 begin
-  tmp := TON_Usr_IsOpen.Create;
+  tmp := TC40_UserDB_On_IsOpen.Create;
   tmp.Client := self;
   tmp.OnResultM := OnResult;
 
@@ -2259,12 +2264,12 @@ begin
   DisposeObject(D);
 end;
 
-procedure TC40_UserDB_Client.Usr_IsOpenP(UserName_: U_String; OnResult: TON_Usr_IsOpenP);
+procedure TC40_UserDB_Client.Usr_IsOpenP(UserName_: U_String; OnResult: TC40_UserDB_On_IsOpenP);
 var
-  tmp: TON_Usr_IsOpen;
+  tmp: TC40_UserDB_On_IsOpen;
   D: TDFE;
 begin
-  tmp := TON_Usr_IsOpen.Create;
+  tmp := TC40_UserDB_On_IsOpen.Create;
   tmp.Client := self;
   tmp.OnResultP := OnResult;
 
@@ -2275,13 +2280,25 @@ begin
   DisposeObject(D);
 end;
 
-procedure TC40_UserDB_Client.Usr_IsOpenC(UserName_: U_StringArray; OnResult: TON_Usr_IsOpenC);
+procedure TC40_UserDB_Client.Usr_IsOpen_Bridge(UserName_: U_StringArray; Bridge_IO_: TPeerIO);
 var
-  tmp: TON_Usr_IsOpen;
   D: TDFE;
   i: Integer;
 begin
-  tmp := TON_Usr_IsOpen.Create;
+  D := TDFE.Create;
+  for i := 0 to length(UserName_) - 1 do
+      D.WriteString(UserName_[i]);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_IsOpen', D, {$IFDEF FPC}@{$ENDIF FPC}TStreamEventBridge.Create(Bridge_IO_).DoStreamEvent);
+  DisposeObject(D);
+end;
+
+procedure TC40_UserDB_Client.Usr_IsOpenC(UserName_: U_StringArray; OnResult: TC40_UserDB_On_IsOpenC);
+var
+  tmp: TC40_UserDB_On_IsOpen;
+  D: TDFE;
+  i: Integer;
+begin
+  tmp := TC40_UserDB_On_IsOpen.Create;
   tmp.Client := self;
   tmp.OnResultC := OnResult;
 
@@ -2293,13 +2310,13 @@ begin
   DisposeObject(D);
 end;
 
-procedure TC40_UserDB_Client.Usr_IsOpenM(UserName_: U_StringArray; OnResult: TON_Usr_IsOpenM);
+procedure TC40_UserDB_Client.Usr_IsOpenM(UserName_: U_StringArray; OnResult: TC40_UserDB_On_IsOpenM);
 var
-  tmp: TON_Usr_IsOpen;
+  tmp: TC40_UserDB_On_IsOpen;
   D: TDFE;
   i: Integer;
 begin
-  tmp := TON_Usr_IsOpen.Create;
+  tmp := TC40_UserDB_On_IsOpen.Create;
   tmp.Client := self;
   tmp.OnResultM := OnResult;
 
@@ -2311,13 +2328,13 @@ begin
   DisposeObject(D);
 end;
 
-procedure TC40_UserDB_Client.Usr_IsOpenP(UserName_: U_StringArray; OnResult: TON_Usr_IsOpenP);
+procedure TC40_UserDB_Client.Usr_IsOpenP(UserName_: U_StringArray; OnResult: TC40_UserDB_On_IsOpenP);
 var
-  tmp: TON_Usr_IsOpen;
+  tmp: TC40_UserDB_On_IsOpen;
   D: TDFE;
   i: Integer;
 begin
-  tmp := TON_Usr_IsOpen.Create;
+  tmp := TC40_UserDB_On_IsOpen.Create;
   tmp.Client := self;
   tmp.OnResultP := OnResult;
 
@@ -2341,12 +2358,22 @@ begin
   DisposeObject(D);
 end;
 
-procedure TC40_UserDB_Client.Usr_GetFriendsC(UserName_: U_String; OnResult: TON_Usr_GetFriendsC);
+procedure TC40_UserDB_Client.Usr_GetFriends_Bridge(UserName_: U_String; Bridge_IO_: TPeerIO);
 var
-  tmp: TON_Usr_GetFriends;
   D: TDFE;
 begin
-  tmp := TON_Usr_GetFriends.Create;
+  D := TDFE.Create;
+  D.WriteString(UserName_);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_GetFriends', D, {$IFDEF FPC}@{$ENDIF FPC}TStreamEventBridge.Create(Bridge_IO_).DoStreamEvent);
+  DisposeObject(D);
+end;
+
+procedure TC40_UserDB_Client.Usr_GetFriendsC(UserName_: U_String; OnResult: TC40_UserDB_On_GetFriendsC);
+var
+  tmp: TC40_UserDB_On_GetFriends;
+  D: TDFE;
+begin
+  tmp := TC40_UserDB_On_GetFriends.Create;
   tmp.Client := self;
   tmp.OnResultC := OnResult;
 
@@ -2357,12 +2384,12 @@ begin
   DisposeObject(D);
 end;
 
-procedure TC40_UserDB_Client.Usr_GetFriendsM(UserName_: U_String; OnResult: TON_Usr_GetFriendsM);
+procedure TC40_UserDB_Client.Usr_GetFriendsM(UserName_: U_String; OnResult: TC40_UserDB_On_GetFriendsM);
 var
-  tmp: TON_Usr_GetFriends;
+  tmp: TC40_UserDB_On_GetFriends;
   D: TDFE;
 begin
-  tmp := TON_Usr_GetFriends.Create;
+  tmp := TC40_UserDB_On_GetFriends.Create;
   tmp.Client := self;
   tmp.OnResultM := OnResult;
 
@@ -2373,12 +2400,12 @@ begin
   DisposeObject(D);
 end;
 
-procedure TC40_UserDB_Client.Usr_GetFriendsP(UserName_: U_String; OnResult: TON_Usr_GetFriendsP);
+procedure TC40_UserDB_Client.Usr_GetFriendsP(UserName_: U_String; OnResult: TC40_UserDB_On_GetFriendsP);
 var
-  tmp: TON_Usr_GetFriends;
+  tmp: TC40_UserDB_On_GetFriends;
   D: TDFE;
 begin
-  tmp := TON_Usr_GetFriends.Create;
+  tmp := TC40_UserDB_On_GetFriends.Create;
   tmp.Client := self;
   tmp.OnResultP := OnResult;
 
@@ -2425,12 +2452,21 @@ begin
   DisposeObject(D);
 end;
 
-procedure TC40_UserDB_Client.Usr_OnlineNumC(OnResult: TON_Usr_OnlineNumC);
+procedure TC40_UserDB_Client.Usr_OnlineNum_Bridge(Bridge_IO_: TPeerIO);
 var
-  tmp: TON_Usr_OnlineNum;
   D: TDFE;
 begin
-  tmp := TON_Usr_OnlineNum.Create;
+  D := TDFE.Create;
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_OnlineNum', D, {$IFDEF FPC}@{$ENDIF FPC}TStreamEventBridge.Create(Bridge_IO_).DoStreamEvent);
+  DisposeObject(D);
+end;
+
+procedure TC40_UserDB_Client.Usr_OnlineNumC(OnResult: TC40_UserDB_On_OnlineNumC);
+var
+  tmp: TC40_UserDB_On_OnlineNum;
+  D: TDFE;
+begin
+  tmp := TC40_UserDB_On_OnlineNum.Create;
   tmp.Client := self;
   tmp.OnResultC := OnResult;
 
@@ -2440,12 +2476,12 @@ begin
   DisposeObject(D);
 end;
 
-procedure TC40_UserDB_Client.Usr_OnlineNumM(OnResult: TON_Usr_OnlineNumM);
+procedure TC40_UserDB_Client.Usr_OnlineNumM(OnResult: TC40_UserDB_On_OnlineNumM);
 var
-  tmp: TON_Usr_OnlineNum;
+  tmp: TC40_UserDB_On_OnlineNum;
   D: TDFE;
 begin
-  tmp := TON_Usr_OnlineNum.Create;
+  tmp := TC40_UserDB_On_OnlineNum.Create;
   tmp.Client := self;
   tmp.OnResultM := OnResult;
 
@@ -2455,12 +2491,12 @@ begin
   DisposeObject(D);
 end;
 
-procedure TC40_UserDB_Client.Usr_OnlineNumP(OnResult: TON_Usr_OnlineNumP);
+procedure TC40_UserDB_Client.Usr_OnlineNumP(OnResult: TC40_UserDB_On_OnlineNumP);
 var
-  tmp: TON_Usr_OnlineNum;
+  tmp: TC40_UserDB_On_OnlineNum;
   D: TDFE;
 begin
-  tmp := TON_Usr_OnlineNum.Create;
+  tmp := TC40_UserDB_On_OnlineNum.Create;
   tmp.Client := self;
   tmp.OnResultP := OnResult;
 
@@ -2470,12 +2506,22 @@ begin
   DisposeObject(D);
 end;
 
-procedure TC40_UserDB_Client.Usr_OnlineListC(Max_Num: Integer; OnResult: TON_Usr_OnlineListC);
+procedure TC40_UserDB_Client.Usr_OnlineList_Bridge(Max_Num: Integer; Bridge_IO_: TPeerIO);
 var
-  tmp: TON_Usr_OnlineList;
   D: TDFE;
 begin
-  tmp := TON_Usr_OnlineList.Create;
+  D := TDFE.Create;
+  D.WriteInteger(Max_Num);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_OnlineList', D, {$IFDEF FPC}@{$ENDIF FPC}TStreamEventBridge.Create(Bridge_IO_).DoStreamEvent);
+  DisposeObject(D);
+end;
+
+procedure TC40_UserDB_Client.Usr_OnlineListC(Max_Num: Integer; OnResult: TC40_UserDB_On_OnlineListC);
+var
+  tmp: TC40_UserDB_On_OnlineList;
+  D: TDFE;
+begin
+  tmp := TC40_UserDB_On_OnlineList.Create;
   tmp.Client := self;
   tmp.OnResultC := OnResult;
 
@@ -2486,12 +2532,12 @@ begin
   DisposeObject(D);
 end;
 
-procedure TC40_UserDB_Client.Usr_OnlineListM(Max_Num: Integer; OnResult: TON_Usr_OnlineListM);
+procedure TC40_UserDB_Client.Usr_OnlineListM(Max_Num: Integer; OnResult: TC40_UserDB_On_OnlineListM);
 var
-  tmp: TON_Usr_OnlineList;
+  tmp: TC40_UserDB_On_OnlineList;
   D: TDFE;
 begin
-  tmp := TON_Usr_OnlineList.Create;
+  tmp := TC40_UserDB_On_OnlineList.Create;
   tmp.Client := self;
   tmp.OnResultM := OnResult;
 
@@ -2502,12 +2548,12 @@ begin
   DisposeObject(D);
 end;
 
-procedure TC40_UserDB_Client.Usr_OnlineListP(Max_Num: Integer; OnResult: TON_Usr_OnlineListP);
+procedure TC40_UserDB_Client.Usr_OnlineListP(Max_Num: Integer; OnResult: TC40_UserDB_On_OnlineListP);
 var
-  tmp: TON_Usr_OnlineList;
+  tmp: TC40_UserDB_On_OnlineList;
   D: TDFE;
 begin
-  tmp := TON_Usr_OnlineList.Create;
+  tmp := TC40_UserDB_On_OnlineList.Create;
   tmp.Client := self;
   tmp.OnResultP := OnResult;
 
@@ -2548,12 +2594,23 @@ begin
   DisposeObject(D);
 end;
 
-procedure TC40_UserDB_Client.Usr_RegC(UserName_, passwd_: U_String; OnResult: TON_Usr_RegC);
+procedure TC40_UserDB_Client.Usr_Reg_Bridge(UserName_, passwd_: U_String; Bridge_IO_: TPeerIO);
 var
-  tmp: TON_Usr_Reg;
   D: TDFE;
 begin
-  tmp := TON_Usr_Reg.Create;
+  D := TDFE.Create;
+  D.WriteString(UserName_);
+  D.WriteString(passwd_);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_Reg', D, {$IFDEF FPC}@{$ENDIF FPC}TStreamEventBridge.Create(Bridge_IO_).DoStreamEvent);
+  DisposeObject(D);
+end;
+
+procedure TC40_UserDB_Client.Usr_RegC(UserName_, passwd_: U_String; OnResult: TC40_UserDB_On_RegC);
+var
+  tmp: TC40_UserDB_On_Reg;
+  D: TDFE;
+begin
+  tmp := TC40_UserDB_On_Reg.Create;
   tmp.Client := self;
   tmp.OnResultC := OnResult;
 
@@ -2565,12 +2622,12 @@ begin
   DisposeObject(D);
 end;
 
-procedure TC40_UserDB_Client.Usr_RegM(UserName_, passwd_: U_String; OnResult: TON_Usr_RegM);
+procedure TC40_UserDB_Client.Usr_RegM(UserName_, passwd_: U_String; OnResult: TC40_UserDB_On_RegM);
 var
-  tmp: TON_Usr_Reg;
+  tmp: TC40_UserDB_On_Reg;
   D: TDFE;
 begin
-  tmp := TON_Usr_Reg.Create;
+  tmp := TC40_UserDB_On_Reg.Create;
   tmp.Client := self;
   tmp.OnResultM := OnResult;
 
@@ -2582,12 +2639,12 @@ begin
   DisposeObject(D);
 end;
 
-procedure TC40_UserDB_Client.Usr_RegP(UserName_, passwd_: U_String; OnResult: TON_Usr_RegP);
+procedure TC40_UserDB_Client.Usr_RegP(UserName_, passwd_: U_String; OnResult: TC40_UserDB_On_RegP);
 var
-  tmp: TON_Usr_Reg;
+  tmp: TC40_UserDB_On_Reg;
   D: TDFE;
 begin
-  tmp := TON_Usr_Reg.Create;
+  tmp := TC40_UserDB_On_Reg.Create;
   tmp.Client := self;
   tmp.OnResultP := OnResult;
 
@@ -2599,12 +2656,22 @@ begin
   DisposeObject(D);
 end;
 
-procedure TC40_UserDB_Client.Usr_ExistsC(UserName_: U_String; OnResult: TON_Usr_ExistsC);
+procedure TC40_UserDB_Client.Usr_Exists_Bridge(UserName_: U_String; Bridge_IO_: TPeerIO);
 var
-  tmp: TON_Usr_Exists;
   D: TDFE;
 begin
-  tmp := TON_Usr_Exists.Create;
+  D := TDFE.Create;
+  D.WriteString(UserName_);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_Exists', D, {$IFDEF FPC}@{$ENDIF FPC}TStreamEventBridge.Create(Bridge_IO_).DoStreamEvent);
+  DisposeObject(D);
+end;
+
+procedure TC40_UserDB_Client.Usr_ExistsC(UserName_: U_String; OnResult: TC40_UserDB_On_ExistsC);
+var
+  tmp: TC40_UserDB_On_Exists;
+  D: TDFE;
+begin
+  tmp := TC40_UserDB_On_Exists.Create;
   tmp.Client := self;
   tmp.OnResultC := OnResult;
 
@@ -2615,12 +2682,12 @@ begin
   DisposeObject(D);
 end;
 
-procedure TC40_UserDB_Client.Usr_ExistsM(UserName_: U_String; OnResult: TON_Usr_ExistsM);
+procedure TC40_UserDB_Client.Usr_ExistsM(UserName_: U_String; OnResult: TC40_UserDB_On_ExistsM);
 var
-  tmp: TON_Usr_Exists;
+  tmp: TC40_UserDB_On_Exists;
   D: TDFE;
 begin
-  tmp := TON_Usr_Exists.Create;
+  tmp := TC40_UserDB_On_Exists.Create;
   tmp.Client := self;
   tmp.OnResultM := OnResult;
 
@@ -2631,12 +2698,12 @@ begin
   DisposeObject(D);
 end;
 
-procedure TC40_UserDB_Client.Usr_ExistsP(UserName_: U_String; OnResult: TON_Usr_ExistsP);
+procedure TC40_UserDB_Client.Usr_ExistsP(UserName_: U_String; OnResult: TC40_UserDB_On_ExistsP);
 var
-  tmp: TON_Usr_Exists;
+  tmp: TC40_UserDB_On_Exists;
   D: TDFE;
 begin
-  tmp := TON_Usr_Exists.Create;
+  tmp := TC40_UserDB_On_Exists.Create;
   tmp.Client := self;
   tmp.OnResultP := OnResult;
 
@@ -2647,12 +2714,23 @@ begin
   DisposeObject(D);
 end;
 
-procedure TC40_UserDB_Client.Usr_AuthC(UserName_, passwd_: U_String; OnResult: TON_Usr_AuthC);
+procedure TC40_UserDB_Client.Usr_Auth_Bridge(UserName_, passwd_: U_String; Bridge_IO_: TPeerIO);
 var
-  tmp: TON_Usr_Auth;
   D: TDFE;
 begin
-  tmp := TON_Usr_Auth.Create;
+  D := TDFE.Create;
+  D.WriteString(UserName_);
+  D.WriteString(passwd_);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_Auth', D, {$IFDEF FPC}@{$ENDIF FPC}TStreamEventBridge.Create(Bridge_IO_).DoStreamEvent);
+  DisposeObject(D);
+end;
+
+procedure TC40_UserDB_Client.Usr_AuthC(UserName_, passwd_: U_String; OnResult: TC40_UserDB_On_AuthC);
+var
+  tmp: TC40_UserDB_On_Auth;
+  D: TDFE;
+begin
+  tmp := TC40_UserDB_On_Auth.Create;
   tmp.Client := self;
   tmp.OnResultC := OnResult;
 
@@ -2664,12 +2742,12 @@ begin
   DisposeObject(D);
 end;
 
-procedure TC40_UserDB_Client.Usr_AuthM(UserName_, passwd_: U_String; OnResult: TON_Usr_AuthM);
+procedure TC40_UserDB_Client.Usr_AuthM(UserName_, passwd_: U_String; OnResult: TC40_UserDB_On_AuthM);
 var
-  tmp: TON_Usr_Auth;
+  tmp: TC40_UserDB_On_Auth;
   D: TDFE;
 begin
-  tmp := TON_Usr_Auth.Create;
+  tmp := TC40_UserDB_On_Auth.Create;
   tmp.Client := self;
   tmp.OnResultM := OnResult;
 
@@ -2681,12 +2759,12 @@ begin
   DisposeObject(D);
 end;
 
-procedure TC40_UserDB_Client.Usr_AuthP(UserName_, passwd_: U_String; OnResult: TON_Usr_AuthP);
+procedure TC40_UserDB_Client.Usr_AuthP(UserName_, passwd_: U_String; OnResult: TC40_UserDB_On_AuthP);
 var
-  tmp: TON_Usr_Auth;
+  tmp: TC40_UserDB_On_Auth;
   D: TDFE;
 begin
-  tmp := TON_Usr_Auth.Create;
+  tmp := TC40_UserDB_On_Auth.Create;
   tmp.Client := self;
   tmp.OnResultP := OnResult;
 
@@ -2698,12 +2776,24 @@ begin
   DisposeObject(D);
 end;
 
-procedure TC40_UserDB_Client.Usr_ChangePasswordC(UserName_, passwd_, NewPasswd_: U_String; OnResult: TON_Usr_ChangePasswordC);
+procedure TC40_UserDB_Client.Usr_ChangePassword_Bridge(UserName_, passwd_, NewPasswd_: U_String; Bridge_IO_: TPeerIO);
 var
-  tmp: TON_Usr_ChangePassword;
   D: TDFE;
 begin
-  tmp := TON_Usr_ChangePassword.Create;
+  D := TDFE.Create;
+  D.WriteString(UserName_);
+  D.WriteString(passwd_);
+  D.WriteString(NewPasswd_);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_ChangePassword', D, {$IFDEF FPC}@{$ENDIF FPC}TStreamEventBridge.Create(Bridge_IO_).DoStreamEvent);
+  DisposeObject(D);
+end;
+
+procedure TC40_UserDB_Client.Usr_ChangePasswordC(UserName_, passwd_, NewPasswd_: U_String; OnResult: TC40_UserDB_On_ChangePasswordC);
+var
+  tmp: TC40_UserDB_On_ChangePassword;
+  D: TDFE;
+begin
+  tmp := TC40_UserDB_On_ChangePassword.Create;
   tmp.Client := self;
   tmp.OnResultC := OnResult;
 
@@ -2716,12 +2806,12 @@ begin
   DisposeObject(D);
 end;
 
-procedure TC40_UserDB_Client.Usr_ChangePasswordM(UserName_, passwd_, NewPasswd_: U_String; OnResult: TON_Usr_ChangePasswordM);
+procedure TC40_UserDB_Client.Usr_ChangePasswordM(UserName_, passwd_, NewPasswd_: U_String; OnResult: TC40_UserDB_On_ChangePasswordM);
 var
-  tmp: TON_Usr_ChangePassword;
+  tmp: TC40_UserDB_On_ChangePassword;
   D: TDFE;
 begin
-  tmp := TON_Usr_ChangePassword.Create;
+  tmp := TC40_UserDB_On_ChangePassword.Create;
   tmp.Client := self;
   tmp.OnResultM := OnResult;
 
@@ -2734,12 +2824,12 @@ begin
   DisposeObject(D);
 end;
 
-procedure TC40_UserDB_Client.Usr_ChangePasswordP(UserName_, passwd_, NewPasswd_: U_String; OnResult: TON_Usr_ChangePasswordP);
+procedure TC40_UserDB_Client.Usr_ChangePasswordP(UserName_, passwd_, NewPasswd_: U_String; OnResult: TC40_UserDB_On_ChangePasswordP);
 var
-  tmp: TON_Usr_ChangePassword;
+  tmp: TC40_UserDB_On_ChangePassword;
   D: TDFE;
 begin
-  tmp := TON_Usr_ChangePassword.Create;
+  tmp := TC40_UserDB_On_ChangePassword.Create;
   tmp.Client := self;
   tmp.OnResultP := OnResult;
 
@@ -2763,12 +2853,23 @@ begin
   DisposeObject(D);
 end;
 
-procedure TC40_UserDB_Client.Usr_NewIdentifierC(UserName_, NewIdentifier_: U_String; OnResult: TON_Usr_NewIdentifierC);
+procedure TC40_UserDB_Client.Usr_NewIdentifier_Bridge(UserName_, NewIdentifier_: U_String; Bridge_IO_: TPeerIO);
 var
-  tmp: TON_Usr_NewIdentifier;
   D: TDFE;
 begin
-  tmp := TON_Usr_NewIdentifier.Create;
+  D := TDFE.Create;
+  D.WriteString(UserName_);
+  D.WriteString(NewIdentifier_);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_NewIdentifier', D, {$IFDEF FPC}@{$ENDIF FPC}TStreamEventBridge.Create(Bridge_IO_).DoStreamEvent);
+  DisposeObject(D);
+end;
+
+procedure TC40_UserDB_Client.Usr_NewIdentifierC(UserName_, NewIdentifier_: U_String; OnResult: TC40_UserDB_On_NewIdentifierC);
+var
+  tmp: TC40_UserDB_On_NewIdentifier;
+  D: TDFE;
+begin
+  tmp := TC40_UserDB_On_NewIdentifier.Create;
   tmp.Client := self;
   tmp.OnResultC := OnResult;
 
@@ -2780,12 +2881,12 @@ begin
   DisposeObject(D);
 end;
 
-procedure TC40_UserDB_Client.Usr_NewIdentifierM(UserName_, NewIdentifier_: U_String; OnResult: TON_Usr_NewIdentifierM);
+procedure TC40_UserDB_Client.Usr_NewIdentifierM(UserName_, NewIdentifier_: U_String; OnResult: TC40_UserDB_On_NewIdentifierM);
 var
-  tmp: TON_Usr_NewIdentifier;
+  tmp: TC40_UserDB_On_NewIdentifier;
   D: TDFE;
 begin
-  tmp := TON_Usr_NewIdentifier.Create;
+  tmp := TC40_UserDB_On_NewIdentifier.Create;
   tmp.Client := self;
   tmp.OnResultM := OnResult;
 
@@ -2797,12 +2898,12 @@ begin
   DisposeObject(D);
 end;
 
-procedure TC40_UserDB_Client.Usr_NewIdentifierP(UserName_, NewIdentifier_: U_String; OnResult: TON_Usr_NewIdentifierP);
+procedure TC40_UserDB_Client.Usr_NewIdentifierP(UserName_, NewIdentifier_: U_String; OnResult: TC40_UserDB_On_NewIdentifierP);
 var
-  tmp: TON_Usr_NewIdentifier;
+  tmp: TC40_UserDB_On_NewIdentifier;
   D: TDFE;
 begin
-  tmp := TON_Usr_NewIdentifier.Create;
+  tmp := TC40_UserDB_On_NewIdentifier.Create;
   tmp.Client := self;
   tmp.OnResultP := OnResult;
 
@@ -2814,12 +2915,22 @@ begin
   DisposeObject(D);
 end;
 
-procedure TC40_UserDB_Client.Usr_GetPrimaryIdentifierC(UserName_: U_String; OnResult: TON_Usr_GetPrimaryIdentifierC);
+procedure TC40_UserDB_Client.Usr_GetPrimaryIdentifier_Bridge(UserName_: U_String; Bridge_IO_: TPeerIO);
 var
-  tmp: TON_Usr_GetPrimaryIdentifier;
   D: TDFE;
 begin
-  tmp := TON_Usr_GetPrimaryIdentifier.Create;
+  D := TDFE.Create;
+  D.WriteString(UserName_);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_GetPrimaryIdentifier', D, {$IFDEF FPC}@{$ENDIF FPC}TStreamEventBridge.Create(Bridge_IO_).DoStreamEvent);
+  DisposeObject(D);
+end;
+
+procedure TC40_UserDB_Client.Usr_GetPrimaryIdentifierC(UserName_: U_String; OnResult: TC40_UserDB_On_GetPrimaryIdentifierC);
+var
+  tmp: TC40_UserDB_On_GetPrimaryIdentifier;
+  D: TDFE;
+begin
+  tmp := TC40_UserDB_On_GetPrimaryIdentifier.Create;
   tmp.Client := self;
   tmp.OnResultC := OnResult;
 
@@ -2830,12 +2941,12 @@ begin
   DisposeObject(D);
 end;
 
-procedure TC40_UserDB_Client.Usr_GetPrimaryIdentifierM(UserName_: U_String; OnResult: TON_Usr_GetPrimaryIdentifierM);
+procedure TC40_UserDB_Client.Usr_GetPrimaryIdentifierM(UserName_: U_String; OnResult: TC40_UserDB_On_GetPrimaryIdentifierM);
 var
-  tmp: TON_Usr_GetPrimaryIdentifier;
+  tmp: TC40_UserDB_On_GetPrimaryIdentifier;
   D: TDFE;
 begin
-  tmp := TON_Usr_GetPrimaryIdentifier.Create;
+  tmp := TC40_UserDB_On_GetPrimaryIdentifier.Create;
   tmp.Client := self;
   tmp.OnResultM := OnResult;
 
@@ -2846,12 +2957,12 @@ begin
   DisposeObject(D);
 end;
 
-procedure TC40_UserDB_Client.Usr_GetPrimaryIdentifierP(UserName_: U_String; OnResult: TON_Usr_GetPrimaryIdentifierP);
+procedure TC40_UserDB_Client.Usr_GetPrimaryIdentifierP(UserName_: U_String; OnResult: TC40_UserDB_On_GetPrimaryIdentifierP);
 var
-  tmp: TON_Usr_GetPrimaryIdentifier;
+  tmp: TC40_UserDB_On_GetPrimaryIdentifier;
   D: TDFE;
 begin
-  tmp := TON_Usr_GetPrimaryIdentifier.Create;
+  tmp := TC40_UserDB_On_GetPrimaryIdentifier.Create;
   tmp.Client := self;
   tmp.OnResultP := OnResult;
 
@@ -2862,12 +2973,23 @@ begin
   DisposeObject(D);
 end;
 
-procedure TC40_UserDB_Client.Usr_GetC(UserName_, ObjName_: U_String; OnResult: TON_Usr_GetC);
+procedure TC40_UserDB_Client.Usr_Get_Bridge(UserName_, ObjName_: U_String; Bridge_IO_: TPeerIO);
 var
-  tmp: TON_Usr_Get;
   D: TDFE;
 begin
-  tmp := TON_Usr_Get.Create;
+  D := TDFE.Create;
+  D.WriteString(UserName_);
+  D.WriteString(ObjName_);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_Get', D, {$IFDEF FPC}@{$ENDIF FPC}TStreamEventBridge.Create(Bridge_IO_).DoStreamEvent);
+  DisposeObject(D);
+end;
+
+procedure TC40_UserDB_Client.Usr_GetC(UserName_, ObjName_: U_String; OnResult: TC40_UserDB_On_GetC);
+var
+  tmp: TC40_UserDB_On_Get;
+  D: TDFE;
+begin
+  tmp := TC40_UserDB_On_Get.Create;
   tmp.Client := self;
   tmp.OnResultC := OnResult;
 
@@ -2879,12 +3001,12 @@ begin
   DisposeObject(D);
 end;
 
-procedure TC40_UserDB_Client.Usr_GetM(UserName_, ObjName_: U_String; OnResult: TON_Usr_GetM);
+procedure TC40_UserDB_Client.Usr_GetM(UserName_, ObjName_: U_String; OnResult: TC40_UserDB_On_GetM);
 var
-  tmp: TON_Usr_Get;
+  tmp: TC40_UserDB_On_Get;
   D: TDFE;
 begin
-  tmp := TON_Usr_Get.Create;
+  tmp := TC40_UserDB_On_Get.Create;
   tmp.Client := self;
   tmp.OnResultM := OnResult;
 
@@ -2896,12 +3018,12 @@ begin
   DisposeObject(D);
 end;
 
-procedure TC40_UserDB_Client.Usr_GetP(UserName_, ObjName_: U_String; OnResult: TON_Usr_GetP);
+procedure TC40_UserDB_Client.Usr_GetP(UserName_, ObjName_: U_String; OnResult: TC40_UserDB_On_GetP);
 var
-  tmp: TON_Usr_Get;
+  tmp: TC40_UserDB_On_Get;
   D: TDFE;
 begin
-  tmp := TON_Usr_Get.Create;
+  tmp := TC40_UserDB_On_Get.Create;
   tmp.Client := self;
   tmp.OnResultP := OnResult;
 

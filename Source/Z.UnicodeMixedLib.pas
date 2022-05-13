@@ -392,7 +392,9 @@ function umlMultipleMatch(IgnoreCase: Boolean; const source, target: TPascalStri
 function umlMultipleMatch(const source, target: TPascalString): Boolean; overload;
 function umlMultipleMatch(const source: array of TPascalString; const target: TPascalString): Boolean; overload;
 function umlSearchMatch(const source, target: TPascalString): Boolean; overload;
+function umlSearchMatch(const source, exclude, target: TPascalString): Boolean; overload;
 function umlSearchMatch(const source: TArrayPascalString; target: TPascalString): Boolean; overload;
+function umlSearchMatch(const source, exclude: TArrayPascalString; target: TPascalString): Boolean; overload;
 
 // <prefix>.<postfix> formula, match sour -> dest
 // example: <prefix>.*
@@ -539,15 +541,30 @@ type
   PMD5 = ^TMD5;
   TMD5 = array [0 .. 15] of Byte;
   TMD5_Pool = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<TMD5>;
+  TMD5_Big_Pool = {$IFDEF FPC}specialize {$ENDIF FPC} TBigList<TMD5>;
   TArrayMD5 = array of TMD5;
+  TMD5_Pair_Pool_Decl = {$IFDEF FPC}specialize {$ENDIF FPC} TBig_Hash_Pair_Pool<TMD5, TMD5>;
+
+  TMD5_Pair_Pool = class(TMD5_Pair_Pool_Decl)
+  public
+    IsChanged: Boolean;
+    constructor Create(HashSize_: Integer);
+    procedure DoFree(var Key: TMD5; var Value: TMD5); override;
+    procedure DoAdd(var Key: TMD5; var Value: TMD5); override;
+    procedure LoadFromStream(stream: TCore_Stream);
+    procedure SaveToStream(stream: TCore_Stream);
+  end;
 
 const
+  Null_MD5: TMD5 = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+  Zero_MD5: TMD5 = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
   NullMD5: TMD5 = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
   ZeroMD5: TMD5 = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
   umlNullMD5: TMD5 = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
   umlZeroMD5: TMD5 = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
   Null_Buff_MD5: TMD5 = (212, 29, 140, 217, 143, 0, 178, 4, 233, 128, 9, 152, 236, 248, 66, 126);
 
+function umlStrIsMD5(hex: TPascalString): Boolean;
 function umlStrToMD5(hex: TPascalString): TMD5;
 procedure umlTransformMD5(var Accu; const Buf);
 function umlMD5(const buffPtr: PByte; bufSiz: NativeUInt): TMD5;
@@ -614,51 +631,7 @@ function umlStringCRC16(const Value: TPascalString): Word;
 function umlStreamCRC16(stream: U_Stream; StartPos, EndPos: Int64): Word; overload;
 function umlStreamCRC16(stream: U_Stream): Word; overload;
 
-{$REGION 'crc32define'}
-
-
-const
-  CRC32Table: array [0 .. 255] of Cardinal = (
-    $00000000, $77073096, $EE0E612C, $990951BA, $076DC419, $706AF48F, $E963A535,
-    $9E6495A3, $0EDB8832, $79DCB8A4, $E0D5E91E, $97D2D988, $09B64C2B, $7EB17CBD,
-    $E7B82D07, $90BF1D91, $1DB71064, $6AB020F2, $F3B97148, $84BE41DE, $1ADAD47D,
-    $6DDDE4EB, $F4D4B551, $83D385C7, $136C9856, $646BA8C0, $FD62F97A, $8A65C9EC,
-    $14015C4F, $63066CD9, $FA0F3D63, $8D080DF5, $3B6E20C8, $4C69105E, $D56041E4,
-    $A2677172, $3C03E4D1, $4B04D447, $D20D85FD, $A50AB56B, $35B5A8FA, $42B2986C,
-    $DBBBC9D6, $ACBCF940, $32D86CE3, $45DF5C75, $DCD60DCF, $ABD13D59, $26D930AC,
-    $51DE003A, $C8D75180, $BFD06116, $21B4F4B5, $56B3C423, $CFBA9599, $B8BDA50F,
-    $2802B89E, $5F058808, $C60CD9B2, $B10BE924, $2F6F7C87, $58684C11, $C1611DAB,
-    $B6662D3D, $76DC4190, $01DB7106, $98D220BC, $EFD5102A, $71B18589, $06B6B51F,
-    $9FBFE4A5, $E8B8D433, $7807C9A2, $0F00F934, $9609A88E, $E10E9818, $7F6A0DBB,
-    $086D3D2D, $91646C97, $E6635C01, $6B6B51F4, $1C6C6162, $856530D8, $F262004E,
-    $6C0695ED, $1B01A57B, $8208F4C1, $F50FC457, $65B0D9C6, $12B7E950, $8BBEB8EA,
-    $FCB9887C, $62DD1DDF, $15DA2D49, $8CD37CF3, $FBD44C65, $4DB26158, $3AB551CE,
-    $A3BC0074, $D4BB30E2, $4ADFA541, $3DD895D7, $A4D1C46D, $D3D6F4FB, $4369E96A,
-    $346ED9FC, $AD678846, $DA60B8D0, $44042D73, $33031DE5, $AA0A4C5F, $DD0D7CC9,
-    $5005713C, $270241AA, $BE0B1010, $C90C2086, $5768B525, $206F85B3, $B966D409,
-    $CE61E49F, $5EDEF90E, $29D9C998, $B0D09822, $C7D7A8B4, $59B33D17, $2EB40D81,
-    $B7BD5C3B, $C0BA6CAD, $EDB88320, $9ABFB3B6, $03B6E20C, $74B1D29A, $EAD54739,
-    $9DD277AF, $04DB2615, $73DC1683, $E3630B12, $94643B84, $0D6D6A3E, $7A6A5AA8,
-    $E40ECF0B, $9309FF9D, $0A00AE27, $7D079EB1, $F00F9344, $8708A3D2, $1E01F268,
-    $6906C2FE, $F762575D, $806567CB, $196C3671, $6E6B06E7, $FED41B76, $89D32BE0,
-    $10DA7A5A, $67DD4ACC, $F9B9DF6F, $8EBEEFF9, $17B7BE43, $60B08ED5, $D6D6A3E8,
-    $A1D1937E, $38D8C2C4, $4FDFF252, $D1BB67F1, $A6BC5767, $3FB506DD, $48B2364B,
-    $D80D2BDA, $AF0A1B4C, $36034AF6, $41047A60, $DF60EFC3, $A867DF55, $316E8EEF,
-    $4669BE79, $CB61B38C, $BC66831A, $256FD2A0, $5268E236, $CC0C7795, $BB0B4703,
-    $220216B9, $5505262F, $C5BA3BBE, $B2BD0B28, $2BB45A92, $5CB36A04, $C2D7FFA7,
-    $B5D0CF31, $2CD99E8B, $5BDEAE1D, $9B64C2B0, $EC63F226, $756AA39C, $026D930A,
-    $9C0906A9, $EB0E363F, $72076785, $05005713, $95BF4A82, $E2B87A14, $7BB12BAE,
-    $0CB61B38, $92D28E9B, $E5D5BE0D, $7CDCEFB7, $0BDBDF21, $86D3D2D4, $F1D4E242,
-    $68DDB3F8, $1FDA836E, $81BE16CD, $F6B9265B, $6FB077E1, $18B74777, $88085AE6,
-    $FF0F6A70, $66063BCA, $11010B5C, $8F659EFF, $F862AE69, $616BFFD3, $166CCF45,
-    $A00AE278, $D70DD2EE, $4E048354, $3903B3C2, $A7672661, $D06016F7, $4969474D,
-    $3E6E77DB, $AED16A4A, $D9D65ADC, $40DF0B66, $37D83BF0, $A9BCAE53, $DEBB9EC5,
-    $47B2CF7F, $30B5FFE9, $BDBDF21C, $CABAC28A, $53B39330, $24B4A3A6, $BAD03605,
-    $CDD70693, $54DE5729, $23D967BF, $B3667A2E, $C4614AB8, $5D681B02, $2A6F2B94,
-    $B40BBE37, $C30C8EA1, $5A05DF1B, $2D02EF8D
-    );
-{$ENDREGION 'crc32define'}
-
+// crc32
 function umlCRC32(const Value: PByte; const Count: NativeUInt): Cardinal;
 function umlString2CRC32(const Value: TPascalString): Cardinal;
 function umlStreamCRC32(stream: U_Stream; StartPos, EndPos: Int64): Cardinal; overload;
@@ -3153,65 +3126,71 @@ end;
 
 function umlGetFirstStr(const sVal, trim_s: TPascalString): TPascalString;
 var
-  umlGetFirstName_PrevPos, umlGetFirstName_Pos: Integer;
+  Next_Pos_, First_Pos_: Integer;
 begin
   Result := sVal;
   if Result.L <= 0 then
     begin
       exit;
     end;
-  umlGetFirstName_Pos := 1;
-  while umlMatchChar(Result[umlGetFirstName_Pos], @trim_s) do
+  First_Pos_ := 1;
+  while umlMatchChar(Result[First_Pos_], @trim_s) do
     begin
-      if umlGetFirstName_Pos = Result.L then
-          exit;
-      inc(umlGetFirstName_Pos);
-    end;
-  umlGetFirstName_PrevPos := umlGetFirstName_Pos;
-  while not umlMatchChar(Result[umlGetFirstName_Pos], @trim_s) do
-    begin
-      if umlGetFirstName_Pos = Result.L then
+      if First_Pos_ = Result.L then
         begin
-          Result := umlCopyStr(Result, umlGetFirstName_PrevPos, umlGetFirstName_Pos + 1);
+          Result := '';
           exit;
         end;
-      inc(umlGetFirstName_Pos);
+      inc(First_Pos_);
     end;
-  Result := umlCopyStr(Result, umlGetFirstName_PrevPos, umlGetFirstName_Pos);
+  Next_Pos_ := First_Pos_;
+  while not umlMatchChar(Result[First_Pos_], @trim_s) do
+    begin
+      if First_Pos_ = Result.L then
+        begin
+          Result := umlCopyStr(Result, Next_Pos_, First_Pos_ + 1);
+          exit;
+        end;
+      inc(First_Pos_);
+    end;
+  Result := umlCopyStr(Result, Next_Pos_, First_Pos_);
 end;
 
 function umlGetLastStr(const sVal, trim_s: TPascalString): TPascalString;
 var
-  umlGetLastName_PrevPos, umlGetLastName_Pos: Integer;
+  Prev_Pos_, Last_Pos_: Integer;
 begin
   Result := sVal;
-  umlGetLastName_Pos := Result.L;
-  if umlGetLastName_Pos <= 0 then
+  Last_Pos_ := Result.L;
+  if Last_Pos_ <= 0 then
     begin
       exit;
     end;
-  while umlMatchChar(Result[umlGetLastName_Pos], @trim_s) do
+  while umlMatchChar(Result[Last_Pos_], @trim_s) do
     begin
-      if umlGetLastName_Pos = 1 then
-          exit;
-      dec(umlGetLastName_Pos);
-    end;
-  umlGetLastName_PrevPos := umlGetLastName_Pos;
-  while not umlMatchChar(Result[umlGetLastName_Pos], @trim_s) do
-    begin
-      if umlGetLastName_Pos = 1 then
+      if Last_Pos_ = 1 then
         begin
-          Result := umlCopyStr(Result, umlGetLastName_Pos, umlGetLastName_PrevPos + 1);
+          Result := '';
           exit;
         end;
-      dec(umlGetLastName_Pos);
+      dec(Last_Pos_);
     end;
-  Result := umlCopyStr(Result, umlGetLastName_Pos + 1, umlGetLastName_PrevPos + 1);
+  Prev_Pos_ := Last_Pos_;
+  while not umlMatchChar(Result[Last_Pos_], @trim_s) do
+    begin
+      if Last_Pos_ = 1 then
+        begin
+          Result := umlCopyStr(Result, Last_Pos_, Prev_Pos_ + 1);
+          exit;
+        end;
+      dec(Last_Pos_);
+    end;
+  Result := umlCopyStr(Result, Last_Pos_ + 1, Prev_Pos_ + 1);
 end;
 
 function umlDeleteFirstStr(const sVal, trim_s: TPascalString): TPascalString;
 var
-  umlMaskFirstName_Pos: Integer;
+  First_Pos_: Integer;
 begin
   Result := sVal;
   if Result.L <= 0 then
@@ -3219,76 +3198,76 @@ begin
       Result := '';
       exit;
     end;
-  umlMaskFirstName_Pos := 1;
-  while umlMatchChar(Result[umlMaskFirstName_Pos], @trim_s) do
+  First_Pos_ := 1;
+  while umlMatchChar(Result[First_Pos_], @trim_s) do
     begin
-      if umlMaskFirstName_Pos = Result.L then
+      if First_Pos_ = Result.L then
         begin
           Result := '';
           exit;
         end;
-      inc(umlMaskFirstName_Pos);
+      inc(First_Pos_);
     end;
-  while not umlMatchChar(Result[umlMaskFirstName_Pos], @trim_s) do
+  while not umlMatchChar(Result[First_Pos_], @trim_s) do
     begin
-      if umlMaskFirstName_Pos = Result.L then
+      if First_Pos_ = Result.L then
         begin
           Result := '';
           exit;
         end;
-      inc(umlMaskFirstName_Pos);
+      inc(First_Pos_);
     end;
-  while umlMatchChar(Result[umlMaskFirstName_Pos], @trim_s) do
+  while umlMatchChar(Result[First_Pos_], @trim_s) do
     begin
-      if umlMaskFirstName_Pos = Result.L then
+      if First_Pos_ = Result.L then
         begin
           Result := '';
           exit;
         end;
-      inc(umlMaskFirstName_Pos);
+      inc(First_Pos_);
     end;
-  Result := umlCopyStr(Result, umlMaskFirstName_Pos, Result.L + 1);
+  Result := umlCopyStr(Result, First_Pos_, Result.L + 1);
 end;
 
 function umlDeleteLastStr(const sVal, trim_s: TPascalString): TPascalString;
 var
-  umlMaskLastName_Pos: Integer;
+  Last_Pos_: Integer;
 begin
   Result := sVal;
-  umlMaskLastName_Pos := Result.L;
-  if umlMaskLastName_Pos <= 0 then
+  Last_Pos_ := Result.L;
+  if Last_Pos_ <= 0 then
     begin
       Result := '';
       exit;
     end;
-  while umlMatchChar(Result[umlMaskLastName_Pos], @trim_s) do
+  while umlMatchChar(Result[Last_Pos_], @trim_s) do
     begin
-      if umlMaskLastName_Pos = 1 then
+      if Last_Pos_ = 1 then
         begin
           Result := '';
           exit;
         end;
-      dec(umlMaskLastName_Pos);
+      dec(Last_Pos_);
     end;
-  while not umlMatchChar(Result[umlMaskLastName_Pos], @trim_s) do
+  while not umlMatchChar(Result[Last_Pos_], @trim_s) do
     begin
-      if umlMaskLastName_Pos = 1 then
+      if Last_Pos_ = 1 then
         begin
           Result := '';
           exit;
         end;
-      dec(umlMaskLastName_Pos);
+      dec(Last_Pos_);
     end;
-  while umlMatchChar(Result[umlMaskLastName_Pos], @trim_s) do
+  while umlMatchChar(Result[Last_Pos_], @trim_s) do
     begin
-      if umlMaskLastName_Pos = 1 then
+      if Last_Pos_ = 1 then
         begin
           Result := '';
           exit;
         end;
-      dec(umlMaskLastName_Pos);
+      dec(Last_Pos_);
     end;
-  umlSetLength(Result, umlMaskLastName_Pos);
+  umlSetLength(Result, Last_Pos_);
 end;
 
 function umlGetIndexStrCount(const sVal, trim_s: TPascalString): Integer;
@@ -3436,36 +3415,36 @@ end;
 
 function umlGetFirstStr_Discontinuity(const sVal, trim_s: TPascalString): TPascalString;
 var
-  umlGetFirstName_PrevPos, umlGetFirstName_Pos: Integer;
+  Next_Pos_, First_Pos_: Integer;
 begin
   Result := sVal;
   if Result.L <= 0 then
       exit;
-  umlGetFirstName_Pos := 1;
-  if umlMatchChar(Result[umlGetFirstName_Pos], @trim_s) then
+  First_Pos_ := 1;
+  if umlMatchChar(Result[First_Pos_], @trim_s) then
     begin
-      inc(umlGetFirstName_Pos);
-      umlGetFirstName_PrevPos := umlGetFirstName_Pos;
+      inc(First_Pos_);
+      Next_Pos_ := First_Pos_;
     end
   else
     begin
-      umlGetFirstName_PrevPos := umlGetFirstName_Pos;
-      while not umlMatchChar(Result[umlGetFirstName_Pos], @trim_s) do
+      Next_Pos_ := First_Pos_;
+      while not umlMatchChar(Result[First_Pos_], @trim_s) do
         begin
-          if umlGetFirstName_Pos = Result.L then
+          if First_Pos_ = Result.L then
             begin
-              Result := umlCopyStr(Result, umlGetFirstName_PrevPos, umlGetFirstName_Pos + 1);
+              Result := umlCopyStr(Result, Next_Pos_, First_Pos_ + 1);
               exit;
             end;
-          inc(umlGetFirstName_Pos);
+          inc(First_Pos_);
         end;
     end;
-  Result := umlCopyStr(Result, umlGetFirstName_PrevPos, umlGetFirstName_Pos);
+  Result := umlCopyStr(Result, Next_Pos_, First_Pos_);
 end;
 
 function umlDeleteFirstStr_Discontinuity(const sVal, trim_s: TPascalString): TPascalString;
 var
-  umlMaskFirstName_Pos: Integer;
+  First_Pos_: Integer;
 begin
   Result := sVal;
   if Result.L <= 0 then
@@ -3473,67 +3452,67 @@ begin
       Result := '';
       exit;
     end;
-  umlMaskFirstName_Pos := 1;
-  while not umlMatchChar(Result[umlMaskFirstName_Pos], @trim_s) do
+  First_Pos_ := 1;
+  while not umlMatchChar(Result[First_Pos_], @trim_s) do
     begin
-      if umlMaskFirstName_Pos = Result.L then
+      if First_Pos_ = Result.L then
         begin
           Result := '';
           exit;
         end;
-      inc(umlMaskFirstName_Pos);
+      inc(First_Pos_);
     end;
-  if umlMatchChar(Result[umlMaskFirstName_Pos], @trim_s) then
-      inc(umlMaskFirstName_Pos);
-  Result := umlCopyStr(Result, umlMaskFirstName_Pos, Result.L + 1);
+  if umlMatchChar(Result[First_Pos_], @trim_s) then
+      inc(First_Pos_);
+  Result := umlCopyStr(Result, First_Pos_, Result.L + 1);
 end;
 
 function umlGetLastStr_Discontinuity(const sVal, trim_s: TPascalString): TPascalString;
 var
-  umlGetLastName_PrevPos, umlGetLastName_Pos: Integer;
+  Prev_Pos_, Last_Pos_: Integer;
 begin
   Result := sVal;
-  umlGetLastName_Pos := Result.L;
-  if umlGetLastName_Pos <= 0 then
+  Last_Pos_ := Result.L;
+  if Last_Pos_ <= 0 then
       exit;
-  if Result[umlGetLastName_Pos] = trim_s then
-      dec(umlGetLastName_Pos);
-  umlGetLastName_PrevPos := umlGetLastName_Pos;
-  while not umlMatchChar(Result[umlGetLastName_Pos], @trim_s) do
+  if Result[Last_Pos_] = trim_s then
+      dec(Last_Pos_);
+  Prev_Pos_ := Last_Pos_;
+  while not umlMatchChar(Result[Last_Pos_], @trim_s) do
     begin
-      if umlGetLastName_Pos = 1 then
+      if Last_Pos_ = 1 then
         begin
-          Result := umlCopyStr(Result, umlGetLastName_Pos, umlGetLastName_PrevPos + 1);
+          Result := umlCopyStr(Result, Last_Pos_, Prev_Pos_ + 1);
           exit;
         end;
-      dec(umlGetLastName_Pos);
+      dec(Last_Pos_);
     end;
-  Result := umlCopyStr(Result, umlGetLastName_Pos + 1, umlGetLastName_PrevPos + 1);
+  Result := umlCopyStr(Result, Last_Pos_ + 1, Prev_Pos_ + 1);
 end;
 
 function umlDeleteLastStr_Discontinuity(const sVal, trim_s: TPascalString): TPascalString;
 var
-  umlMaskLastName_Pos: Integer;
+  Last_Pos_: Integer;
 begin
   Result := sVal;
-  umlMaskLastName_Pos := Result.L;
-  if umlMaskLastName_Pos <= 0 then
+  Last_Pos_ := Result.L;
+  if Last_Pos_ <= 0 then
     begin
       Result := '';
       exit;
     end;
-  if umlMatchChar(Result[umlMaskLastName_Pos], @trim_s) then
-      dec(umlMaskLastName_Pos);
-  while not umlMatchChar(Result[umlMaskLastName_Pos], @trim_s) do
+  if umlMatchChar(Result[Last_Pos_], @trim_s) then
+      dec(Last_Pos_);
+  while not umlMatchChar(Result[Last_Pos_], @trim_s) do
     begin
-      if umlMaskLastName_Pos = 1 then
+      if Last_Pos_ = 1 then
         begin
           Result := '';
           exit;
         end;
-      dec(umlMaskLastName_Pos);
+      dec(Last_Pos_);
     end;
-  umlSetLength(Result, umlMaskLastName_Pos);
+  umlSetLength(Result, Last_Pos_);
 end;
 
 function umlGetIndexStrCount_Discontinuity(const sVal, trim_s: TPascalString): Integer;
@@ -3895,7 +3874,7 @@ begin
       Result := Format('%d', [Size])
   else if Size < 1 shl 20 then
       Result := Format('%f Kb', [Size / (1 shl 10)])
-  else if Size < 1 shl 30 then
+  else
       Result := Format('%f M', [Size / (1 shl 20)]);
 end;
 
@@ -3930,7 +3909,7 @@ begin
       Result := Format('%d bps', [Size * 10])
   else if Size < 1 shl 20 then
       Result := Format('%f Kbps', [Size / (1 shl 10) * 10])
-  else if Size < 1 shl 30 then
+  else
       Result := Format('%f Mbps', [Size / (1 shl 20) * 10]);
 end;
 
@@ -4343,15 +4322,34 @@ end;
 
 function umlSearchMatch(const source, target: TPascalString): Boolean;
 var
-  fi: TArrayPascalString;
+  sArry: TArrayPascalString;
 begin
   if (source.L > 0) and (source.text <> '*') then
     begin
-      umlGetSplitArray(source, fi, ';,');
-      Result := umlSearchMatch(fi, target);
+      umlGetSplitArray(source, sArry, ';,');
+      Result := umlSearchMatch(sArry, target);
     end
   else
       Result := True;
+end;
+
+function umlSearchMatch(const source, exclude, target: TPascalString): Boolean;
+var
+  sArry, eArry: TArrayPascalString;
+begin
+  if (source.L > 0) and (source.text <> '*') then
+      umlGetSplitArray(source, sArry, ';,')
+  else
+      SetLength(sArry, 0);
+
+  if (exclude.L > 0) and (exclude.text <> '*') then
+      umlGetSplitArray(exclude, eArry, ';,')
+  else
+      SetLength(eArry, 0);
+
+  Result := umlSearchMatch(sArry, eArry, target);
+  SetLength(sArry, 0);
+  SetLength(eArry, 0);
 end;
 
 function umlSearchMatch(const source: TArrayPascalString; target: TPascalString): Boolean;
@@ -4361,15 +4359,37 @@ begin
   Result := False;
   if target.L > 0 then
     begin
-      if high(source) >= 0 then
+      if length(source) > 0 then
         begin
-          Result := False;
           for i := low(source) to high(source) do
             begin
               Result := (target.GetPos(source[i]) > 0) or (umlMultipleMatch(True, source[i], target));
               if Result then
                   exit;
             end;
+        end
+      else
+          Result := True;
+    end;
+end;
+
+function umlSearchMatch(const source, exclude: TArrayPascalString; target: TPascalString): Boolean;
+var
+  i: Integer;
+begin
+  Result := False;
+  if target.L > 0 then
+    begin
+      if length(exclude) > 0 then
+        for i := low(exclude) to high(exclude) do
+          if (target.GetPos(exclude[i]) > 0) or (umlMultipleMatch(True, exclude[i], target)) then
+              exit;
+
+      if length(source) > 0 then
+        begin
+          for i := low(source) to high(source) do
+            if (target.GetPos(source[i]) > 0) or (umlMultipleMatch(True, source[i], target)) then
+                exit(True);
         end
       else
           Result := True;
@@ -5086,14 +5106,12 @@ end;
 
 function umlCharReplace(const s: TPascalString; OldPattern, NewPattern: U_Char): TPascalString;
 begin
-  Result := s;
-  Result.ReplaceChar(OldPattern, NewPattern);
+  Result := s.ReplaceChar(OldPattern, NewPattern);
 end;
 
 function umlReplaceChar(const s: TPascalString; OldPattern, NewPattern: U_Char): TPascalString;
 begin
-  Result := s;
-  Result.ReplaceChar(OldPattern, NewPattern);
+  Result := s.ReplaceChar(OldPattern, NewPattern);
 end;
 
 function umlEncodeText2HTML(const psSrc: TPascalString): TPascalString;
@@ -5880,6 +5898,53 @@ begin
       SetLength(dest, 0);
 end;
 
+constructor TMD5_Pair_Pool.Create(HashSize_: Integer);
+begin
+  inherited Create(HashSize_, NullMD5);
+  IsChanged := False;
+end;
+
+procedure TMD5_Pair_Pool.DoFree(var Key: TMD5; var Value: TMD5);
+begin
+  inherited;
+  IsChanged := True;
+end;
+
+procedure TMD5_Pair_Pool.DoAdd(var Key: TMD5; var Value: TMD5);
+begin
+  inherited;
+  IsChanged := True;
+end;
+
+procedure TMD5_Pair_Pool.LoadFromStream(stream: TCore_Stream);
+begin
+  Clear;
+  while stream.Position + 32 <= stream.Size do
+      Add(StreamReadMD5(stream), StreamReadMD5(stream), False);
+end;
+
+procedure TMD5_Pair_Pool.SaveToStream(stream: TCore_Stream);
+begin
+  with Repeat_ do
+    repeat
+      StreamWriteMD5(stream, Queue^.Data^.Data.Primary);
+      StreamWriteMD5(stream, Queue^.Data^.Data.Second);
+    until not Right;
+end;
+
+function umlStrIsMD5(hex: TPascalString): Boolean;
+var
+  c: SystemChar;
+begin
+  Result := False;
+  if hex.L <> 32 then
+      exit;
+  for c in hex.buff do
+    if not CharIn(c, cHex) then
+        exit;
+  Result := True;
+end;
+
 function umlStrToMD5(hex: TPascalString): TMD5;
 begin
   TCipher.HexToBuffer(hex, Result[0], SizeOf(TMD5));
@@ -6488,7 +6553,7 @@ begin
   i := 0;
   while i < Count do
     begin
-      Result := ((Result shr 8) and $00FFFFFF) xor CRC32Table[(Result xor p^) and $000000FF];
+      Result := ((Result shr 8) and $00FFFFFF) xor C_CRC32Table[(Result xor p^) and $000000FF];
       inc(i);
       inc(p);
     end;
@@ -6516,7 +6581,7 @@ const
     i := 0;
     while i < L do
       begin
-        crc := ((crc shr 8) and $00FFFFFF) xor CRC32Table[(crc xor p^) and $000000FF];
+        crc := ((crc shr 8) and $00FFFFFF) xor C_CRC32Table[(crc xor p^) and $000000FF];
         inc(p);
         inc(i);
       end;

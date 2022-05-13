@@ -12,9 +12,11 @@ uses SysUtils, Z.Core, Types, Variants,
   Z.ListEngine, Z.MemoryStream, Z.Cipher,
   Z.Status, Z.Geometry.Low, Z.TextDataEngine, Z.Geometry2D, Z.Geometry3D,
   Z.Json, Z.Number,
-{$IFDEF DELPHI}
+{$IFDEF FPC}
+  Z.FPC.GenericList,
+{$ELSE FPC}
   Z.Delphi.JsonDataObjects,
-{$ENDIF DELPHI}
+{$ENDIF FPC}
   Z.Compress, Z.UnicodeMixedLib, Z.PascalStrings, Z.UPascalStrings;
 
 type
@@ -448,9 +450,18 @@ type
     rdtArrayInteger, rdtArraySingle, rdtArrayDouble, rdtStream, rdtVariant, rdtInt64, rdtArrayShortInt, rdtCardinal, rdtUInt64, rdtArrayByte,
     rdtArrayInt64);
 
+  TDFE_DataList_Decl = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<TDFBase>;
+
+  TDFE_DataList = class(TDFE_DataList_Decl)
+  public
+    Owner: TDFE;
+    function Add_DFBase(Data_: TDFBase): TDFBase;
+    procedure Clear;
+  end;
+
   TDFE = class(TCore_Object)
   private
-    FDataList: TCore_ListForObj;
+    FDataList: TDFE_DataList;
     FReader: TDFEReader;
     FCompressorDeflate: TCompressorDeflate;
     FCompressorBRRC: TCompressorBRRC;
@@ -478,6 +489,7 @@ type
     function DeleteLast: Boolean; overload;
     function DeleteLastCount(num_: Integer): Boolean; overload;
     function DeleteCount(index_, Count_: Integer): Boolean;
+    procedure Append(source: TDFE);
     procedure Assign(source: TDFE);
     function Clone: TDFE;
 
@@ -649,7 +661,7 @@ type
     procedure SaveToFile(fileName_: U_String);
     // list
     property Data[index_: Integer]: TDFBase read GetData; default;
-    property List: TCore_ListForObj read FDataList;
+    property List: TDFE_DataList read FDataList;
   end;
 
   TDataWriter = class(TCore_Object)
@@ -2217,6 +2229,19 @@ begin
   Result := FOwner.Read(FIndex);
 end;
 
+function TDFE_DataList.Add_DFBase(Data_: TDFBase): TDFBase;
+begin
+  inherited Add(Data_);
+  Result := Data_;
+  Owner.FIsChanged := True;
+end;
+
+procedure TDFE_DataList.Clear;
+begin
+  inherited Clear;
+  Owner.FIsChanged := True;
+end;
+
 function TDFE.DataTypeToByte(v: TRunTimeDataType): Byte;
 begin
   Result := Byte(v);
@@ -2230,8 +2255,9 @@ end;
 constructor TDFE.Create;
 begin
   inherited Create;
-  FDataList := TCore_ListForObj.Create;
-  FReader := TDFEReader.Create(Self);
+  FDataList := TDFE_DataList.Create;
+  FDataList.Owner := self;
+  FReader := TDFEReader.Create(self);
   FCompressorDeflate := nil;
   FCompressorBRRC := nil;
   FIsChanged := False;
@@ -2251,10 +2277,10 @@ end;
 
 procedure TDFE.SwapInstance(source: TDFE);
 var
-  tmp_DataList: TCore_ListForObj;
+  tmp_DataList: TDFE_DataList;
   tmp_Reader: TDFEReader;
 begin
-  if Self = source then
+  if self = source then
       exit;
   tmp_DataList := FDataList;
   tmp_Reader := FReader;
@@ -2264,6 +2290,10 @@ begin
 
   source.FDataList := tmp_DataList;
   source.FReader := tmp_Reader;
+
+  FDataList.Owner := self;
+  source.FDataList.Owner := source;
+
   FIsChanged := True;
   source.FIsChanged := True;
 end;
@@ -2287,6 +2317,7 @@ begin
   except
   end;
 
+  FIsChanged := True;
   FReader.index := 0;
 end;
 
@@ -2314,7 +2345,7 @@ begin
       Result := nil;
   end;
   if Result <> nil then
-      FDataList.Add(Result);
+      FDataList.Add_DFBase(Result);
   FIsChanged := True;
 end;
 
@@ -2359,8 +2390,9 @@ end;
 function TDFE.Delete(index_: Integer): Boolean;
 begin
   try
-    DisposeObject(TDFBase(FDataList[index_]));
+    DisposeObject(FDataList[index_]);
     FDataList.Delete(index_);
+    FIsChanged := True;
     Result := True;
   except
       Result := False;
@@ -2396,13 +2428,33 @@ begin
       Result := Result and Delete(index_);
 end;
 
+procedure TDFE.Append(source: TDFE);
+var
+  m64: TMS64;
+  i: Integer;
+  DataFrame_: TDFBase;
+begin
+  if self = source then
+      exit;
+  m64 := TMS64.CustomCreate(8192);
+  for i := 0 to source.Count - 1 do
+    begin
+      DataFrame_ := AddData(ByteToDataType(source[i].FID));
+      source[i].SaveToStream(m64);
+      m64.Position := 0;
+      DataFrame_.LoadFromStream(m64);
+      m64.Clear;
+    end;
+  DisposeObject(m64);
+end;
+
 procedure TDFE.Assign(source: TDFE);
 var
   m64: TMS64;
   i: Integer;
   DataFrame_: TDFBase;
 begin
-  if Self = source then
+  if self = source then
       exit;
   Clear;
   m64 := TMS64.CustomCreate(8192);
@@ -2420,7 +2472,7 @@ end;
 function TDFE.Clone: TDFE;
 begin
   Result := TDFE.Create;
-  Result.Assign(Self);
+  Result.Assign(self);
 end;
 
 procedure TDFE.WriteString(v: SystemString);
@@ -2429,7 +2481,7 @@ var
 begin
   Obj_ := TDFString.Create(DataTypeToByte(rdtString));
   Obj_.Buffer := umlBytesOf(v);
-  FDataList.Add(Obj_);
+  FDataList.Add_DFBase(Obj_);
 end;
 
 procedure TDFE.WriteString(v: TPascalString);
@@ -2438,7 +2490,7 @@ var
 begin
   Obj_ := TDFString.Create(DataTypeToByte(rdtString));
   Obj_.Buffer := v.Bytes;
-  FDataList.Add(Obj_);
+  FDataList.Add_DFBase(Obj_);
 end;
 
 procedure TDFE.WriteString(const Fmt: SystemString; const Args: array of const);
@@ -2452,7 +2504,7 @@ var
 begin
   Obj_ := TDFInteger.Create(DataTypeToByte(rdtInteger));
   Obj_.Buffer := v;
-  FDataList.Add(Obj_);
+  FDataList.Add_DFBase(Obj_);
 end;
 
 procedure TDFE.WriteCardinal(v: Cardinal);
@@ -2461,7 +2513,7 @@ var
 begin
   Obj_ := TDFCardinal.Create(DataTypeToByte(rdtCardinal));
   Obj_.Buffer := v;
-  FDataList.Add(Obj_);
+  FDataList.Add_DFBase(Obj_);
 end;
 
 procedure TDFE.WriteWORD(v: Word);
@@ -2470,7 +2522,7 @@ var
 begin
   Obj_ := TDFWord.Create(DataTypeToByte(rdtWORD));
   Obj_.Buffer := v;
-  FDataList.Add(Obj_);
+  FDataList.Add_DFBase(Obj_);
 end;
 
 procedure TDFE.WriteBool(v: Boolean);
@@ -2492,7 +2544,7 @@ var
 begin
   Obj_ := TDFByte.Create(DataTypeToByte(rdtByte));
   Obj_.Buffer := v;
-  FDataList.Add(Obj_);
+  FDataList.Add_DFBase(Obj_);
 end;
 
 procedure TDFE.WriteSingle(v: Single);
@@ -2501,7 +2553,7 @@ var
 begin
   Obj_ := TDFSingle.Create(DataTypeToByte(rdtSingle));
   Obj_.Buffer := v;
-  FDataList.Add(Obj_);
+  FDataList.Add_DFBase(Obj_);
 end;
 
 procedure TDFE.WriteDouble(v: Double);
@@ -2510,25 +2562,25 @@ var
 begin
   Obj_ := TDFDouble.Create(DataTypeToByte(rdtDouble));
   Obj_.Buffer := v;
-  FDataList.Add(Obj_);
+  FDataList.Add_DFBase(Obj_);
 end;
 
 function TDFE.WriteArrayInteger: TDFArrayInteger;
 begin
   Result := TDFArrayInteger.Create(DataTypeToByte(rdtArrayInteger));
-  FDataList.Add(Result);
+  FDataList.Add_DFBase(Result);
 end;
 
 function TDFE.WriteArrayShortInt: TDFArrayShortInt;
 begin
   Result := TDFArrayShortInt.Create(DataTypeToByte(rdtArrayShortInt));
-  FDataList.Add(Result);
+  FDataList.Add_DFBase(Result);
 end;
 
 function TDFE.WriteArrayByte: TDFArrayByte;
 begin
   Result := TDFArrayByte.Create(DataTypeToByte(rdtArrayByte));
-  FDataList.Add(Result);
+  FDataList.Add_DFBase(Result);
 end;
 
 procedure TDFE.WriteMD5(md5: TMD5);
@@ -2539,19 +2591,19 @@ end;
 function TDFE.WriteArraySingle: TDFArraySingle;
 begin
   Result := TDFArraySingle.Create(DataTypeToByte(rdtArraySingle));
-  FDataList.Add(Result);
+  FDataList.Add_DFBase(Result);
 end;
 
 function TDFE.WriteArrayDouble: TDFArrayDouble;
 begin
   Result := TDFArrayDouble.Create(DataTypeToByte(rdtArrayDouble));
-  FDataList.Add(Result);
+  FDataList.Add_DFBase(Result);
 end;
 
 function TDFE.WriteArrayInt64: TDFArrayInt64;
 begin
   Result := TDFArrayInt64.Create(DataTypeToByte(rdtArrayInt64));
-  FDataList.Add(Result);
+  FDataList.Add_DFBase(Result);
 end;
 
 procedure TDFE.WriteStream(v: TCore_Stream);
@@ -2560,7 +2612,7 @@ var
 begin
   Obj_ := TDFStream.Create(DataTypeToByte(rdtStream));
   Obj_.Buffer := v;
-  FDataList.Add(Obj_);
+  FDataList.Add_DFBase(Obj_);
 end;
 
 procedure TDFE.WriteInstanceStream(v: TMS64);
@@ -2569,7 +2621,7 @@ var
 begin
   Obj_ := TDFStream.Create(DataTypeToByte(rdtStream));
   Obj_.InstanceBuffer := v;
-  FDataList.Add(Obj_);
+  FDataList.Add_DFBase(Obj_);
 end;
 
 procedure TDFE.WriteVariant(v: Variant);
@@ -2578,7 +2630,7 @@ var
 begin
   Obj_ := TDFVariant.Create(DataTypeToByte(rdtVariant));
   Obj_.Buffer := v;
-  FDataList.Add(Obj_);
+  FDataList.Add_DFBase(Obj_);
 end;
 
 procedure TDFE.WriteInt64(v: Int64);
@@ -2587,7 +2639,7 @@ var
 begin
   Obj_ := TDFInt64.Create(DataTypeToByte(rdtInt64));
   Obj_.Buffer := v;
-  FDataList.Add(Obj_);
+  FDataList.Add_DFBase(Obj_);
 end;
 
 procedure TDFE.WriteUInt64(v: UInt64);
@@ -2596,7 +2648,7 @@ var
 begin
   Obj_ := TDFUInt64.Create(DataTypeToByte(rdtUInt64));
   Obj_.Buffer := v;
-  FDataList.Add(Obj_);
+  FDataList.Add_DFBase(Obj_);
 end;
 
 procedure TDFE.WriteStrings(v: TCore_Strings);
@@ -2642,7 +2694,7 @@ var
 begin
   Obj_ := TDFStream.Create(DataTypeToByte(rdtStream));
   v.FastEncodeTo(Obj_.Buffer);
-  FDataList.Add(Obj_);
+  FDataList.Add_DFBase(Obj_);
 end;
 
 procedure TDFE.WriteDataFrameCompressed(v: TDFE);
@@ -2651,7 +2703,7 @@ var
 begin
   Obj_ := TDFStream.Create(DataTypeToByte(rdtStream));
   v.EncodeAsSelectCompressor(Obj_.Buffer, True);
-  FDataList.Add(Obj_);
+  FDataList.Add_DFBase(Obj_);
 end;
 
 procedure TDFE.WriteDataFrameZLib(v: TDFE);
@@ -2660,7 +2712,7 @@ var
 begin
   Obj_ := TDFStream.Create(DataTypeToByte(rdtStream));
   v.EncodeAsZLib(Obj_.Buffer, True);
-  FDataList.Add(Obj_);
+  FDataList.Add_DFBase(Obj_);
 end;
 
 procedure TDFE.WriteHashStringList(v: THashStringList);
@@ -4629,7 +4681,7 @@ begin
 
   Result := -1;
 
-  StoreStream := TMS64.Create;
+  StoreStream := TMS64.CustomCreate(16 * 1024);
 
   source.Read(editionToken, C_Byte_Size);
   if (editionToken in [$FF, $FA]) then

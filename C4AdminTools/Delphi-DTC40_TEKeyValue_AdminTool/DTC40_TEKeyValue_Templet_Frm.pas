@@ -63,7 +63,7 @@ type
     procedure Do_QueryResult(Sender: TC40_PhysicsTunnel; L: TC40_InfoList);
     procedure Clear_TE_List;
     procedure Clear_TE_Text;
-    procedure Do_SearchTE(Sender: TC40_TEKeyValue_Client; arry: TON_SearchTE_Result_Array);
+    procedure Do_SearchTE(Sender: TC40_TEKeyValue_Client; arry: TC40_TEKeyValue_Client_SearchTE_Result_Array);
   private
     procedure C40_PhysicsTunnel_Connected(Sender: TC40_PhysicsTunnel);
     procedure C40_PhysicsTunnel_Disconnect(Sender: TC40_PhysicsTunnel);
@@ -107,7 +107,7 @@ end;
 procedure TDTC40_TEKeyValue_Templet_Form.FormClose(Sender: TObject; var CloseAction: TCloseAction);
 begin
   WriteConfig;
-  Action := caFree;
+  CloseAction := caFree;
 end;
 
 procedure TDTC40_TEKeyValue_Templet_Form.netTimerTimer(Sender: TObject);
@@ -240,7 +240,7 @@ begin
   TE_Name_Edit.Text := '';
 end;
 
-procedure TDTC40_TEKeyValue_Templet_Form.Do_SearchTE(Sender: TC40_TEKeyValue_Client; arry: TON_SearchTE_Result_Array);
+procedure TDTC40_TEKeyValue_Templet_Form.Do_SearchTE(Sender: TC40_TEKeyValue_Client; arry: TC40_TEKeyValue_Client_SearchTE_Result_Array);
 var
   i: Integer;
 begin

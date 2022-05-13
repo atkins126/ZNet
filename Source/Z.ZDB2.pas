@@ -43,6 +43,7 @@ type
     FlushThisCacheToFile: Boolean;
   end;
 
+  TZDB2_ID_Pool = {$IFDEF FPC}specialize {$ENDIF FPC} TBigList<Integer>;
   TZDB2_ID_List = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<Integer>;
   TZDB2_BlockPtrList_Decl = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<PZDB2_Block>;
 
@@ -219,7 +220,7 @@ type
     // data
     function Check(ID_: Integer): Boolean;
     function GetSpaceHndID(ID_: Integer): Integer;
-    function GetSpaceHnd(ID_: Integer): TZDB2_BlockHandle;
+    function GetSpaceHnd(ID_: Integer): TZDB2_BlockHandle; inline;
     function GetSpaceHndAsText(ID_: Integer): U_String;
     function GetSpaceHndPtr(ID_: Integer): TZDB2_BlockPtrList;
     function CheckWriteSpace(Siz_: Int64): Boolean; overload;
@@ -1667,6 +1668,7 @@ var
   SwapBuff_: Pointer;
 begin
   Result := False;
+  dest_StoreData := nil;
   FlushCache;
   headSize := C_ZDB2_HeaderSize + TZDB2_BlockStoreData.ComputeSize(FBlockCount);
   headPos_ := C_ZDB2_HeaderSize;
@@ -1744,6 +1746,7 @@ begin
   if (ID < 0) or (ID >= FBlockCount) then
       exit;
 
+  // safe check
   while FBlockBuffer[ID].Prev >= 0 do
     if (ID >= 0) and (ID < FBlockCount) and (FBlockBuffer[ID].UsedSpace > 0) then
         ID := FBlockBuffer[ID].Prev
@@ -1777,7 +1780,7 @@ begin
   if (ID < 0) or (ID >= FBlockCount) then
       exit;
 
-  // reseek
+  // safe check
   while FBlockBuffer[ID].Prev >= 0 do
     if (ID >= 0) and (ID < FBlockCount) and (FBlockBuffer[ID].UsedSpace > 0) then
         ID := FBlockBuffer[ID].Prev
@@ -1806,10 +1809,10 @@ begin
   SetLength(Result, 0);
 
   ID := ID_;
-  if ID < 0 then
+  if (ID < 0) or (ID >= BlockCount) then
       exit;
 
-  // reseek
+  // safe check
   while FBlockBuffer[ID].Prev >= 0 do
     if (ID >= 0) and (ID < FBlockCount) and (FBlockBuffer[ID].UsedSpace > 0) then
         ID := FBlockBuffer[ID].Prev
@@ -1869,10 +1872,10 @@ begin
   Result := nil;
 
   ID := ID_;
-  if ID < 0 then
+  if (ID < 0) or (ID >= BlockCount) then
       exit;
 
-  // reseek
+  // safe check
   while FBlockBuffer[ID].Prev >= 0 do
     if (ID >= 0) and (ID < FBlockCount) and (FBlockBuffer[ID].UsedSpace > 0) then
         ID := FBlockBuffer[ID].Prev
@@ -1960,6 +1963,8 @@ var
 begin
   Result := False;
   BlockPos_ := 0;
+  if SpaceHnd.Count <= 0 then
+      exit;
   for i := 0 to SpaceHnd.Count - 1 do
     begin
       p := SpaceHnd[i];

@@ -170,6 +170,7 @@
   // used Critical Simulate Atomic with TMonitor.Enter(obj) and TMonitor.Exit(obj)
   // CriticalSimulateAtomic defined so performance to be reduced
   // {$DEFINE CriticalSimulateAtomic}
+  {$UNDEF CriticalSimulateAtomic}
 
   // used soft Simulate Critical(ring)
   // SoftCritical defined so performance to be reduced

@@ -473,6 +473,8 @@ type
     procedure Exchange(p1, p2: PQueueStruct);
     function Found(p1: PQueueStruct): Boolean;
     function Find_Data(Data: T_): PQueueStruct;
+    function Search_Data_As_Array(Data: T_): TArray_T_;
+    function Search_Data_As_Order(Data: T_): TOrder_Data_Pool;
     function Remove_Data(Data: T_): Integer;
     function Repeat_(): TRepeat___; overload;
     function Repeat_(BI_, EI_: NativeInt): TRepeat___; overload;
@@ -611,6 +613,8 @@ type
     procedure Exchange(p1, p2: PQueueStruct);
     function Found(p1: PQueueStruct): Boolean;
     function Find_Data(Data: T_): PQueueStruct;
+    function Search_Data_As_Array(Data: T_): TArray_T_;
+    function Search_Data_As_Order(Data: T_): TOrder_Data_Pool;
     function Remove_Data(Data: T_): Integer;
     function Repeat_(): TRepeat___; overload;
     function Repeat_(BI_, EI_: NativeInt): TRepeat___; overload;
@@ -1279,10 +1283,10 @@ type
 {$ELSE SystemParallel}
   TDelphiParallel_P32 = reference to procedure(pass: Integer);
   TDelphiParallel_P64 = reference to procedure(pass: Int64);
-  procedure DelphiParallelFor_Block(parallel: Boolean; b, e: Integer; OnFor: TDelphiParallel_P32); overload;
-  procedure DelphiParallelFor_Block(parallel: Boolean; b, e: Int64; OnFor: TDelphiParallel_P64); overload;
-  procedure DelphiParallelFor_Fold(parallel: Boolean; b, e: Integer; OnFor: TDelphiParallel_P32); overload;
-  procedure DelphiParallelFor_Fold(parallel: Boolean; b, e: Int64; OnFor: TDelphiParallel_P64); overload;
+procedure DelphiParallelFor_Block(parallel: Boolean; b, e: Integer; OnFor: TDelphiParallel_P32); overload;
+procedure DelphiParallelFor_Block(parallel: Boolean; b, e: Int64; OnFor: TDelphiParallel_P64); overload;
+procedure DelphiParallelFor_Fold(parallel: Boolean; b, e: Integer; OnFor: TDelphiParallel_P32); overload;
+procedure DelphiParallelFor_Fold(parallel: Boolean; b, e: Int64; OnFor: TDelphiParallel_P64); overload;
 {$ENDIF SystemParallel}
 
 procedure DelphiParallelFor(parallel: Boolean; b, e: Integer; OnFor: TDelphiParallel_P32); overload;

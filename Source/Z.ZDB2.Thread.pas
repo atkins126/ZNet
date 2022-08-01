@@ -88,6 +88,7 @@ type
     procedure WriteConfig(cfg: THashStringList);
     procedure Clear;
     procedure Format_Database;
+    function Ready: Boolean;
     procedure Build(Data_Class: TZDB2_Th_Engine_Data_Class);
     procedure Rebuild_Data_Pool(Data_Class: TZDB2_Th_Engine_Data_Class);
     function Flush: Boolean;
@@ -487,6 +488,11 @@ begin
       umlDeleteFile(Database_File);
 end;
 
+function TZDB2_Th_Engine.Ready: Boolean;
+begin
+  Result := (Engine <> nil);
+end;
+
 procedure TZDB2_Th_Engine.Build(Data_Class: TZDB2_Th_Engine_Data_Class);
 var
   Stream: TCore_Stream;
@@ -785,13 +791,8 @@ begin
   OnRun_C := nil;
   OnRun_M := nil;
   OnRun_P := nil;
-{$IFDEF DEBUG}
-  FTh_Pool := TIO_Direct.Create();
-  FMax_Queue := Max_Thread_Supported;
-{$ELSE DEBUG}
   FTh_Pool := TIO_Thread.Create(ThNum_);
   FMax_Queue := Max_Thread_Supported;
-{$ENDIF DEBUG}
 end;
 
 destructor TZDB2_Th_Engine_Load_Processor.Destroy;

@@ -32,12 +32,12 @@ type
 
     function Connected: Boolean; override;
     procedure Disconnect; override;
-    procedure SendByteBuffer(const buff: PByte; const Size: nativeInt); override;
+    procedure Write_IO_Buffer(const buff: PByte; const Size: nativeInt); override;
     procedure WriteBufferOpen; override;
     procedure WriteBufferFlush; override;
     procedure WriteBufferClose; override;
     function GetPeerIP: SystemString; override;
-    function WriteBufferEmpty: Boolean; override;
+    function WriteBuffer_is_NULL: Boolean; override;
     procedure Progress; override;
   end;
 
@@ -196,7 +196,7 @@ begin
   DelayFree(5.0);
 end;
 
-procedure TXNAT_MappingOnVirutalService_IO.SendByteBuffer(const buff: PByte; const Size: nativeInt);
+procedure TXNAT_MappingOnVirutalService_IO.Write_IO_Buffer(const buff: PByte; const Size: nativeInt);
 begin
   SendingStream.WritePtr(buff, Size);
 end;
@@ -229,7 +229,7 @@ begin
   Result := Remote_IP;
 end;
 
-function TXNAT_MappingOnVirutalService_IO.WriteBufferEmpty: Boolean;
+function TXNAT_MappingOnVirutalService_IO.WriteBuffer_is_NULL: Boolean;
 begin
   Result := True;
 end;
@@ -237,7 +237,7 @@ end;
 procedure TXNAT_MappingOnVirutalService_IO.Progress;
 begin
   inherited Progress;
-  ProcessAllSendCmd(nil, False, False);
+  Process_Send_Buffer();
 end;
 
 procedure TXNAT_MappingOnVirutalService.Init;
@@ -319,7 +319,10 @@ begin
       RecvTunnel.SyncOnCompleteBuffer := True;
       RecvTunnel.SyncOnResult := True;
       RecvTunnel.SwitchMaxPerformance;
+      { compressed complete buffer }
       RecvTunnel.CompleteBufferCompressed := XNAT.ProtocolCompressed;
+      { automated swap space }
+      RecvTunnel.CompleteBufferSwapSpace := True;
       { register cmd }
       if not RecvTunnel.ExistsRegistedCmd(C_Connect_request) then
           RecvTunnel.RegisterDirectStream(C_Connect_request).OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_connect_request;
@@ -341,6 +344,8 @@ begin
       SendTunnel.SwitchMaxPerformance;
       { compressed complete buffer }
       SendTunnel.CompleteBufferCompressed := XNAT.ProtocolCompressed;
+      { automated swap space }
+      SendTunnel.CompleteBufferSwapSpace := True;
       { disable status }
       SendTunnel.PrintParams[C_Connect_reponse] := False;
       SendTunnel.PrintParams[C_Disconnect_reponse] := False;
@@ -413,8 +418,7 @@ begin
   x_io := TXNAT_MappingOnVirutalService_IO(PeerIO[local_id]);
   if x_io <> nil then
     begin
-      x_io.SaveReceiveBuffer(destBuff, destSiz);
-      x_io.FillRecvBuffer(nil, False, False);
+      x_io.Write_Physics_Fragment(destBuff, destSiz);
     end;
 end;
 

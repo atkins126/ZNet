@@ -88,6 +88,8 @@ type
     procedure Do_Go_Next_Task;
   public
     UserData: TCore_Object;
+    UserData2: TCore_Object;
+    UserDataInfo: U_String;
     On_Run: TC40_NetDisk_VM_Client_Task_Event;
     On_Done: TC40_NetDisk_VM_Client_Task_Event;
     constructor Create;
@@ -191,7 +193,7 @@ type
   public
     Share_Directory_DB_Name, Local_File, DB_Field, DB_Item: U_String;
     constructor Create;
-    destructor Destroy;
+    destructor Destroy; override;
     procedure Do_Usr_Auto_Get_File(sender: TC40_NetDisk_VM_Client; UserData: TCore_Object;
       Stream: TCore_Stream; Stream_Final_MD5__: TMD5; Successed: Boolean; info: U_String);
     procedure Do_Run_Task; override;
@@ -556,6 +558,8 @@ begin
   AtomInc(Task_Seed_No);
   FTask_No := Task_Seed_No;
   UserData := nil;
+  UserData2 := nil;
+  UserDataInfo := '';
   On_Run := nil;
   On_Done := nil;
 end;

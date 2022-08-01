@@ -163,6 +163,11 @@ begin
       Result.Cipher_Security := TCipherSecurity.csNone;
 
   Result.Build(ZDB2_Marshal.Current_Data_Class);
+  if not Result.Ready then
+    begin
+      DisposeObjectAndNil(Result);
+      Result := BuildMemory();
+    end;
 end;
 
 procedure TZDB2_Pair_MD5_Stream_Tool.Extract_MD5_Pool(ThNum_, Max_Queue_: Integer);
@@ -221,7 +226,7 @@ var
   m64: TMS64;
 begin
   m64 := TMS64.Create;
-  m64.Mapping(buff, buff_size);
+  m64.WritePtr(buff, buff_size);
   Set_MD5_Fragment(m64, True);
 end;
 

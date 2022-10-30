@@ -73,8 +73,6 @@ type
     function Connected: Boolean; override;
     function ClientIO: TPeerIO; override;
 
-    procedure TriggerQueueData(v: PQueueData); override;
-
     procedure Progress; override;
   end;
 
@@ -192,7 +190,7 @@ end;
 constructor TZNet_Client_ICS.Create;
 begin
   inherited Create;
-  FEnabledAtomicLockAndMultiThread := False;
+  EnabledAtomicLockAndMultiThread := False;
 
   FDriver := TClientICSContextIntf.Create(nil);
   FDriver.MultiThreaded := False;
@@ -366,19 +364,6 @@ end;
 function TZNet_Client_ICS.ClientIO: TPeerIO;
 begin
   Result := FClient;
-end;
-
-procedure TZNet_Client_ICS.TriggerQueueData(v: PQueueData);
-begin
-  if not Connected then
-    begin
-      DisposeQueueData(v);
-      exit;
-    end;
-
-  FClient.PostQueueData(v);
-  FClient.Process_Send_Buffer();
-  inherited Progress;
 end;
 
 procedure TZNet_Client_ICS.Progress;

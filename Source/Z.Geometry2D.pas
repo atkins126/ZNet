@@ -351,6 +351,8 @@ function RectEdge(const R: TRectV2; const Edge: TVec2): TRectV2; {$IFDEF INLINE_
 function RectCentre(const R: TRectV2): TVec2; {$IFDEF INLINE_ASM} inline; {$ENDIF INLINE_ASM} overload;
 function RectCentre(const R: TRect): TVec2; {$IFDEF INLINE_ASM} inline; {$ENDIF INLINE_ASM} overload;
 function RectCentre(const R: TRectf): TVec2; {$IFDEF INLINE_ASM} inline; {$ENDIF INLINE_ASM} overload;
+function RectIOU(const r1, r2: TRectV2): TGeoFloat; {$IFDEF INLINE_ASM}inline; {$ENDIF INLINE_ASM}
+function RectDistance(const r1, r2: TRectV2): TGeoFloat; {$IFDEF INLINE_ASM}inline; {$ENDIF INLINE_ASM}
 
 function Tri(const v1, v2, v3: TVec2): TTriangle; {$IFDEF INLINE_ASM}inline; {$ENDIF INLINE_ASM}
 function TriAdd(const t: TTriangle; V: TVec2): TTriangle; {$IFDEF INLINE_ASM}inline; {$ENDIF INLINE_ASM}
@@ -432,7 +434,7 @@ function BuffCentroid(const buff: TArrayVec2): TVec2; {$IFDEF INLINE_ASM} inline
 function BuffCentroid(const p1, p2, p3, p4: TVec2): TVec2; {$IFDEF INLINE_ASM} inline; {$ENDIF INLINE_ASM} overload;
 function BuffCentroid(const p1, p2, p3: TVec2): TVec2; {$IFDEF INLINE_ASM} inline; {$ENDIF INLINE_ASM} overload;
 function PointInPolygon(pt: TVec2; const PolygonBuff: TArrayVec2): boolean; {$IFDEF INLINE_ASM}inline; {$ENDIF INLINE_ASM}
-function PolygonArea(const buff: TArrayVec2): TGeoFloat; {$IFDEF INLINE_ASM}inline; {$ENDIF INLINE_ASM}
+function PolygonArea(buff: TArrayVec2): TGeoFloat; {$IFDEF INLINE_ASM}inline; {$ENDIF INLINE_ASM} overload;
 
 function FastRamerDouglasPeucker(var Points: TArrayVec2; Epsilon_: TGeoFloat): TGeoInt; {$IFDEF INLINE_ASM}inline; {$ENDIF INLINE_ASM}
 procedure FastVertexReduction(Points: TArrayVec2; Epsilon_: TGeoFloat; var output: TArrayVec2);
@@ -629,7 +631,6 @@ type
     FList: TCore_List;
     FUserData: pointer;
     FUserObject: TCore_Object;
-
     function GetPoints(index: TGeoInt): PVec2;
   public
     constructor Create;
@@ -1077,6 +1078,7 @@ type
     error: boolean;
     Data1: pointer;
     Data2: TCore_Object;
+    ID: TGeoInt;
   end;
 
   PRectPackData = ^TRectPackData;
@@ -1094,8 +1096,8 @@ type
     constructor Create;
     destructor Destroy; override;
     procedure Clear;
-    procedure Add(const X, Y, width, height: TGeoFloat); overload;
     procedure Add(Data1: pointer; Data2: TCore_Object; X, Y, width, height: TGeoFloat); overload;
+    procedure Add(const X, Y, width, height: TGeoFloat); overload;
     procedure Add(Data1: pointer; Data2: TCore_Object; R: TRectV2); overload;
     procedure Add(Data1: pointer; Data2: TCore_Object; width, height: TGeoFloat); overload;
     function Data1Exists(const Data1: pointer): boolean;
@@ -1287,7 +1289,6 @@ type
     class procedure Test2();
   end;
 {$ENDREGION 'Hausdorf'}
-
 
 function ArrayVec2(const V: TArrayVec2): TArrayVec2; overload;
 function ArrayVec2(const R: TRectV2): TArrayVec2; overload;
@@ -2693,6 +2694,21 @@ begin
   Result := RectCentre(RectV2(R));
 end;
 
+function RectIOU(const r1, r2: TRectV2): TGeoFloat;
+var
+  r1A, r2A, cA: TGeoFloat;
+begin
+  r1A := RectArea(r1);
+  r2A := RectArea(r2);
+  cA := RectArea(Clip(r1, r2));
+  Result := cA / (r1A + r2A - cA);
+end;
+
+function RectDistance(const r1, r2: TRectV2): TGeoFloat;
+begin
+  Result := Vec2Distance(RectCentre(r1), RectCentre(r2));
+end;
+
 function Tri(const v1, v2, v3: TVec2): TTriangle;
 begin
   Result[0] := v1;
@@ -3467,7 +3483,7 @@ begin
     end;
 end;
 
-function PolygonArea(const buff: TArrayVec2): TGeoFloat;
+function PolygonArea(buff: TArrayVec2): TGeoFloat;
 var
   i, j: TGeoInt;
 begin
@@ -9720,33 +9736,21 @@ begin
   FList.Clear;
 end;
 
-function TRectPacking.Count: TGeoInt;
-begin
-  Result := FList.Count;
-end;
-
-procedure TRectPacking.Add(const X, Y, width, height: TGeoFloat);
-var
-  p: PRectPackData;
-begin
-  new(p);
-  p^.Rect := FixRect(MakeRectV2(X, Y, X + width, Y + height));
-  p^.error := True;
-  p^.Data1 := nil;
-  p^.Data2 := nil;
-  FList.Add(p);
-end;
-
 procedure TRectPacking.Add(Data1: pointer; Data2: TCore_Object; X, Y, width, height: TGeoFloat);
 var
   p: PRectPackData;
 begin
   new(p);
-  p^.Rect := FixRect(MakeRectV2(0, 0, width, height));
+  p^.Rect := RectV2(X, Y, X + width, Y + height);
   p^.error := True;
   p^.Data1 := Data1;
   p^.Data2 := Data2;
-  FList.Add(p);
+  p^.ID := FList.Add(p);
+end;
+
+procedure TRectPacking.Add(const X, Y, width, height: TGeoFloat);
+begin
+  Add(nil, nil, X, Y, width, height);
 end;
 
 procedure TRectPacking.Add(Data1: pointer; Data2: TCore_Object; R: TRectV2);
@@ -9781,11 +9785,18 @@ begin
   Result := False;
 end;
 
+function TRectPacking.Count: TGeoInt;
+begin
+  Result := FList.Count;
+end;
+
 procedure TRectPacking.Build(SpaceWidth, SpaceHeight: TGeoFloat);
 
   function Compare_(Left, Right: pointer): ShortInt;
   begin
     Result := CompareFloat(RectArea(PRectPackData(Right)^.Rect), RectArea(PRectPackData(Left)^.Rect));
+    if Result = 0 then
+        Result := CompareGeoInt(PRectPackData(Left)^.ID, PRectPackData(Right)^.ID);
   end;
 
   procedure fastSort_(var Arry_: TCore_PointerList; L, R: TGeoInt);

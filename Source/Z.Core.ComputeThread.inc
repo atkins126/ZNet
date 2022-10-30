@@ -166,7 +166,7 @@ procedure TCore_Dispatch_Order_Thread.Execute;
         else
           begin
             // remove
-            Compute_Dispatch_Queue_Pool__.Remove(Data_.Pool_Queue_Ptr__);
+            Compute_Dispatch_Queue_Pool__.Remove_P(Data_.Pool_Queue_Ptr__);
             Data_.IsPicked__ := nil;
             Compute_Dispatch_Critical__.Release;
           end;
@@ -370,7 +370,7 @@ begin
     end;
 
   Compute_Dispatch_Critical__.Acquire;
-  Core_Thread_Pool__.Remove(Thread_Pool_Queue_Data_Ptr);
+  Core_Thread_Pool__.Remove_P(Thread_Pool_Queue_Data_Ptr);
   Compute_Dispatch_Critical__.Release;
 
   AtomDec(PMD19937Core(FRndInstance)^.Instance_TMT19937Random__);
@@ -1041,4 +1041,64 @@ end;
 class procedure TCompute.PostP4(Data1: Pointer; Data2: TCore_Object; OnSync: TThreadPost_P4; IsRuning_, IsExit_: PBoolean);
 begin
   MainThreadProgress.PostP4(Data1, Data2, OnSync, IsRuning_, IsExit_);
+end;
+
+class procedure TCompute.Sync_Wait_PostC1(OnSync: TThreadPost_C1);
+begin
+  MainThreadProgress.Sync_Wait_PostC1(OnSync);
+end;
+
+class procedure TCompute.Sync_Wait_PostC2(Data1: Pointer; OnSync: TThreadPost_C2);
+begin
+  MainThreadProgress.Sync_Wait_PostC2(Data1, OnSync);
+end;
+
+class procedure TCompute.Sync_Wait_PostC3(Data1: Pointer; Data2: TCore_Object; Data3: Variant; OnSync: TThreadPost_C3);
+begin
+  MainThreadProgress.Sync_Wait_PostC3(Data1, Data2, Data3, OnSync);
+end;
+
+class procedure TCompute.Sync_Wait_PostC4(Data1: Pointer; Data2: TCore_Object; OnSync: TThreadPost_C4);
+begin
+  MainThreadProgress.Sync_Wait_PostC4(Data1, Data2, OnSync);
+end;
+
+class procedure TCompute.Sync_Wait_PostM1(OnSync: TThreadPost_M1);
+begin
+  MainThreadProgress.Sync_Wait_PostM1(OnSync);
+end;
+
+class procedure TCompute.Sync_Wait_PostM2(Data1: Pointer; OnSync: TThreadPost_M2);
+begin
+  MainThreadProgress.Sync_Wait_PostM2(Data1, OnSync);
+end;
+
+class procedure TCompute.Sync_Wait_PostM3(Data1: Pointer; Data2: TCore_Object; Data3: Variant; OnSync: TThreadPost_M3);
+begin
+  MainThreadProgress.Sync_Wait_PostM3(Data1, Data2, Data3, OnSync);
+end;
+
+class procedure TCompute.Sync_Wait_PostM4(Data1: Pointer; Data2: TCore_Object; OnSync: TThreadPost_M4);
+begin
+  MainThreadProgress.Sync_Wait_PostM4(Data1, Data2, OnSync);
+end;
+
+class procedure TCompute.Sync_Wait_PostP1(OnSync: TThreadPost_P1);
+begin
+  MainThreadProgress.Sync_Wait_PostP1(OnSync);
+end;
+
+class procedure TCompute.Sync_Wait_PostP2(Data1: Pointer; OnSync: TThreadPost_P2);
+begin
+  MainThreadProgress.Sync_Wait_PostP2(Data1, OnSync);
+end;
+
+class procedure TCompute.Sync_Wait_PostP3(Data1: Pointer; Data2: TCore_Object; Data3: Variant; OnSync: TThreadPost_P3);
+begin
+  MainThreadProgress.Sync_Wait_PostP3(Data1, Data2, Data3, OnSync);
+end;
+
+class procedure TCompute.Sync_Wait_PostP4(Data1: Pointer; Data2: TCore_Object; OnSync: TThreadPost_P4);
+begin
+  MainThreadProgress.Sync_Wait_PostP4(Data1, Data2, OnSync);
 end;

@@ -12,7 +12,7 @@ uses Z.Core,
   Z.FPC.GenericList,
 {$ENDIF FPC}
   Z.PascalStrings, Z.UPascalStrings, Z.UnicodeMixedLib,
-  Z.MemoryStream, Z.GHashList,
+  Z.MemoryStream, Z.HashList.Templet,
   Z.Status, Z.Cipher, Z.ZDB2, Z.ListEngine, Z.TextDataEngine, Z.Notify, Z.IOThread,
   Z.ZDB2.Thread.Queue, Z.ZDB2.Thread;
 
@@ -20,12 +20,12 @@ type
   TZDB2_Pair_String_Stream_Tool = class;
   TZDB2_Pair_String_Stream_Data = class;
 
-  TZDB2_Pair_String_Stream_Pool__ = {$IFDEF FPC}specialize {$ENDIF FPC} TString_Critical_Big_Hash_Pair_Pool<TZDB2_Pair_String_Stream_Data>;
+  TZDB2_Pair_String_Stream_Pool__ = {$IFDEF FPC}specialize {$ENDIF FPC} TCritical_String_Big_Hash_Pair_Pool<TZDB2_Pair_String_Stream_Data>;
 
   TZDB2_Pair_String_Stream_Pool = class(TZDB2_Pair_String_Stream_Pool__)
   public
     procedure DoFree(var Key: SystemString; var Value: TZDB2_Pair_String_Stream_Data); override;
-    function Compare_Value(Value_1, Value_2: TZDB2_Pair_String_Stream_Data): Boolean; override;
+    function Compare_Value(const Value_1, Value_2: TZDB2_Pair_String_Stream_Data): Boolean; override;
   end;
 
   TZDB2_Pair_String_Stream_Data = class(TZDB2_Th_Engine_Data)
@@ -84,7 +84,7 @@ begin
     end;
 end;
 
-function TZDB2_Pair_String_Stream_Pool.Compare_Value(Value_1, Value_2: TZDB2_Pair_String_Stream_Data): Boolean;
+function TZDB2_Pair_String_Stream_Pool.Compare_Value(const Value_1, Value_2: TZDB2_Pair_String_Stream_Data): Boolean;
 begin
   Result := Value_1 = Value_2;
 end;

@@ -50,7 +50,6 @@ type
 
     function Connected: Boolean; override;
     function ClientIO: TPeerIO; override;
-    procedure TriggerQueueData(v: PQueueData); override;
     procedure Progress; override;
 
     procedure AsyncConnect(addr: SystemString; Port: Word); overload;
@@ -139,7 +138,7 @@ end;
 constructor TZNet_Client_CrossSocket.Create;
 begin
   inherited Create;
-  FEnabledAtomicLockAndMultiThread := False;
+  EnabledAtomicLockAndMultiThread := False;
   FOnAsyncConnectNotify_C := nil;
   FOnAsyncConnectNotify_M := nil;
   FOnAsyncConnectNotify_P := nil;
@@ -197,18 +196,6 @@ end;
 function TZNet_Client_CrossSocket.ClientIO: TPeerIO;
 begin
   Result := ClientIOIntf;
-end;
-
-procedure TZNet_Client_CrossSocket.TriggerQueueData(v: PQueueData);
-begin
-  if not Connected then
-    begin
-      DisposeQueueData(v);
-      Exit;
-    end;
-
-  ClientIOIntf.PostQueueData(v);
-  ClientIOIntf.Process_Send_Buffer();
 end;
 
 procedure TZNet_Client_CrossSocket.Progress;

@@ -12,7 +12,7 @@ uses Z.Core,
   Z.FPC.GenericList,
 {$ENDIF FPC}
   Z.PascalStrings, Z.UPascalStrings, Z.UnicodeMixedLib,
-  Z.MemoryStream, Z.GHashList,
+  Z.MemoryStream, Z.HashList.Templet,
   Z.Status, Z.Cipher, Z.ZDB2, Z.ListEngine, Z.TextDataEngine, Z.Notify, Z.IOThread,
   Z.ZDB2.Thread.Queue, Z.ZDB2.Thread;
 
@@ -25,8 +25,8 @@ type
   TZDB2_Pair_MD5_Stream_Pool = class(TZDB2_Pair_MD5_Stream_Pool__)
   public
     procedure DoFree(var Key: TMD5; var Value: TZDB2_Pair_MD5_Stream_Data); override;
-    function Compare_Key(Key_1, Key_2: TMD5): Boolean; override;
-    function Compare_Value(Value_1, Value_2: TZDB2_Pair_MD5_Stream_Data): Boolean; override;
+    function Compare_Key(const Key_1, Key_2: TMD5): Boolean; override;
+    function Compare_Value(const Value_1, Value_2: TZDB2_Pair_MD5_Stream_Data): Boolean; override;
   end;
 
   TZDB2_Pair_MD5_Stream_Data = class(TZDB2_Th_Engine_Data)
@@ -87,12 +87,12 @@ begin
     end;
 end;
 
-function TZDB2_Pair_MD5_Stream_Pool.Compare_Key(Key_1, Key_2: TMD5): Boolean;
+function TZDB2_Pair_MD5_Stream_Pool.Compare_Key(const Key_1, Key_2: TMD5): Boolean;
 begin
   Result := umlMD5Compare(Key_1, Key_2);
 end;
 
-function TZDB2_Pair_MD5_Stream_Pool.Compare_Value(Value_1, Value_2: TZDB2_Pair_MD5_Stream_Data): Boolean;
+function TZDB2_Pair_MD5_Stream_Pool.Compare_Value(const Value_1, Value_2: TZDB2_Pair_MD5_Stream_Data): Boolean;
 begin
   Result := Value_1 = Value_2;
 end;

@@ -209,7 +209,6 @@ end;
 
 procedure TIO_Thread.ThRun(Sender: TCompute);
 var
-  i: Integer;
   d: TIO_Thread_Data;
   LTK, L: TTimeTick;
   p: TIO_Thread_Queue.POrderStruct;
@@ -740,7 +739,7 @@ begin
     end;
 
   FOwner.FCritical.Lock;
-  FOwner.Remove(FPool_Data_Ptr);
+  FOwner.Remove_P(FPool_Data_Ptr);
   FOwner.FCritical.UnLock;
 
   FBindTh := nil;

@@ -79,13 +79,13 @@ type
 
     // query options
     WriteResultToOutputDB: Boolean; // result write to output
-    AutoDestroyDB: Boolean;         // complete time destroy DB
-    FragmentWaitTime: Double;       // fragment time,realtime send to client
-    MaxWaitTime: Double;            // max wait complete time,query to abort from out time
-    MaxQueryCompare: Int64;         // max query compare
-    MaxQueryResult: Int64;          // max query result
+    AutoDestroyDB: Boolean; // complete time destroy DB
+    FragmentWaitTime: Double; // fragment time,realtime send to client
+    MaxWaitTime: Double; // max wait complete time,query to abort from out time
+    MaxQueryCompare: Int64; // max query compare
+    MaxQueryResult: Int64; // max query result
     QueryDoneFreeDelayTime: Double; // delay free query pipeline
-    WriteFragmentBuffer: Boolean;   // write fragment buffer
+    WriteFragmentBuffer: Boolean; // write fragment buffer
 
     OnDataFilter_C: TZDBPipelineFilter_C;
     OnDataFilter_M: TZDBPipelineFilter_M;
@@ -939,13 +939,13 @@ begin
 
   // data query options
   WriteResultToOutputDB := True; // query result write to output
-  AutoDestroyDB := True;         // complete time destroy Database_
-  FragmentWaitTime := 0.5;       // fragment time,realtime send to client
-  MaxWaitTime := 0;              // max wait complete time,query to abort from out time
-  MaxQueryCompare := 0;          // max query compare
-  MaxQueryResult := 0;           // max query result
-  QueryDoneFreeDelayTime := 60;  // query done free delay time
-  WriteFragmentBuffer := True;   // write fragment
+  AutoDestroyDB := True; // complete time destroy Database_
+  FragmentWaitTime := 0.5; // fragment time,realtime send to client
+  MaxWaitTime := 0; // max wait complete time,query to abort from out time
+  MaxQueryCompare := 0; // max query compare
+  MaxQueryResult := 0; // max query result
+  QueryDoneFreeDelayTime := 60; // query done free delay time
+  WriteFragmentBuffer := True; // write fragment
 
   OnDataFilter_C := nil;
   OnDataFilter_M := nil;
@@ -1196,8 +1196,11 @@ begin
   except
   end;
 
-  with ProgressPost.PostExecuteM(pipe.QueryDoneFreeDelayTime, {$IFDEF FPC}@{$ENDIF FPC}DelayFreePipe) do
+  with ProgressPost.PostExecuteM(False, pipe.QueryDoneFreeDelayTime, {$IFDEF FPC}@{$ENDIF FPC}DelayFreePipe) do
+    begin
       Data1 := pipe;
+      Ready();
+    end;
 end;
 
 procedure TZDBLocalManager.DelayFreePipe(Sender: TN_Post_Execute);
@@ -1213,8 +1216,11 @@ begin
         pl := TZDBPipeline(FQueryPipelineList[i]);
         if (pl.SourceDB = sour.OutputDB) and (pl.Activted) then
           begin
-            with ProgressPost.PostExecuteM(1.0, {$IFDEF FPC}@{$ENDIF FPC}DelayFreePipe) do
+            with ProgressPost.PostExecuteM(False, 1.0, {$IFDEF FPC}@{$ENDIF FPC}DelayFreePipe) do
+              begin
                 Data1 := sour;
+                Ready();
+              end;
             Exit;
           end;
       end;
@@ -1267,11 +1273,12 @@ begin
 
   SourceDatabaseName_ := dPipe.SourceDB.Name;
   replaceN := dPipe.UserVariant;
-  with ProgressPost.PostExecuteM(2.0, {$IFDEF FPC}@{$ENDIF FPC}DelayReplaceDB) do
+  with ProgressPost.PostExecuteM(False, 2.0, {$IFDEF FPC}@{$ENDIF FPC}DelayReplaceDB) do
     begin
       Data3 := SourceDatabaseName_;
       Data4 := replaceN;
       Data5 := Done_Ptr;
+      Ready();
     end;
 end;
 
@@ -1308,11 +1315,12 @@ begin
 
   if dbBusy then
     begin
-      with ProgressPost.PostExecuteM(1.0, {$IFDEF FPC}@{$ENDIF FPC}DelayReplaceDB) do
+      with ProgressPost.PostExecuteM(False, 1.0, {$IFDEF FPC}@{$ENDIF FPC}DelayReplaceDB) do
         begin
           Data3 := SourceDatabaseName_;
           Data4 := replaceN;
           Data5 := Done_Ptr;
+          Ready();
         end;
       Exit;
     end;
@@ -1661,10 +1669,11 @@ end;
 
 procedure TZDBLocalManager.ReplaceDB(dataBaseName_, replaceN: SystemString);
 begin
-  with ProgressPost.PostExecuteM(0, {$IFDEF FPC}@{$ENDIF FPC}DelayReplaceDB) do
+  with ProgressPost.PostExecuteM(False, 0, {$IFDEF FPC}@{$ENDIF FPC}DelayReplaceDB) do
     begin
       Data3 := dataBaseName_;
       Data4 := replaceN;
+      Ready();
     end;
 end;
 
@@ -2207,7 +2216,7 @@ begin
   LM.QueryDBP(True, True, False, 'test', 'test_output', True, 1.0, 1, 0, 0, 0, @do_fpc_Query, @do_fpc_Query_Done);
 {$ELSE FPC}
   LM.QueryDBP(True, True, False, 'test', 'test_output', True, 1.0, 1, 0, 0, 0,
-    procedure(dPipe: TZDBPipeline; var qState: TQueryState; var Allowed: Boolean)
+      procedure(dPipe: TZDBPipeline; var qState: TQueryState; var Allowed: Boolean)
     begin
       if qState.IsString then
         begin

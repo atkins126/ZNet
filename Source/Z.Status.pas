@@ -41,6 +41,8 @@ procedure DisableStatus;
 procedure EnabledStatus;
 function Is_EnabledStatus: Boolean;
 function Is_DisableStatus: Boolean;
+function Get_DoStatus_Queue_Num: NativeInt;
+procedure Wait_DoStatus_Queue;
 
 procedure DoStatus(Text_: SystemString; const ID: Integer); overload;
 procedure DoStatus(const v: Pointer; siz, width: NativeInt); overload;
@@ -62,6 +64,10 @@ procedure DoStatus; overload;
 procedure DoStatusNoLn(const v: TPascalString); overload;
 procedure DoStatusNoLn(const v: SystemString; const Args: array of const); overload;
 procedure DoStatusNoLn; overload;
+
+// dispose object and print info
+function DisposeObject_PrintInfo(const Obj: TObject): Boolean;
+function DisposeObjectAndNil_PrintInfo(var Obj): Boolean;
 
 var
   LastDoStatus: SystemString;
@@ -390,6 +396,42 @@ begin
       DoStatus(S);
 end;
 
+function DisposeObject_PrintInfo(const Obj: TObject): Boolean;
+{$IFDEF SHOW_DISPOSEOBJECT_PRINTINFO_LOG}
+var
+  n: SystemString;
+{$ENDIF SHOW_DISPOSEOBJECT_PRINTINFO_LOG}
+begin
+{$IFDEF SHOW_DISPOSEOBJECT_PRINTINFO_LOG}
+  Result := False;
+  if Obj = nil then
+      exit;
+  n := Obj.ClassName;
+  Result := DisposeObject(Obj);
+  DoStatus('free %s', [n]);
+{$ELSE SHOW_DISPOSEOBJECT_PRINTINFO_LOG}
+  Result := DisposeObject(Obj);
+{$ENDIF SHOW_DISPOSEOBJECT_PRINTINFO_LOG}
+end;
+
+function DisposeObjectAndNil_PrintInfo(var Obj): Boolean;
+{$IFDEF SHOW_DISPOSEOBJECT_PRINTINFO_LOG}
+var
+  n: SystemString;
+{$ENDIF SHOW_DISPOSEOBJECT_PRINTINFO_LOG}
+begin
+{$IFDEF SHOW_DISPOSEOBJECT_PRINTINFO_LOG}
+  Result := False;
+  if TObject(Obj) = nil then
+      exit;
+  n := TObject(Obj).ClassName;
+  Result := DisposeObjectAndNil(Obj);
+  DoStatus('free and nil %s', [n]);
+{$ELSE SHOW_DISPOSEOBJECT_PRINTINFO_LOG}
+  Result := DisposeObjectAndNil(Obj);
+{$ENDIF SHOW_DISPOSEOBJECT_PRINTINFO_LOG}
+end;
+
 procedure _InternalOutput(const Text_: U_String; const ID: Integer);
 var
   tmp: U_String;
@@ -472,7 +514,7 @@ begin
     begin
       new(pSS);
       if StatusThreadID then
-          pSS^.S := '[' + IntToStr(Th.ThreadID) + '] ' + Text_
+          pSS^.S := '[' + IntToStr(Th.ThreadID) + '] ' + umlReplace(Text_, #10, #10 + '[' + IntToStr(Th.ThreadID) + '] ', False, False)
       else
           pSS^.S := Text_;
       pSS^.Th := Th;
@@ -564,6 +606,28 @@ end;
 function Is_DisableStatus: Boolean;
 begin
   Result := not Status_Active__;
+end;
+
+function Get_DoStatus_Queue_Num: NativeInt;
+begin
+  Result := Text_Queue_Data_Pool__.Num;
+end;
+
+procedure Wait_DoStatus_Queue;
+begin
+  if TCompute.CurrentThread.ThreadID <> MainThreadID then
+    begin
+      while Get_DoStatus_Queue_Num > 0 do
+          TCompute.Sleep(1);
+    end
+  else
+    begin
+      while Get_DoStatus_Queue_Num > 0 do
+        begin
+          DoStatus;
+          TCompute.Sleep(1);
+        end;
+    end;
 end;
 
 procedure DoCheckThreadSynchronize;

@@ -8,6 +8,7 @@ unit Z.UnicodeMixedLib;
 interface
 
 uses
+  Dateutils,
 {$IFDEF FPC}
   Dynlibs,
   Z.FPC.GenericList,
@@ -41,6 +42,7 @@ const
   C_PrepareReadCacheSize = 512;
   C_MaxBufferFragmentSize = $F000;
 
+  C_Flush_And_Seek_Error = -912;
   C_StringError = -911;
   C_SeekError = -910;
   C_FileWriteError = -909;
@@ -60,6 +62,7 @@ type
   U_StringArray = array of U_SystemString;
   U_ArrayString = U_StringArray;
   U_Bytes = TBytes;
+
   TSR = TSearchRec;
   U_Stream = TCore_Stream;
 
@@ -127,6 +130,11 @@ type
   TListPascalString_Helper_ = class helper for TListPascalString
   public
     procedure FillToArry(var Output_: U_StringArray);
+  end;
+
+  TStringBigList_Helper_ = class helper for TStringBigList
+  public
+    procedure InputArray(arry: U_StringArray);
   end;
 
 function umlBytesOf(const s: TPascalString): TBytes;
@@ -210,9 +218,12 @@ function umlRandomRangeF(const min_, max_: Double): Double; overload;
 
 function umlDefaultTime: Double;
 function umlNow: Double;
+function umlTime: Double;
+function umlDate: Double;
 function umlDefaultAttrib: Integer;
 function umlBoolToStr(const Value: Boolean): TPascalString;
-function umlStrToBool(const Value: TPascalString): Boolean;
+function umlStrToBool(const Value: TPascalString; Default_: Boolean): Boolean; overload;
+function umlStrToBool(const Value: TPascalString): Boolean; overload;
 
 function umlFileExists(const FileName: TPascalString): Boolean;
 function umlDirectoryExists(const DirectoryName: TPascalString): Boolean;
@@ -280,9 +291,9 @@ function umlBlockWrite(var IOHnd: TIOHnd; const buff; const Size: Int64): Boolea
 function umlFileWriteFixedString(var IOHnd: TIOHnd; var Value: TPascalString): Boolean;
 function umlFileReadFixedString(var IOHnd: TIOHnd; var Value: TPascalString): Boolean;
 function umlCheckSeedPos(var IOHnd: TIOHnd; Pos_: Int64): Boolean;
-function umlFileSeek(var IOHnd: TIOHnd; Pos_: Int64): Boolean;
-function umlFileGetPOS(var IOHnd: TIOHnd): Int64;
+function umlFileSeek(var IOHnd: TIOHnd; const Pos_: Int64): Boolean;
 function umlFileSetSize(var IOHnd: TIOHnd; siz_: Int64): Boolean;
+function umlFileGetPOS(var IOHnd: TIOHnd): Int64;
 function umlFilePOS(var IOHnd: TIOHnd): Int64;
 function umlFileGetSize(var IOHnd: TIOHnd): Int64;
 function umlFileSize(var IOHnd: TIOHnd): Int64;
@@ -369,15 +380,24 @@ function umlIntToStr(Parameter: Single): TPascalString; overload;
 function umlIntToStr(Parameter: Double): TPascalString; overload;
 function umlIntToStr(Parameter: Int64): TPascalString; overload;
 function umlIntToStr(Parameter: UInt64): TPascalString; overload;
+function umlIntToStr(Parameter: Integer): TPascalString; overload;
+function umlIntToStr(Parameter: Cardinal): TPascalString; overload;
 
 function umlPointerToStr(param: Pointer): TPascalString;
 
 function umlMBPSToStr(Size: Int64): TPascalString;
 function umlSizeToStr(Parameter: Int64): TPascalString;
+function umlGSizeToStr(Parameter: Int64): TPascalString;
+
+function umlStrToTime(s: TPascalString): TDateTime;
+function umlTimeToStr(t: TDateTime): TPascalString;
 function umlStrToDateTime(s: TPascalString): TDateTime;
 function umlDateTimeToStr(t: TDateTime): TPascalString;
+function umlDT(t: TDateTime): TPascalString; overload;
+function umlDT(s: TPascalString): TDateTime; overload;
+function umlDT(s: TPascalString; Default_: TDateTime): TDateTime; overload;
+
 function umlTimeTickToStr(const t: TTimeTick): TPascalString;
-function umlTimeToStr(t: TDateTime): TPascalString;
 function umlDateToStr(t: TDateTime): TPascalString;
 function umlFloatToStr(const f: Double): TPascalString;
 function umlShortFloatToStr(const f: Double): TPascalString;
@@ -406,9 +426,13 @@ function umlMatchFileInfo(const exp_, sour_, dest_: TPascalString): Boolean;
 function umlGetDateTimeStr(NowDateTime: TDateTime): TPascalString;
 function umlDecodeTimeToStr(NowDateTime: TDateTime): TPascalString;
 function umlMakeRanName: TPascalString;
+function umlDecodeDateTimeToInt64(NowDateTime: TDateTime): Int64;
 
 type
   TBatch = record
+  private
+    procedure Swap_(var inst: TBatch);
+  public
     sour, dest: TPascalString;
     sum: Integer;
   end;
@@ -916,6 +940,14 @@ begin
   SetLength(Output_, Count);
   for i := 0 to Count - 1 do
       Output_[i] := Items[i];
+end;
+
+procedure TStringBigList_Helper_.InputArray(arry: U_StringArray);
+var
+  i: Integer;
+begin
+  for i := low(arry) to high(arry) do
+      add(arry[i]);
 end;
 
 function umlBytesOf(const s: TPascalString): TBytes;
@@ -1544,6 +1576,16 @@ begin
   Result := Now();
 end;
 
+function umlTime: Double;
+begin
+  Result := Time();
+end;
+
+function umlDate: Double;
+begin
+  Result := Date();
+end;
+
 function umlDefaultAttrib: Integer;
 begin
   Result := 0;
@@ -1557,7 +1599,7 @@ begin
       Result := 'False';
 end;
 
-function umlStrToBool(const Value: TPascalString): Boolean;
+function umlStrToBool(const Value: TPascalString; Default_: Boolean): Boolean;
 var
   NewValue: TPascalString;
 begin
@@ -1575,7 +1617,12 @@ begin
   else if NewValue.Same('0') then
       Result := False
   else
-      Result := False;
+      Result := Default_;
+end;
+
+function umlStrToBool(const Value: TPascalString): Boolean;
+begin
+  Result := umlStrToBool(Value, False);
 end;
 
 function umlFileExists(const FileName: TPascalString): Boolean;
@@ -1739,7 +1786,7 @@ begin
   if umlFindFirstFile(umlCombineFileName(FullPath, '*'), _SR) then
     begin
       repeat
-        AsLst.Add(_SR.Name);
+        AsLst.add(_SR.Name);
         inc(Result);
       until not umlFindNextFile(_SR);
     end;
@@ -1754,7 +1801,7 @@ begin
   if umlFindFirstDir(umlCombineFileName(FullPath, '*'), _SR) then
     begin
       repeat
-        AsLst.Add(_SR.Name);
+        AsLst.add(_SR.Name);
         inc(Result);
       until not umlFindNextDir(_SR);
     end;
@@ -1769,7 +1816,7 @@ begin
   if umlFindFirstFile(umlCombineFileName(FullPath, '*'), _SR) then
     begin
       repeat
-        AsLst.Add(_SR.Name);
+        AsLst.add(_SR.Name);
         inc(Result);
       until not umlFindNextFile(_SR);
     end;
@@ -1784,7 +1831,7 @@ begin
   if umlFindFirstDir(umlCombineFileName(FullPath, '*'), _SR) then
     begin
       repeat
-        AsLst.Add(_SR.Name);
+        AsLst.add(_SR.Name);
         inc(Result);
       until not umlFindNextDir(_SR);
     end;
@@ -2733,7 +2780,7 @@ begin
   Result := (Pos_ >= 0) and (Pos_ <= IOHnd.Size);
 end;
 
-function umlFileSeek(var IOHnd: TIOHnd; Pos_: Int64): Boolean;
+function umlFileSeek(var IOHnd: TIOHnd; const Pos_: Int64): Boolean;
 begin
   if Pos_ < 0 then
     begin
@@ -2742,16 +2789,17 @@ begin
       exit;
     end;
 
+  if not umlFileFlushWriteCache(IOHnd) then
+    begin
+      IOHnd.Return := C_Flush_And_Seek_Error;
+      Result := False;
+      exit;
+    end;
+
   if (Pos_ = IOHnd.Position) and (Pos_ = IOHnd.Handle.Position) then
     begin
       IOHnd.Return := C_NotError;
       Result := True;
-      exit;
-    end;
-
-  if not umlFileFlushWriteCache(IOHnd) then
-    begin
-      Result := False;
       exit;
     end;
 
@@ -2768,11 +2816,6 @@ begin
   end;
 end;
 
-function umlFileGetPOS(var IOHnd: TIOHnd): Int64;
-begin
-  Result := IOHnd.Position;
-end;
-
 function umlFileSetSize(var IOHnd: TIOHnd; siz_: Int64): Boolean;
 begin
   if not umlFileFlushWriteCache(IOHnd) then
@@ -2782,8 +2825,16 @@ begin
     end;
 
   IOHnd.Handle.Size := siz_;
+  IOHnd.Size := siz_;
+  IOHnd.Position := IOHnd.Position;
   Result := True;
   IOHnd.Return := C_NotError;
+end;
+
+function umlFileGetPOS(var IOHnd: TIOHnd): Int64;
+begin
+  umlFileFlushWriteCache(IOHnd);
+  Result := IOHnd.Position;
 end;
 
 function umlFilePOS(var IOHnd: TIOHnd): Int64;
@@ -2793,6 +2844,7 @@ end;
 
 function umlFileGetSize(var IOHnd: TIOHnd): Int64;
 begin
+  umlFileFlushWriteCache(IOHnd);
   Result := IOHnd.Size;
 end;
 
@@ -3906,9 +3958,9 @@ begin
   if Size < 1 shl 10 then
       Result := Format('%d', [Size])
   else if Size < 1 shl 20 then
-      Result := Format('%f Kb', [Size / (1 shl 10)])
+      Result := Format('%fKb', [Size / (1 shl 10)])
   else
-      Result := Format('%f M', [Size / (1 shl 20)]);
+      Result := Format('%fM', [Size / (1 shl 20)]);
 end;
 
 function umlIntToStr(Parameter: Single): TPascalString;
@@ -3931,6 +3983,16 @@ begin
   Result := UIntToStr(Parameter);
 end;
 
+function umlIntToStr(Parameter: Integer): TPascalString;
+begin
+  Result := IntToStr(Parameter);
+end;
+
+function umlIntToStr(Parameter: Cardinal): TPascalString;
+begin
+  Result := UIntToStr(Parameter);
+end;
+
 function umlPointerToStr(param: Pointer): TPascalString;
 begin
   Result := '0x' + IntToHex(NativeUInt(param), SizeOf(Pointer) * 2);
@@ -3939,11 +4001,11 @@ end;
 function umlMBPSToStr(Size: Int64): TPascalString;
 begin
   if Size < 1 shl 10 then
-      Result := Format('%d bps', [Size * 10])
+      Result := Format('%dBps', [Size * 10])
   else if Size < 1 shl 20 then
-      Result := Format('%f Kbps', [Size / (1 shl 10) * 10])
+      Result := Format('%fKbps', [Size / (1 shl 10) * 10])
   else
-      Result := Format('%f Mbps', [Size / (1 shl 20) * 10]);
+      Result := Format('%fMbps', [Size / (1 shl 20) * 10]);
 end;
 
 function umlSizeToStr(Parameter: Int64): TPascalString;
@@ -3955,6 +4017,32 @@ begin
   end;
 end;
 
+function umlGSizeToStr(Parameter: Int64): TPascalString;
+begin
+  try
+    if Parameter < 1 shl 10 then
+        Result := Format('%d', [Parameter])
+    else if Parameter < 1 shl 20 then
+        Result := Format('%fKb', [Parameter / (1 shl 10)])
+    else if Parameter < 1 shl 30 then
+        Result := Format('%fM', [Parameter / (1 shl 20)])
+    else
+        Result := Format('%fG', [Parameter / (1 shl 30)])
+  except
+      Result := IntToStr(Parameter);
+  end;
+end;
+
+function umlStrToTime(s: TPascalString): TDateTime;
+begin
+  Result := StrToTime(s.text, Lib_DateTimeFormatSettings);
+end;
+
+function umlTimeToStr(t: TDateTime): TPascalString;
+begin
+  Result.text := TimeToStr(t, Lib_DateTimeFormatSettings);
+end;
+
 function umlStrToDateTime(s: TPascalString): TDateTime;
 begin
   Result := StrToDateTime(s.text, Lib_DateTimeFormatSettings);
@@ -3963,6 +4051,25 @@ end;
 function umlDateTimeToStr(t: TDateTime): TPascalString;
 begin
   Result.text := DateTimeToStr(t, Lib_DateTimeFormatSettings);
+end;
+
+function umlDT(t: TDateTime): TPascalString;
+begin
+  Result := umlDateTimeToStr(t);
+end;
+
+function umlDT(s: TPascalString): TDateTime;
+begin
+  Result := umlStrToDateTime(s);
+end;
+
+function umlDT(s: TPascalString; Default_: TDateTime): TDateTime;
+begin
+  try
+      Result := umlDT(s);
+  except
+      Result := Default_;
+  end;
 end;
 
 function umlTimeTickToStr(const t: TTimeTick): TPascalString;
@@ -3989,21 +4096,16 @@ begin
 {$ENDIF FPC}
   Result := '';
   if (d > 0) then
-      Result.Append(IntToStr(d) + ' day ');
+      Result.Append(IntToStr(d) + ' Day ');
   if (Result.L > 0) or (h > 0) then
-      Result.Append(IntToStr(h) + ' hour ');
+      Result.Append(IntToStr(h) + ':');
   if (Result.L > 0) or (m > 0) then
-      Result.Append(IntToStr(m) + ' minute ');
+      Result.Append(IntToStr(m) + ':');
 
   if (Result.L > 0) or (s > 0) then
       Result.Append(PFormat('%2.2f', [s + tmp / 1000]))
   else
       Result.Append('0');
-end;
-
-function umlTimeToStr(t: TDateTime): TPascalString;
-begin
-  Result := TimeToStr(t, Lib_DateTimeFormatSettings);
 end;
 
 function umlDateToStr(t: TDateTime): TPascalString;
@@ -4474,7 +4576,7 @@ end;
 
 function umlMakeRanName: TPascalString;
 type
-  TRanData = packed record
+  TDecode_Data_ = packed record
     Year, Month, Day: Word;
     Hour, min_, Sec, MSec: Word;
     i64: Int64;
@@ -4482,17 +4584,29 @@ type
   end;
 var
   d: TDateTime;
-  r: TRanData;
+  R: TDecode_Data_;
 begin
   d := umlNow();
-  with r do
+  with R do
     begin
       DecodeDate(d, Year, Month, Day);
       DecodeTime(d, Hour, min_, Sec, MSec);
       i64 := TMT19937.Rand64;
       i32 := TMT19937.Rand32;
     end;
-  Result := umlMD5String(@r, SizeOf(TRanData));
+  Result := umlMD5String(@R, SizeOf(TDecode_Data_));
+end;
+
+function umlDecodeDateTimeToInt64(NowDateTime: TDateTime): Int64;
+begin
+  Result := DateTimeToUnix(NowDateTime, True);
+end;
+
+procedure TBatch.Swap_(var inst: TBatch);
+begin
+  sour.SwapInstance(inst.sour);
+  dest.SwapInstance(inst.dest);
+  swap(sum, inst.sum);
 end;
 
 function umlBuildBatch(L: THashStringList): TArrayBatch;
@@ -4568,35 +4682,50 @@ procedure umlSortBatch(var arry: TArrayBatch);
     Result := CompareInt_(Right.sour.L, Left.sour.L);
   end;
 
-  procedure fastSort_(L, r: Integer);
+  procedure fastSort_(L, R: Integer);
   var
     i, j: Integer;
     p: TBatch;
   begin
-    repeat
-      i := L;
-      j := r;
-      p := arry[(L + r) shr 1];
-      repeat
-        while Compare_(arry[i], p) < 0 do
-            inc(i);
-        while Compare_(arry[j], p) > 0 do
-            dec(j);
-        if i <= j then
-          begin
-            if i <> j then
+    if L < R then
+      begin
+        repeat
+          if (R - L) = 1 then
+            begin
+              if Compare_(arry[L], arry[R]) > 0 then
+                  arry[L].Swap_(arry[R]);
+              break;
+            end;
+          i := L;
+          j := R;
+          p := arry[(L + R) shr 1];
+          repeat
+            while Compare_(arry[i], p) < 0 do
+                inc(i);
+            while Compare_(arry[j], p) > 0 do
+                dec(j);
+            if i <= j then
               begin
-                arry[i].sour.SwapInstance(arry[j].sour);
-                arry[i].dest.SwapInstance(arry[j].dest);
+                if i <> j then
+                    arry[i].Swap_(arry[j]);
+                inc(i);
+                dec(j);
               end;
-            inc(i);
-            dec(j);
-          end;
-      until i > j;
-      if L < j then
-          fastSort_(L, j);
-      L := i;
-    until i >= r;
+          until i > j;
+          if (j - L) > (R - i) then
+            begin
+              if i < R then
+                  fastSort_(i, R);
+              R := j;
+            end
+          else
+            begin
+              if L < j then
+                  fastSort_(L, j);
+              L := i;
+            end;
+        until L >= R;
+      end;
   end;
 
 begin
@@ -4779,7 +4908,7 @@ function umlBatchSum(p: PPascalString; var arry: TArrayBatch; OnlyWord, IgnoreCa
   end;
 
 var
-  i, r, BP, EP: Integer;
+  i, R, BP, EP: Integer;
   found_: Boolean;
   BatchInfo: TBatchInfo;
 begin
@@ -4808,21 +4937,21 @@ begin
       found_ := False;
       if (i >= BP) and (i <= EP) then
         begin
-          r := Match_(i);
-          found_ := r >= 0;
+          R := Match_(i);
+          found_ := R >= 0;
           if found_ then
             begin
               if Info <> nil then
                 begin
-                  BatchInfo.Batch := r;
+                  BatchInfo.Batch := R;
                   BatchInfo.sour_bPos := i;
-                  BatchInfo.sour_ePos := i + arry[r].sour.L - 1;
+                  BatchInfo.sour_ePos := i + arry[R].sour.L - 1;
                   BatchInfo.dest_bPos := BatchInfo.sour_bPos;
                   BatchInfo.dest_ePos := BatchInfo.sour_ePos;
-                  Info.Add(BatchInfo);
+                  Info.add(BatchInfo);
                 end;
-              inc(i, arry[r].sour.L);
-              inc(arry[r].sum);
+              inc(i, arry[R].sour.L);
+              inc(arry[R].sum);
               inc(Result);
             end;
         end;
@@ -4856,7 +4985,7 @@ function umlBatchReplace(p: PPascalString; var arry: TArrayBatch; OnlyWord, Igno
   end;
 
 var
-  i, r, BP, EP: Integer;
+  i, R, BP, EP: Integer;
   found_: Boolean;
   m64: TMem64;
   BatchInfo: TBatchInfo;
@@ -4887,24 +5016,25 @@ begin
       found_ := False;
       if (i >= BP) and (i <= EP) then
         begin
-          r := Match_(i);
-          found_ := r >= 0;
+          R := Match_(i);
+          found_ := R >= 0;
           if found_ and Assigned(On_P) then
-              On_P(i, i + (arry[r].sour.L - 1), @arry[r].sour, @arry[r].dest, found_);
+              On_P(i, i + (arry[R].sour.L - 1), @arry[R].sour, @arry[R].dest, found_);
           if found_ then
             begin
               if Info <> nil then
                 begin
-                  BatchInfo.Batch := r;
+                  BatchInfo.Batch := R;
                   BatchInfo.sour_bPos := i;
-                  BatchInfo.sour_ePos := i + (arry[r].sour.L - 1);
+                  BatchInfo.sour_ePos := i + (arry[R].sour.L - 1);
                   BatchInfo.dest_bPos := m64.Size div SystemCharSize + 1;
-                  BatchInfo.dest_ePos := BatchInfo.dest_bPos + (arry[r].dest.L - 1);
-                  Info.Add(BatchInfo);
+                  BatchInfo.dest_ePos := BatchInfo.dest_bPos + (arry[R].dest.L - 1);
+                  Info.add(BatchInfo);
                 end;
-              m64.Write64(arry[r].dest.buff[0], SystemCharSize * arry[r].dest.L);
-              inc(arry[r].sum);
-              inc(i, arry[r].sour.L);
+              if arry[R].dest.L > 0 then
+                  m64.Write64(arry[R].dest.buff[0], SystemCharSize * arry[R].dest.L);
+              inc(arry[R].sum);
+              inc(i, arry[R].sour.L);
             end;
         end;
       if not found_ then
@@ -4972,7 +5102,7 @@ begin
                   BatchInfo.sour_ePos := BatchInfo.sour_bPos + (Pattern.L - 1);
                   BatchInfo.dest_bPos := BatchInfo.sour_bPos;
                   BatchInfo.dest_ePos := BatchInfo.sour_ePos;
-                  Info.Add(BatchInfo);
+                  Info.add(BatchInfo);
                 end;
               inc(i, Pattern.L);
               inc(Result);
@@ -5037,7 +5167,7 @@ begin
                   BatchInfo.sour_ePos := i + (OldPattern.L - 1);
                   BatchInfo.dest_bPos := m64.Size div SystemCharSize + 1;
                   BatchInfo.dest_ePos := BatchInfo.dest_bPos + (NewPattern.L - 1);
-                  Info.Add(BatchInfo);
+                  Info.add(BatchInfo);
                 end;
               m64.Write64(NewPattern.buff[0], SystemCharSize * NewPattern.L);
               inc(i, OldPattern.L);
@@ -5067,7 +5197,7 @@ end;
 
 function umlReplace(p: PPascalString; OldPattern, NewPattern: TPascalString; OnlyWord, IgnoreCase: Boolean): TPascalString;
 var
-  i, r: Integer;
+  i, R: Integer;
   m64: TMem64;
 begin
   Result := '';
@@ -5957,7 +6087,7 @@ procedure TMD5_Pair_Pool.LoadFromStream(stream: TCore_Stream);
 begin
   Clear;
   while stream.Position + 32 <= stream.Size do
-      Add(StreamReadMD5(stream), StreamReadMD5(stream), False);
+      add(StreamReadMD5(stream), StreamReadMD5(stream), False);
 end;
 
 procedure TMD5_Pair_Pool.SaveToStream(stream: TCore_Stream);
@@ -6029,70 +6159,70 @@ begin
   c := TDigestCardinal(Accu)[2];
   d := TDigestCardinal(Accu)[3];
 
-  A := FF(A, B, c, d, TCardinalBuf(Buf)[0], 7, $D76AA478);   { 1 }
-  d := FF(d, A, B, c, TCardinalBuf(Buf)[1], 12, $E8C7B756);  { 2 }
-  c := FF(c, d, A, B, TCardinalBuf(Buf)[2], 17, $242070DB);  { 3 }
-  B := FF(B, c, d, A, TCardinalBuf(Buf)[3], 22, $C1BDCEEE);  { 4 }
-  A := FF(A, B, c, d, TCardinalBuf(Buf)[4], 7, $F57C0FAF);   { 5 }
-  d := FF(d, A, B, c, TCardinalBuf(Buf)[5], 12, $4787C62A);  { 6 }
-  c := FF(c, d, A, B, TCardinalBuf(Buf)[6], 17, $A8304613);  { 7 }
-  B := FF(B, c, d, A, TCardinalBuf(Buf)[7], 22, $FD469501);  { 8 }
-  A := FF(A, B, c, d, TCardinalBuf(Buf)[8], 7, $698098D8);   { 9 }
-  d := FF(d, A, B, c, TCardinalBuf(Buf)[9], 12, $8B44F7AF);  { 10 }
+  A := FF(A, B, c, d, TCardinalBuf(Buf)[0], 7, $D76AA478); { 1 }
+  d := FF(d, A, B, c, TCardinalBuf(Buf)[1], 12, $E8C7B756); { 2 }
+  c := FF(c, d, A, B, TCardinalBuf(Buf)[2], 17, $242070DB); { 3 }
+  B := FF(B, c, d, A, TCardinalBuf(Buf)[3], 22, $C1BDCEEE); { 4 }
+  A := FF(A, B, c, d, TCardinalBuf(Buf)[4], 7, $F57C0FAF); { 5 }
+  d := FF(d, A, B, c, TCardinalBuf(Buf)[5], 12, $4787C62A); { 6 }
+  c := FF(c, d, A, B, TCardinalBuf(Buf)[6], 17, $A8304613); { 7 }
+  B := FF(B, c, d, A, TCardinalBuf(Buf)[7], 22, $FD469501); { 8 }
+  A := FF(A, B, c, d, TCardinalBuf(Buf)[8], 7, $698098D8); { 9 }
+  d := FF(d, A, B, c, TCardinalBuf(Buf)[9], 12, $8B44F7AF); { 10 }
   c := FF(c, d, A, B, TCardinalBuf(Buf)[10], 17, $FFFF5BB1); { 11 }
   B := FF(B, c, d, A, TCardinalBuf(Buf)[11], 22, $895CD7BE); { 12 }
-  A := FF(A, B, c, d, TCardinalBuf(Buf)[12], 7, $6B901122);  { 13 }
+  A := FF(A, B, c, d, TCardinalBuf(Buf)[12], 7, $6B901122); { 13 }
   d := FF(d, A, B, c, TCardinalBuf(Buf)[13], 12, $FD987193); { 14 }
   c := FF(c, d, A, B, TCardinalBuf(Buf)[14], 17, $A679438E); { 15 }
   B := FF(B, c, d, A, TCardinalBuf(Buf)[15], 22, $49B40821); { 16 }
-  A := GG(A, B, c, d, TCardinalBuf(Buf)[1], 5, $F61E2562);   { 17 }
-  d := GG(d, A, B, c, TCardinalBuf(Buf)[6], 9, $C040B340);   { 18 }
+  A := GG(A, B, c, d, TCardinalBuf(Buf)[1], 5, $F61E2562); { 17 }
+  d := GG(d, A, B, c, TCardinalBuf(Buf)[6], 9, $C040B340); { 18 }
   c := GG(c, d, A, B, TCardinalBuf(Buf)[11], 14, $265E5A51); { 19 }
-  B := GG(B, c, d, A, TCardinalBuf(Buf)[0], 20, $E9B6C7AA);  { 20 }
-  A := GG(A, B, c, d, TCardinalBuf(Buf)[5], 5, $D62F105D);   { 21 }
-  d := GG(d, A, B, c, TCardinalBuf(Buf)[10], 9, $02441453);  { 22 }
+  B := GG(B, c, d, A, TCardinalBuf(Buf)[0], 20, $E9B6C7AA); { 20 }
+  A := GG(A, B, c, d, TCardinalBuf(Buf)[5], 5, $D62F105D); { 21 }
+  d := GG(d, A, B, c, TCardinalBuf(Buf)[10], 9, $02441453); { 22 }
   c := GG(c, d, A, B, TCardinalBuf(Buf)[15], 14, $D8A1E681); { 23 }
-  B := GG(B, c, d, A, TCardinalBuf(Buf)[4], 20, $E7D3FBC8);  { 24 }
-  A := GG(A, B, c, d, TCardinalBuf(Buf)[9], 5, $21E1CDE6);   { 25 }
-  d := GG(d, A, B, c, TCardinalBuf(Buf)[14], 9, $C33707D6);  { 26 }
-  c := GG(c, d, A, B, TCardinalBuf(Buf)[3], 14, $F4D50D87);  { 27 }
-  B := GG(B, c, d, A, TCardinalBuf(Buf)[8], 20, $455A14ED);  { 28 }
-  A := GG(A, B, c, d, TCardinalBuf(Buf)[13], 5, $A9E3E905);  { 29 }
-  d := GG(d, A, B, c, TCardinalBuf(Buf)[2], 9, $FCEFA3F8);   { 30 }
-  c := GG(c, d, A, B, TCardinalBuf(Buf)[7], 14, $676F02D9);  { 31 }
+  B := GG(B, c, d, A, TCardinalBuf(Buf)[4], 20, $E7D3FBC8); { 24 }
+  A := GG(A, B, c, d, TCardinalBuf(Buf)[9], 5, $21E1CDE6); { 25 }
+  d := GG(d, A, B, c, TCardinalBuf(Buf)[14], 9, $C33707D6); { 26 }
+  c := GG(c, d, A, B, TCardinalBuf(Buf)[3], 14, $F4D50D87); { 27 }
+  B := GG(B, c, d, A, TCardinalBuf(Buf)[8], 20, $455A14ED); { 28 }
+  A := GG(A, B, c, d, TCardinalBuf(Buf)[13], 5, $A9E3E905); { 29 }
+  d := GG(d, A, B, c, TCardinalBuf(Buf)[2], 9, $FCEFA3F8); { 30 }
+  c := GG(c, d, A, B, TCardinalBuf(Buf)[7], 14, $676F02D9); { 31 }
   B := GG(B, c, d, A, TCardinalBuf(Buf)[12], 20, $8D2A4C8A); { 32 }
-  A := HH(A, B, c, d, TCardinalBuf(Buf)[5], 4, $FFFA3942);   { 33 }
-  d := HH(d, A, B, c, TCardinalBuf(Buf)[8], 11, $8771F681);  { 34 }
+  A := HH(A, B, c, d, TCardinalBuf(Buf)[5], 4, $FFFA3942); { 33 }
+  d := HH(d, A, B, c, TCardinalBuf(Buf)[8], 11, $8771F681); { 34 }
   c := HH(c, d, A, B, TCardinalBuf(Buf)[11], 16, $6D9D6122); { 35 }
   B := HH(B, c, d, A, TCardinalBuf(Buf)[14], 23, $FDE5380C); { 36 }
-  A := HH(A, B, c, d, TCardinalBuf(Buf)[1], 4, $A4BEEA44);   { 37 }
-  d := HH(d, A, B, c, TCardinalBuf(Buf)[4], 11, $4BDECFA9);  { 38 }
-  c := HH(c, d, A, B, TCardinalBuf(Buf)[7], 16, $F6BB4B60);  { 39 }
+  A := HH(A, B, c, d, TCardinalBuf(Buf)[1], 4, $A4BEEA44); { 37 }
+  d := HH(d, A, B, c, TCardinalBuf(Buf)[4], 11, $4BDECFA9); { 38 }
+  c := HH(c, d, A, B, TCardinalBuf(Buf)[7], 16, $F6BB4B60); { 39 }
   B := HH(B, c, d, A, TCardinalBuf(Buf)[10], 23, $BEBFBC70); { 40 }
-  A := HH(A, B, c, d, TCardinalBuf(Buf)[13], 4, $289B7EC6);  { 41 }
-  d := HH(d, A, B, c, TCardinalBuf(Buf)[0], 11, $EAA127FA);  { 42 }
-  c := HH(c, d, A, B, TCardinalBuf(Buf)[3], 16, $D4EF3085);  { 43 }
-  B := HH(B, c, d, A, TCardinalBuf(Buf)[6], 23, $04881D05);  { 44 }
-  A := HH(A, B, c, d, TCardinalBuf(Buf)[9], 4, $D9D4D039);   { 45 }
+  A := HH(A, B, c, d, TCardinalBuf(Buf)[13], 4, $289B7EC6); { 41 }
+  d := HH(d, A, B, c, TCardinalBuf(Buf)[0], 11, $EAA127FA); { 42 }
+  c := HH(c, d, A, B, TCardinalBuf(Buf)[3], 16, $D4EF3085); { 43 }
+  B := HH(B, c, d, A, TCardinalBuf(Buf)[6], 23, $04881D05); { 44 }
+  A := HH(A, B, c, d, TCardinalBuf(Buf)[9], 4, $D9D4D039); { 45 }
   d := HH(d, A, B, c, TCardinalBuf(Buf)[12], 11, $E6DB99E5); { 46 }
   c := HH(c, d, A, B, TCardinalBuf(Buf)[15], 16, $1FA27CF8); { 47 }
-  B := HH(B, c, d, A, TCardinalBuf(Buf)[2], 23, $C4AC5665);  { 48 }
-  A := II(A, B, c, d, TCardinalBuf(Buf)[0], 6, $F4292244);   { 49 }
-  d := II(d, A, B, c, TCardinalBuf(Buf)[7], 10, $432AFF97);  { 50 }
+  B := HH(B, c, d, A, TCardinalBuf(Buf)[2], 23, $C4AC5665); { 48 }
+  A := II(A, B, c, d, TCardinalBuf(Buf)[0], 6, $F4292244); { 49 }
+  d := II(d, A, B, c, TCardinalBuf(Buf)[7], 10, $432AFF97); { 50 }
   c := II(c, d, A, B, TCardinalBuf(Buf)[14], 15, $AB9423A7); { 51 }
-  B := II(B, c, d, A, TCardinalBuf(Buf)[5], 21, $FC93A039);  { 52 }
-  A := II(A, B, c, d, TCardinalBuf(Buf)[12], 6, $655B59C3);  { 53 }
-  d := II(d, A, B, c, TCardinalBuf(Buf)[3], 10, $8F0CCC92);  { 54 }
+  B := II(B, c, d, A, TCardinalBuf(Buf)[5], 21, $FC93A039); { 52 }
+  A := II(A, B, c, d, TCardinalBuf(Buf)[12], 6, $655B59C3); { 53 }
+  d := II(d, A, B, c, TCardinalBuf(Buf)[3], 10, $8F0CCC92); { 54 }
   c := II(c, d, A, B, TCardinalBuf(Buf)[10], 15, $FFEFF47D); { 55 }
-  B := II(B, c, d, A, TCardinalBuf(Buf)[1], 21, $85845DD1);  { 56 }
-  A := II(A, B, c, d, TCardinalBuf(Buf)[8], 6, $6FA87E4F);   { 57 }
+  B := II(B, c, d, A, TCardinalBuf(Buf)[1], 21, $85845DD1); { 56 }
+  A := II(A, B, c, d, TCardinalBuf(Buf)[8], 6, $6FA87E4F); { 57 }
   d := II(d, A, B, c, TCardinalBuf(Buf)[15], 10, $FE2CE6E0); { 58 }
-  c := II(c, d, A, B, TCardinalBuf(Buf)[6], 15, $A3014314);  { 59 }
+  c := II(c, d, A, B, TCardinalBuf(Buf)[6], 15, $A3014314); { 59 }
   B := II(B, c, d, A, TCardinalBuf(Buf)[13], 21, $4E0811A1); { 60 }
-  A := II(A, B, c, d, TCardinalBuf(Buf)[4], 6, $F7537E82);   { 61 }
+  A := II(A, B, c, d, TCardinalBuf(Buf)[4], 6, $F7537E82); { 61 }
   d := II(d, A, B, c, TCardinalBuf(Buf)[11], 10, $BD3AF235); { 62 }
-  c := II(c, d, A, B, TCardinalBuf(Buf)[2], 15, $2AD7D2BB);  { 63 }
-  B := II(B, c, d, A, TCardinalBuf(Buf)[9], 21, $EB86D391);  { 64 }
+  c := II(c, d, A, B, TCardinalBuf(Buf)[2], 15, $2AD7D2BB); { 63 }
+  B := II(B, c, d, A, TCardinalBuf(Buf)[9], 21, $EB86D391); { 64 }
 
   inc(TDigestCardinal(Accu)[0], A);
   inc(TDigestCardinal(Accu)[1], B);
@@ -6193,7 +6323,7 @@ var
   ChunkBuff: array [0 .. 63] of Byte;
 begin
   if StartPos > EndPos then
-      Swap(StartPos, EndPos);
+      swap(StartPos, EndPos);
   StartPos := umlClamp(StartPos, 0, stream.Size);
   EndPos := umlClamp(EndPos, 0, stream.Size);
   if EndPos - StartPos <= 0 then
@@ -6736,7 +6866,7 @@ begin
       SeparatorText_ := umlGetFirstStr(NewText_, SeparatorChar);
       while (SeparatorText_.L > 0) and (NewText_.L > 0) do
         begin
-          dest.Add(SeparatorText_.text);
+          dest.add(SeparatorText_.text);
           inc(Result);
           NewText_ := umlDeleteFirstStr(NewText_, SeparatorChar);
           SeparatorText_ := umlGetFirstStr(NewText_, SeparatorChar);
@@ -6774,7 +6904,7 @@ begin
       SeparatorText_ := umlGetFirstStr(NewText_, SeparatorChar);
       while (SeparatorText_.L > 0) and (NewText_.L > 0) do
         begin
-          dest.Add(SeparatorText_);
+          dest.add(SeparatorText_);
           inc(Result);
           NewText_ := umlDeleteFirstStr(NewText_, SeparatorChar);
           SeparatorText_ := umlGetFirstStr(NewText_, SeparatorChar);
@@ -7233,19 +7363,19 @@ end;
 
 procedure umlReadComponent(stream: TCore_Stream; comp: TCore_Component);
 var
-  r: TCore_Reader;
+  R: TCore_Reader;
   needClearName: Boolean;
 begin
-  r := TCore_Reader.Create(stream, 4096);
-  r.IgnoreChildren := True;
+  R := TCore_Reader.Create(stream, 4096);
+  R.IgnoreChildren := True;
   try
     needClearName := (comp.Name = '');
-    r.ReadRootComponent(comp);
+    R.ReadRootComponent(comp);
     if needClearName then
         comp.Name := '';
   except
   end;
-  DisposeObject(r);
+  DisposeObject(R);
 end;
 
 procedure umlWriteComponent(stream: TCore_Stream; comp: TCore_Component);
@@ -7716,7 +7846,7 @@ begin
 {$ELSE FPC}
         Result := LoadLibrary(PChar(LibName));
 {$ENDIF FPC}
-        ExLibs.Add(LibName, Result);
+        ExLibs.add(LibName, Result);
       except
         FreeExtLib(LibName);
         Result := 0;
@@ -7886,7 +8016,7 @@ begin
       except
           p^.md5 := Null_Buff_MD5;
       end;
-      FHash.Add(FileName, p, False);
+      FHash.add(FileName, p, False);
       Result := p^.md5;
     end
   else

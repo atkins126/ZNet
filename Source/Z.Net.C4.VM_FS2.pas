@@ -933,6 +933,8 @@ begin
     EStrToInt64(ParamList.GetDefaultValue('MD5_HashPool', '4*1024*1024'), 4 * 1024 * 1024),
     nil);
 
+  DoStatus('extract %s', [C40_FS2_VM_FileName.Text]);
+
   if EStrToBool(ParamList.GetDefaultValue('ForeverSave', 'True'), True) and umlFileExists(C40_FS2_VM_FileName) then
       FS := TCore_FileStream.Create(C40_FS2_VM_FileName, fmOpenReadWrite)
   else
@@ -1210,8 +1212,8 @@ begin
       tmp.OnResultM := OnResultM;
       tmp.OnResultP := OnResultP;
       tmp.Stream.WriteString(File_Name); // name
-      tmp.Stream.WriteDouble(umlNow);    // file time
-      tmp.Stream.WriteInt32(0);          // ref
+      tmp.Stream.WriteDouble(umlNow); // file time
+      tmp.Stream.WriteInt32(0); // ref
       Stream.Position := 0;
       tmp.Stream.CopyFrom(Stream, Stream.Size);
 
@@ -1525,7 +1527,7 @@ begin
       if umlMD5Compare(umlStreamMD5(Cache.Stream.Data), MD5_) then
         begin
           Cache.LastAccess := GetTimeTick();
-          Sender.DTNoAuth.RecvTunnel.Print('get file "%s" from cache', [File_Name.Text]);;
+          Sender.DTNoAuth.RecvTunnel.Print('get file "%s" from cache', [File_Name.Text]);
           try
             Cache.Stream.Data.Position := 0;
             if Assigned(OnResultC) then
@@ -1986,8 +1988,8 @@ begin
       tmp.Client := Self;
       tmp.File_Name := File_Name;
       tmp.Stream.WriteString(File_Name); // name
-      tmp.Stream.WriteDouble(umlNow);    // file time
-      tmp.Stream.WriteInt32(0);          // ref
+      tmp.Stream.WriteDouble(umlNow); // file time
+      tmp.Stream.WriteInt32(0); // ref
       Stream.Position := 0;
       tmp.Stream.CopyFrom(Stream, Stream.Size);
       if P2PVM_Recycle_Pool.Num > 0 then
@@ -2030,8 +2032,8 @@ begin
       tmp.File_Name := File_Name;
       tmp.OnResultC := OnResult;
       tmp.Stream.WriteString(File_Name); // name
-      tmp.Stream.WriteDouble(umlNow);    // file time
-      tmp.Stream.WriteInt32(0);          // ref
+      tmp.Stream.WriteDouble(umlNow); // file time
+      tmp.Stream.WriteInt32(0); // ref
       Stream.Position := 0;
       tmp.Stream.CopyFrom(Stream, Stream.Size);
       if P2PVM_Recycle_Pool.Num > 0 then
@@ -2074,8 +2076,8 @@ begin
       tmp.File_Name := File_Name;
       tmp.OnResultM := OnResult;
       tmp.Stream.WriteString(File_Name); // name
-      tmp.Stream.WriteDouble(umlNow);    // file time
-      tmp.Stream.WriteInt32(0);          // ref
+      tmp.Stream.WriteDouble(umlNow); // file time
+      tmp.Stream.WriteInt32(0); // ref
       Stream.Position := 0;
       tmp.Stream.CopyFrom(Stream, Stream.Size);
       if P2PVM_Recycle_Pool.Num > 0 then
@@ -2118,8 +2120,8 @@ begin
       tmp.File_Name := File_Name;
       tmp.OnResultP := OnResult;
       tmp.Stream.WriteString(File_Name); // name
-      tmp.Stream.WriteDouble(umlNow);    // file time
-      tmp.Stream.WriteInt32(0);          // ref
+      tmp.Stream.WriteDouble(umlNow); // file time
+      tmp.Stream.WriteInt32(0); // ref
       Stream.Position := 0;
       tmp.Stream.CopyFrom(Stream, Stream.Size);
       if P2PVM_Recycle_Pool.Num > 0 then

@@ -16,24 +16,25 @@ uses SysUtils, Variants,
 
 type
 {$REGION 'internal define'}
-  TSymbolOperation = (soAdd, soSub, soMul, soDiv, soMod, soIntDiv, soPow, soOr, soAnd, soXor, { math }
-    soEqual, soLessThan, soEqualOrLessThan, soGreaterThan, soEqualOrGreaterThan, soNotEqual,  { logic }
-    soShl, soShr,                                                                             { bit }
-    soBlockIndentBegin, soBlockIndentEnd,                                                     { block indent }
-    soPropIndentBegin, soPropIndentEnd,                                                       { property indent }
-    soDotSymbol, soCommaSymbol,                                                               { dot and comma }
-    soEolSymbol,                                                                              { eol }
-    soProc, soParameter,                                                                      { proc }
+  TSymbolOperation = (
+    soAdd, soSub, soMul, soDiv, soMod, soIntDiv, soPow, soOr, soAnd, soXor, { math }
+    soEqual, soLessThan, soEqualOrLessThan, soGreaterThan, soEqualOrGreaterThan, soNotEqual, { logic }
+    soShl, soShr, { bit }
+    soBlockIndentBegin, soBlockIndentEnd, { block indent }
+    soPropIndentBegin, soPropIndentEnd, { property indent }
+    soDotSymbol, soCommaSymbol, { dot and comma }
+    soEolSymbol, { eol }
+    soProc, soParameter, { proc }
     soUnknow);
   TSymbolOperations = set of TSymbolOperation;
 
   TExpressionDeclType = (
-    edtSymbol,                                                                                 { symbol }
+    edtSymbol, { symbol }
     edtBool, edtInt, edtInt64, edtUInt64, edtWord, edtByte, edtSmallInt, edtShortInt, edtUInt, { build-in byte type }
-    edtSingle, edtDouble, edtCurrency,                                                         { build-in float type }
-    edtString,                                                                                 { string }
-    edtProcExp,                                                                                { proc }
-    edtExpressionAsValue,                                                                      { expression }
+    edtSingle, edtDouble, edtCurrency, { build-in float type }
+    edtString, { string }
+    edtProcExp, { proc }
+    edtExpressionAsValue, { expression }
     edtUnknow);
 
   TExpressionDeclTypes = set of TExpressionDeclType;
@@ -41,12 +42,12 @@ type
   TSymbolExpression = class;
 
   TExpressionListData = record
-    dType: TExpressionDeclType;    { declaration }
-    cPos: Integer;                 { char pos }
-    Symbol: TSymbolOperation;      { symbol }
-    Value: Variant;                { value }
+    dType: TExpressionDeclType; { declaration }
+    cPos: Integer; { char pos }
+    Symbol: TSymbolOperation; { symbol }
+    Value: Variant; { value }
     Expression: TSymbolExpression; { expression }
-    ExpressionAutoFree: Boolean;   { autofree }
+    ExpressionAutoFree: Boolean; { autofree }
   end;
 
   PExpressionListData = ^TExpressionListData;
@@ -118,7 +119,6 @@ type
 {$ELSE FPC}
   TOnDeclValue_P = reference to procedure(const Decl: SystemString; var ValType: TExpressionDeclType; var Value: Variant);
 {$ENDIF FPC}
-  { }
   { text parse support }
   TExpressionParsingState = set of (esFirst, esWaitOp, esWaitIndentEnd, esWaitPropParamIndentEnd, esWaitValue);
   PExpressionParsingState = ^TExpressionParsingState;
@@ -224,7 +224,7 @@ function EvaluateExpressionValue_P(UsedCache: Boolean; Special_ASCII_: TListPasc
   TextEngClass: TTextParsingClass; TextStyle: TTextStyle; ExpressionText: SystemString; const OnGetValue: TOnDeclValue_P): Variant;
 {$ENDREGION 'internal define'}
 
-function OpCache: THashObjectList;
+function OpCache: TOpCode_Pool;
 procedure CleanOpCache();
 
 { prototype: EvaluateExpressionValue }
@@ -285,6 +285,8 @@ function EStrToInt(s: U_String; default: Integer): Integer; overload;
 function EStrToInt(s: U_String): Integer; overload;
 function EStrToInt64(s: U_String; default: Int64): Int64; overload;
 function EStrToInt64(s: U_String): Int64; overload;
+function EStrToUInt64(s: U_String; default: UInt64): UInt64; overload;
+function EStrToUInt64(s: U_String): UInt64; overload;
 function EStrToFloat(s: U_String; default: Double): Double; overload;
 function EStrToFloat(s: U_String): Double; overload;
 function EStrToSingle(s: U_String; default: Single): Single; overload;
@@ -305,7 +307,7 @@ procedure EvaluateExpressionVectorAndMatrix_test_;
 implementation
 
 var
-  OpCache___: THashObjectList = nil;
+  OpCache___: TOpCode_Pool = nil;
 
 {$REGION 'internal imp'}
 
@@ -1544,7 +1546,7 @@ var
 begin
   Result := nil;
 
-  if ParsingTool_.ParsingData.L < 1 then
+  if ParsingTool_.Len < 1 then
       Exit;
   if ParsingTool_.TokenCountT([ttTextDecl, ttNumber, ttAscii]) = 0 then
       Exit;
@@ -1636,9 +1638,9 @@ begin
                 nttInt64: Container.AddInt64(StrToInt64(Decl), bPos);
 {$IFDEF FPC}
                 nttUInt64: Container.AddUInt64(StrToQWord(Decl), bPos);
-{$ELSE}
+{$ELSE FPC}
                 nttUInt64: Container.AddUInt64(StrToUInt64(Decl), bPos);
-{$ENDIF}
+{$ENDIF FPC}
                 nttWord: Container.AddWord(StrToInt(Decl), bPos);
                 nttByte: Container.AddByte(StrToInt(Decl), bPos);
                 nttSmallInt: Container.AddSmallInt(StrToInt(Decl), bPos);
@@ -2453,7 +2455,7 @@ var
                                   end
                                 else
                                   begin
-                                    PrintError('logical operotion Illegal');
+                                    PrintError('logical operation Illegal');
                                     Break;
                                   end;
                                 Continue;
@@ -2627,11 +2629,9 @@ begin
           if DebugMode then
               NewSymbExps.PrintDebug(True);
 
-          if NewSymbExps.GetSymbolCount([soBlockIndentBegin, soPropIndentBegin]) =
-            NewSymbExps.GetSymbolCount([soBlockIndentEnd, soPropIndentEnd]) then
+          if NewSymbExps.GetSymbolCount([soBlockIndentBegin, soPropIndentBegin]) = NewSymbExps.GetSymbolCount([soBlockIndentEnd, soPropIndentEnd]) then
             begin
               OpContainer := TCore_ListForObj.Create;
-
               SymbolIndex := 0;
               BuildAborted := False;
               Result := ProcessIndent(soUnknow);
@@ -2725,9 +2725,7 @@ begin
   Op := nil;
   if UsedCache then
     begin
-      LockObject(OpCache);
-      Op := TOpCode(OpCache[ExpressionText]);
-      UnLockObject(OpCache);
+      Op := OpCache[ExpressionText];
     end;
 
   if (Op <> nil) and (UsedCache) then
@@ -2752,9 +2750,7 @@ begin
                 Result := Op.Execute(SystemOpRunTime);
                 if UsedCache then
                   begin
-                    LockObject(OpCache);
-                    OpCache.Add(ExpressionText, Op);
-                    UnLockObject(OpCache);
+                    OpCache.Add(ExpressionText, Op, True);
                   end
                 else
                     DisposeObject(Op);
@@ -2777,9 +2773,7 @@ begin
   Op := nil;
   if UsedCache then
     begin
-      LockObject(OpCache);
-      Op := TOpCode(OpCache[ExpressionText]);
-      UnLockObject(OpCache);
+      Op := OpCache[ExpressionText];
     end;
 
   if (Op <> nil) and (UsedCache) then
@@ -2804,9 +2798,7 @@ begin
                 Result := Op.Execute(SystemOpRunTime);
                 if UsedCache then
                   begin
-                    LockObject(OpCache);
-                    OpCache.Add(ExpressionText, Op);
-                    UnLockObject(OpCache);
+                    OpCache.Add(ExpressionText, Op, True);
                   end
                 else
                     DisposeObject(Op);
@@ -2829,9 +2821,7 @@ begin
   Op := nil;
   if UsedCache then
     begin
-      LockObject(OpCache);
-      Op := TOpCode(OpCache[ExpressionText]);
-      UnLockObject(OpCache);
+      Op := OpCache[ExpressionText];
     end;
 
   if (Op <> nil) and (UsedCache) then
@@ -2856,9 +2846,7 @@ begin
                 Result := Op.Execute(SystemOpRunTime);
                 if UsedCache then
                   begin
-                    LockObject(OpCache);
-                    OpCache.Add(ExpressionText, Op);
-                    UnLockObject(OpCache);
+                    OpCache.Add(ExpressionText, Op, True);
                   end
                 else
                     DisposeObject(Op);
@@ -2874,22 +2862,19 @@ end;
 {$ENDREGION 'internal imp'}
 
 
-function OpCache: THashObjectList;
+function OpCache: TOpCode_Pool;
 begin
-  if OpCache___ = nil then
-      OpCache___ := THashObjectList.CustomCreate(True, 1024 * 1024);
   Result := OpCache___;
 end;
 
 procedure CleanOpCache();
 begin
-  LockObject(OpCache);
   OpCache.Clear;
-  UnLockObject(OpCache);
 end;
 
 type
   TExpression_ConstVL = class
+  public
     VL: THashVariantList;
     procedure GetValue(const Decl: SystemString; var ValType: TExpressionDeclType; var Value: Variant);
   end;
@@ -2948,9 +2933,7 @@ begin
   Op := nil;
   if (UsedCache) and (const_vl = nil) then
     begin
-      LockObject(OpCache);
-      Op := TOpCode(OpCache[ExpressionText]);
-      UnLockObject(OpCache);
+      Op := OpCache[ExpressionText];
     end;
 
   if (Op <> nil) and (UsedCache) and (const_vl = nil) then
@@ -2979,9 +2962,7 @@ begin
 
                 if (UsedCache) and (const_vl = nil) then
                   begin
-                    LockObject(OpCache);
-                    OpCache.Add(ExpressionText, Op);
-                    UnLockObject(OpCache);
+                    OpCache.Add(ExpressionText, Op, True);
                   end
                 else
                     DisposeObject(Op);
@@ -3259,6 +3240,26 @@ begin
   Result := EStrToInt64(s, 0);
 end;
 
+function EStrToUInt64(s: U_String; default: UInt64): UInt64;
+var
+  v: Variant;
+begin
+  try
+    v := EvaluateExpressionValue(s);
+    if VarIsNumeric(v) then
+        Result := v
+    else
+        Result := default;
+  except
+      Result := default;
+  end;
+end;
+
+function EStrToUInt64(s: U_String): UInt64;
+begin
+  Result := EStrToUInt64(s, 0);
+end;
+
 function EStrToFloat(s: U_String; default: Double): Double;
 begin
   Result := EStrToDouble(s, default);
@@ -3379,7 +3380,7 @@ end;
 
 initialization
 
-OpCache___ := nil;
+OpCache___ := TOpCode_Pool.Create(True, 1024 * 1024);
 
 finalization
 

@@ -4,12 +4,22 @@ constructor TPair_Pool{$IFNDEF FPC}<T1_, T2_>{$ENDIF FPC}.Create;
 begin
   inherited Create;
   List := TPair_BigList__.Create;
+  List.FOnFree := {$IFDEF FPC}@{$ENDIF FPC}DoFree;
+  List.FOnAdd := {$IFDEF FPC}@{$ENDIF FPC}DoAdd;
 end;
 
 destructor TPair_Pool{$IFNDEF FPC}<T1_, T2_>{$ENDIF FPC}.Destroy;
 begin
   List.Free;
   inherited Destroy;
+end;
+
+procedure TPair_Pool{$IFNDEF FPC}<T1_, T2_>{$ENDIF FPC}.DoFree(var Data: TPair);
+begin
+end;
+
+procedure TPair_Pool{$IFNDEF FPC}<T1_, T2_>{$ENDIF FPC}.DoAdd(var Data: TPair);
+begin
 end;
 
 function TPair_Pool{$IFNDEF FPC}<T1_, T2_>{$ENDIF FPC}.Add_Pair(Primary: T1_; Second: T2_): PPair__;
@@ -25,12 +35,22 @@ constructor TPair_Third_Pool{$IFNDEF FPC}<T1_, T2_, T3_>{$ENDIF FPC}.Create;
 begin
   inherited Create;
   List := TPair_BigList__.Create;
+  List.FOnFree := {$IFDEF FPC}@{$ENDIF FPC}DoFree;
+  List.FOnAdd := {$IFDEF FPC}@{$ENDIF FPC}DoAdd;
 end;
 
 destructor TPair_Third_Pool{$IFNDEF FPC}<T1_, T2_, T3_>{$ENDIF FPC}.Destroy;
 begin
   List.Free;
   inherited Destroy;
+end;
+
+procedure TPair_Third_Pool{$IFNDEF FPC}<T1_, T2_, T3_>{$ENDIF FPC}.DoFree(var Data: TPair);
+begin
+end;
+
+procedure TPair_Third_Pool{$IFNDEF FPC}<T1_, T2_, T3_>{$ENDIF FPC}.DoAdd(var Data: TPair);
+begin
 end;
 
 function TPair_Third_Pool{$IFNDEF FPC}<T1_, T2_, T3_>{$ENDIF FPC}.Add_Pair(Primary: T1_; Second: T2_; Third: T3_): PPair__;
@@ -47,12 +67,22 @@ constructor TPair_Fourth_Pool{$IFNDEF FPC}<T1_, T2_, T3_, T4_>{$ENDIF FPC}.Creat
 begin
   inherited Create;
   List := TPair_BigList__.Create;
+  List.FOnFree := {$IFDEF FPC}@{$ENDIF FPC}DoFree;
+  List.FOnAdd := {$IFDEF FPC}@{$ENDIF FPC}DoAdd;
 end;
 
 destructor TPair_Fourth_Pool{$IFNDEF FPC}<T1_, T2_, T3_, T4_>{$ENDIF FPC}.Destroy;
 begin
   List.Free;
   inherited Destroy;
+end;
+
+procedure TPair_Fourth_Pool{$IFNDEF FPC}<T1_, T2_, T3_, T4_>{$ENDIF FPC}.DoFree(var Data: TPair);
+begin
+end;
+
+procedure TPair_Fourth_Pool{$IFNDEF FPC}<T1_, T2_, T3_, T4_>{$ENDIF FPC}.DoAdd(var Data: TPair);
+begin
 end;
 
 function TPair_Fourth_Pool{$IFNDEF FPC}<T1_, T2_, T3_, T4_>{$ENDIF FPC}.Add_Pair(Primary: T1_; Second: T2_; Third: T3_; Fourth: T4_): PPair__;
@@ -62,6 +92,40 @@ begin
   Result^.Data.Second := Second;
   Result^.Data.Third := Third;
   Result^.Data.Fourth := Fourth;
+end;
+
+// *****************************************************************************************************************
+
+constructor TPair_Five_Pool{$IFNDEF FPC}<T1_, T2_, T3_, T4_, T5_>{$ENDIF FPC}.Create;
+begin
+  inherited Create;
+  List := TPair_BigList__.Create;
+  List.FOnFree := {$IFDEF FPC}@{$ENDIF FPC}DoFree;
+  List.FOnAdd := {$IFDEF FPC}@{$ENDIF FPC}DoAdd;
+end;
+
+destructor TPair_Five_Pool{$IFNDEF FPC}<T1_, T2_, T3_, T4_, T5_>{$ENDIF FPC}.Destroy;
+begin
+  List.Free;
+  inherited Destroy;
+end;
+
+procedure TPair_Five_Pool{$IFNDEF FPC}<T1_, T2_, T3_, T4_, T5_>{$ENDIF FPC}.DoFree(var Data: TPair);
+begin
+end;
+
+procedure TPair_Five_Pool{$IFNDEF FPC}<T1_, T2_, T3_, T4_, T5_>{$ENDIF FPC}.DoAdd(var Data: TPair);
+begin
+end;
+
+function TPair_Five_Pool{$IFNDEF FPC}<T1_, T2_, T3_, T4_, T5_>{$ENDIF FPC}.Add_Pair(Primary: T1_; Second: T2_; Third: T3_; Fourth: T4_; Five: T5_): PPair__;
+begin
+  Result := List.Add_Null();
+  Result^.Data.Primary := Primary;
+  Result^.Data.Second := Second;
+  Result^.Data.Third := Third;
+  Result^.Data.Fourth := Fourth;
+  Result^.Data.Five := Five;
 end;
 
 // *****************************************************************************************************************
@@ -111,6 +175,16 @@ begin
   DoFree(Data.Primary, Data.Second);
 end;
 
+class function TBig_Hash_Pair_Pool{$IFNDEF FPC}<TKey_, TValue_>{$ENDIF FPC}.Null_Key: TKey_;
+begin
+  FillPtr(@Result, SizeOf(TKey_), 0);
+end;
+
+class function TBig_Hash_Pair_Pool{$IFNDEF FPC}<TKey_, TValue_>{$ENDIF FPC}.Null_Value: TValue_;
+begin
+  FillPtr(@Result, SizeOf(TValue_), 0);
+end;
+
 constructor TBig_Hash_Pair_Pool{$IFNDEF FPC}<TKey_, TValue_>{$ENDIF FPC}.Create(const HashSize_: integer; const Null_Value_: TValue_);
 var
   i: integer;
@@ -122,7 +196,7 @@ begin
   FHash_Buffer.Count := HashSize_;
   for i := 0 to FHash_Buffer.Count - 1 do
       FHash_Buffer[i] := nil;
-  Null_Value := Null_Value_;
+  FNull_Value := Null_Value_;
   FOnAdd := nil;
   FOnFree := nil;
 end;
@@ -169,6 +243,15 @@ end;
 function TBig_Hash_Pair_Pool{$IFNDEF FPC}<TKey_, TValue_>{$ENDIF FPC}.Compare_Value(const Value_1, Value_2: TValue_): Boolean;
 begin
   Result := CompareMemory(@Value_1, @Value_2, SizeOf(TValue_));
+end;
+
+procedure TBig_Hash_Pair_Pool{$IFNDEF FPC}<TKey_, TValue_>{$ENDIF FPC}.Extract_Queue_Pool_Third;
+begin
+  if FQueue_Pool.Num > 0 then
+    with FQueue_Pool.Repeat_ do
+      repeat
+          Queue^.Data^.Data.Third := Queue;
+      until not Next;
 end;
 
 procedure TBig_Hash_Pair_Pool{$IFNDEF FPC}<TKey_, TValue_>{$ENDIF FPC}.Clear;
@@ -280,7 +363,7 @@ var
   i: NativeInt;
   p: PPair_Pool_Value__;
 begin
-  R := Null_Value;
+  R := FNull_Value;
   L := Get_Value_List(Key, Key_Hash_);
   if L.L.Num > 0 then
     begin
@@ -358,7 +441,7 @@ end;
 
 function TBig_Hash_Pair_Pool{$IFNDEF FPC}<TKey_, TValue_>{$ENDIF FPC}.Get_Value_Ptr(const Key: TKey_): PValue;
 begin
-  Result := Get_Value_Ptr(Key, Null_Value);
+  Result := Get_Value_Ptr(Key, FNull_Value);
 end;
 
 function TBig_Hash_Pair_Pool{$IFNDEF FPC}<TKey_, TValue_>{$ENDIF FPC}.Get_Value_Ptr(const Key: TKey_; const Default_: TValue_): PValue;
@@ -685,52 +768,6 @@ begin
     end;
 end;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // *****************************************************************************************************************
 
 function TCritical_Big_Hash_Pair_Pool{$IFNDEF FPC}<TKey_, TValue_>{$ENDIF FPC}.Get_Value_List(const Key_: TKey_; var Key_Hash_: THash): TValue_Pair_Pool__;
@@ -778,6 +815,16 @@ begin
   DoFree(Data.Primary, Data.Second);
 end;
 
+class function TCritical_Big_Hash_Pair_Pool{$IFNDEF FPC}<TKey_, TValue_>{$ENDIF FPC}.Null_Key: TKey_;
+begin
+  FillPtr(@Result, SizeOf(TKey_), 0);
+end;
+
+class function TCritical_Big_Hash_Pair_Pool{$IFNDEF FPC}<TKey_, TValue_>{$ENDIF FPC}.Null_Value: TValue_;
+begin
+  FillPtr(@Result, SizeOf(TValue_), 0);
+end;
+
 constructor TCritical_Big_Hash_Pair_Pool{$IFNDEF FPC}<TKey_, TValue_>{$ENDIF FPC}.Create(const HashSize_: integer; const Null_Value_: TValue_);
 var
   i: integer;
@@ -790,7 +837,7 @@ begin
   FHash_Buffer.Count := HashSize_;
   for i := 0 to FHash_Buffer.Count - 1 do
       FHash_Buffer[i] := nil;
-  Null_Value := Null_Value_;
+  FNull_Value := Null_Value_;
   FOnAdd := nil;
   FOnFree := nil;
 end;
@@ -838,6 +885,15 @@ end;
 function TCritical_Big_Hash_Pair_Pool{$IFNDEF FPC}<TKey_, TValue_>{$ENDIF FPC}.Compare_Value(const Value_1, Value_2: TValue_): Boolean;
 begin
   Result := CompareMemory(@Value_1, @Value_2, SizeOf(TValue_));
+end;
+
+procedure TCritical_Big_Hash_Pair_Pool{$IFNDEF FPC}<TKey_, TValue_>{$ENDIF FPC}.Extract_Queue_Pool_Third;
+begin
+  if FQueue_Pool.Num > 0 then
+    with FQueue_Pool.Repeat_ do
+      repeat
+          Queue^.Data^.Data.Third := Queue;
+      until not Next;
 end;
 
 procedure TCritical_Big_Hash_Pair_Pool{$IFNDEF FPC}<TKey_, TValue_>{$ENDIF FPC}.Clear;
@@ -969,7 +1025,7 @@ var
   i: NativeInt;
   p: PPair_Pool_Value__;
 begin
-  R := Null_Value;
+  R := FNull_Value;
   FCritical__.Lock;
   try
     L := Get_Value_List(Key, Key_Hash_);
@@ -1067,7 +1123,7 @@ end;
 
 function TCritical_Big_Hash_Pair_Pool{$IFNDEF FPC}<TKey_, TValue_>{$ENDIF FPC}.Get_Value_Ptr(const Key: TKey_): PValue;
 begin
-  Result := Get_Value_Ptr(Key, Null_Value);
+  Result := Get_Value_Ptr(Key, FNull_Value);
 end;
 
 function TCritical_Big_Hash_Pair_Pool{$IFNDEF FPC}<TKey_, TValue_>{$ENDIF FPC}.Get_Value_Ptr(const Key: TKey_; const Default_: TValue_): PValue;

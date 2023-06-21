@@ -80,8 +80,8 @@ type
     function StartService(Host: SystemString; Port: Word): Boolean; override;
     procedure StopService; override;
     procedure Progress; override;
-    function WaitSendConsoleCmd(p_io: TPeerIO; const Cmd, ConsoleData: SystemString; Timeout: TTimeTick): SystemString; override;
-    procedure WaitSendStreamCmd(p_io: TPeerIO; const Cmd: SystemString; StreamData, Result_: TDFE; Timeout: TTimeTick); override;
+    function WaitSendConsoleCmd(p_io: TPeerIO; const Cmd, ConsoleData: SystemString; TimeOut_: TTimeTick): SystemString; override;
+    procedure WaitSendStreamCmd(p_io: TPeerIO; const Cmd: SystemString; StreamData, Result_: TDFE; TimeOut_: TTimeTick); override;
   end;
 
   TPhysicsEngine_Special = class(TPeerIOUserSpecial)
@@ -212,7 +212,7 @@ var
 begin
   if SendingStream.Size > 0 then
     begin
-      BuildBuff(SendingStream.Memory, SendingStream.Size, ID, Remote_ID, nSiz, nBuff);
+      Build_XNAT_Buff(SendingStream.Memory, SendingStream.Size, ID, Remote_ID, nSiz, nBuff);
       OwnerVS.SendTunnel.SendCompleteBuffer(C_Data, nBuff, nSiz, True);
       SendingStream.Clear;
     end;
@@ -413,7 +413,7 @@ var
   destBuff: PByte;
   x_io: TXNAT_MappingOnVirutalService_IO;
 begin
-  ExtractBuff(InData, DataSize, Remote_ID, local_id, destSiz, destBuff);
+  Extract_XNAT_Buff(InData, DataSize, Remote_ID, local_id, destSiz, destBuff);
   x_io := TXNAT_MappingOnVirutalService_IO(PeerIO[local_id]);
   if x_io <> nil then
     begin
@@ -493,13 +493,13 @@ begin
       RecvTunnel.Progress;
 end;
 
-function TXNAT_MappingOnVirutalService.WaitSendConsoleCmd(p_io: TPeerIO; const Cmd, ConsoleData: SystemString; Timeout: TTimeTick): SystemString;
+function TXNAT_MappingOnVirutalService.WaitSendConsoleCmd(p_io: TPeerIO; const Cmd, ConsoleData: SystemString; TimeOut_: TTimeTick): SystemString;
 begin
   Result := '';
   RaiseInfo('WaitSend no Suppport');
 end;
 
-procedure TXNAT_MappingOnVirutalService.WaitSendStreamCmd(p_io: TPeerIO; const Cmd: SystemString; StreamData, Result_: TDFE; Timeout: TTimeTick);
+procedure TXNAT_MappingOnVirutalService.WaitSendStreamCmd(p_io: TPeerIO; const Cmd: SystemString; StreamData, Result_: TDFE; TimeOut_: TTimeTick);
 begin
   RaiseInfo('WaitSend no Suppport');
 end;

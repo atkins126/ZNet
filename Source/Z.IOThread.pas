@@ -175,6 +175,8 @@ procedure Test_IOData__C(Sender: TIO_Thread_Data);
 
 implementation
 
+uses Z.Notify;
+
 procedure Test_IOData__C(Sender: TIO_Thread_Data);
 begin
 end;
@@ -213,6 +215,8 @@ var
   LTK, L: TTimeTick;
   p: TIO_Thread_Queue.POrderStruct;
 begin
+  Sender.Thread_Info := ClassName;
+
   AtomInc(FThNum);
   LTK := GetTimeTick();
   while FThRunning.V do
@@ -260,7 +264,7 @@ end;
 
 constructor TIO_Thread.Create(ThNum_: Integer);
 var
-  i: Integer;
+  n, i: Integer;
 begin
   inherited Create;
   FCritical := TCritical.Create;
@@ -269,9 +273,11 @@ begin
   FQueue := TIO_Thread_Queue.Create;
   FDoneQueue := TIO_Thread_Queue.Create;
 
-  for i := 0 to ThNum_ - 1 do
+  n := if_(ThNum_ < 2, 1, ThNum_);
+
+  for i := 0 to n - 1 do
       TCompute.RunM({$IFDEF FPC}@{$ENDIF FPC}ThRun);
-  while FThNum < ThNum_ do
+  while FThNum < n do
       TCompute.Sleep(1);
 end;
 
@@ -555,24 +561,18 @@ end;
 function TThread_Pool.TaskNum: NativeInt;
 var
   R_: Int64;
-{$IFDEF FPC}
-  procedure fpc_progress_(Index_: NativeInt; p: PQueueStruct; var Aborted: Boolean);
-  begin
-    inc(R_, p^.Data.FPost.Count);
-  end;
-{$ENDIF FPC}
-
-
 begin
   R_ := 0;
-{$IFDEF FPC}
-  For_P(@fpc_progress_);
-{$ELSE FPC}
-  For_P(procedure(Index_: NativeInt; p: PQueueStruct; var Aborted: Boolean)
-    begin
-      inc(R_, p^.Data.FPost.Count);
-    end);
-{$ENDIF FPC}
+  FCritical.Lock;
+  try
+    if Num > 0 then
+      with Repeat_ do
+        repeat
+            inc(R_, Queue^.Data.FPost.Num);
+        until not Next;
+  finally
+      FCritical.UnLock;
+  end;
   Result := R_;
 end;
 
@@ -714,6 +714,7 @@ var
   L: NativeInt;
   Last_TK, IDLE_TK: TTimeTick;
 begin
+  ThSender.Thread_Info := ClassName;
   FBindTh := ThSender;
   FPost := TThreadPost.Create(ThSender.ThreadID);
   FPost.OneStep := False;
@@ -745,7 +746,7 @@ begin
   FBindTh := nil;
   DisposeObjectAndNil(FPost);
   DisposeObjectAndNil(FActivted);
-  Free;
+  DelayFreeObj(1.0, Self);
 end;
 
 constructor TThread_Event_Pool__.Create(Owner_: TThread_Pool);

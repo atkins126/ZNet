@@ -41,6 +41,7 @@ type
 
     function Mem64: TMem64;
     function Clone: TMS64;
+    function Swap_To_New_Instance: TMS64;
     procedure DiscardMemory;
     procedure Clear;
     procedure NewParam(source: TMS64); overload;
@@ -83,6 +84,7 @@ type
     function Seek(const Offset: Int64; origin: TSeekOrigin): Int64; override;
     property Memory: Pointer read FMemory;
 
+    function CopyMem64(const source: TMem64; Count: Int64): Int64;
     function CopyFrom(const source: TCore_Stream; Count: Int64): Int64; virtual;
 
     // Serialized writer
@@ -133,6 +135,8 @@ type
   public
     procedure Clean;
   end;
+
+  TMS64_Pool = {$IFDEF FPC}specialize {$ENDIF FPC} TBig_Object_List<TMS64>;
 
   TStream64List = TMemoryStream64List;
   TMS64List = TMemoryStream64List;
@@ -220,6 +224,7 @@ type
 
     function Stream64: TMS64;
     function Clone: TMem64;
+    function Swap_To_New_Instance: TMem64;
     procedure DiscardMemory;
     procedure Clear;
     procedure NewParam(source: TMS64); overload;
@@ -473,6 +478,12 @@ begin
   Result.Size := Size;
   CopyPtr(Memory, Result.Memory, Size);
   Result.Position := Position;
+end;
+
+function TMS64.Swap_To_New_Instance: TMS64;
+begin
+  Result := TMS64.Create;
+  SwapInstance(Result);
 end;
 
 procedure TMS64.DiscardMemory;
@@ -920,6 +931,15 @@ begin
     TSeekOrigin.soEnd: FPosition := FSize + Offset;
   end;
   Result := FPosition;
+end;
+
+function TMS64.CopyMem64(const source: TMem64; Count: Int64): Int64;
+begin
+  if FProtectedMode then
+      RaiseInfo('protected mode');
+  WritePtr(source.PositionAsPtr, Count);
+  source.Position := source.FPosition + Count;
+  Result := Count;
 end;
 
 function TMS64.CopyFrom(const source: TCore_Stream; Count: Int64): Int64;
@@ -1453,6 +1473,12 @@ begin
   Result.Size := Size;
   CopyPtr(Memory, Result.Memory, Size);
   Result.Position := Position;
+end;
+
+function TMem64.Swap_To_New_Instance: TMem64;
+begin
+  Result := TMem64.Create;
+  SwapInstance(Result);
 end;
 
 procedure TMem64.DiscardMemory;

@@ -7,7 +7,7 @@ unit Z.Core;
 
 interface
 
-uses SysUtils, Classes, Types, Variants, SyncObjs,
+uses SysUtils, Classes, Types, Variants, SyncObjs, TypInfo,
   {$IFDEF FPC}
   Z.FPC.GenericList, fgl,
   {$ELSE FPC}
@@ -139,6 +139,8 @@ type
     procedure Release; virtual;
     procedure Enter; virtual;
     procedure Leave; virtual;
+    procedure Lock; virtual;
+    procedure UnLock; virtual;
   end;
 
 {$IFDEF SoftCritical}
@@ -154,13 +156,14 @@ type
     PT_ = ^T_;
   private
     FValue__: T_;
-    Critical: TCritical;
+    FCritical: TCritical;
     function GetValue: T_;
     procedure SetValue(const Value_: T_);
     function GetValueP: PT_;
   public
     constructor Create(Value_: T_);
     destructor Destroy; override;
+    property Critical: TCritical read FCritical;
     // operation
     function Lock: T_;
     function LockP: PT_;
@@ -216,6 +219,7 @@ type
     procedure Lock; {$IFDEF INLINE_ASM}inline; {$ENDIF INLINE_ASM}
     procedure UnLock; {$IFDEF INLINE_ASM}inline; {$ENDIF INLINE_ASM}
     function IsBusy: Boolean;
+    property IsLock: Boolean read IsBusy;
     property Busy: Boolean read IsBusy;
     // atom
     procedure Inc_(var x: Int64); overload;
@@ -370,6 +374,7 @@ type
   TBigList<T_> = class(TCore_Object)
   public type
 
+    P_ = ^T_;
     PQueueStruct = ^TQueueStruct;
     PPQueueStruct = ^PQueueStruct;
     T___ = {$IFDEF FPC}specialize {$ENDIF FPC} TBigList<T_>;
@@ -379,6 +384,7 @@ type
       Next: PQueueStruct;
       Prev: PQueueStruct;
       Instance___: T___;
+      Recycle___: Boolean;
     end;
 
     TRepeat___ = record
@@ -435,171 +441,16 @@ type
     TQueueArrayStruct = array [0 .. (MaxInt div SizeOf(Pointer) - 1)] of PQueueStruct;
     PQueueArrayStruct = ^TQueueArrayStruct;
     TOnStruct_Event = procedure(var p: T_) of object;
-    TSort_C = function(var Left, Right: T_): ShortInt;
+    TSort_C = function(var L, R: T_): Integer;
     TQueneStructFor_C = procedure(Index_: NativeInt; p: PQueueStruct; var Aborted: Boolean);
-    TSort_M = function(var Left, Right: T_): ShortInt of object;
+    TSort_M = function(var L, R: T_): Integer of object;
     TQueneStructFor_M = procedure(Index_: NativeInt; p: PQueueStruct; var Aborted: Boolean) of object;
 {$IFDEF FPC}
     TQueneStructFor_P = procedure(Index_: NativeInt; p: PQueueStruct; var Aborted: Boolean) is nested;
-    TSort_P = function(var Left, Right: T_): ShortInt is nested;
+    TSort_P = function(var L, R: T_): Integer is nested;
 {$ELSE FPC}
     TQueneStructFor_P = reference to procedure(Index_: NativeInt; p: PQueueStruct; var Aborted: Boolean);
-    TSort_P = reference to function(var Left, Right: T_): ShortInt;
-{$ENDIF FPC}
-  private
-    FRecycle_Pool__: TRecycle_Pool__;
-    FFirst: PQueueStruct;
-    FLast: PQueueStruct;
-    FNum: NativeInt;
-    FOnAdd: TOnStruct_Event;
-    FOnFree: TOnStruct_Event;
-    FChanged: Boolean;
-    FList: Pointer;
-    procedure DoInternalFree(p: PQueueStruct);
-  public
-    constructor Create;
-    destructor Destroy; override;
-    procedure DoFree(var Data: T_); virtual;
-    procedure DoAdd(var Data: T_); virtual;
-    function CompareData(const Data_1, Data_2: T_): Boolean; virtual;
-    property Recycle_Pool: TRecycle_Pool__ read FRecycle_Pool__;
-    procedure Push_To_Recycle_Pool(p: PQueueStruct);
-    procedure Free_Recycle_Pool;
-    procedure Clear;
-    property First: PQueueStruct read FFirst;
-    property Last: PQueueStruct read FLast;
-    procedure Next; // queue support
-    function Add(const Data: T_): PQueueStruct;
-    procedure AddL(L_: T___);
-    function Add_Null(): PQueueStruct;
-    function Insert(const Data: T_; To_: PQueueStruct): PQueueStruct;
-    procedure Remove_P(p: PQueueStruct);
-    procedure Remove_T(const Data: T_);
-    procedure Move_Before(p, To_: PQueueStruct);
-    procedure MoveToFirst(p: PQueueStruct);
-    procedure MoveToLast(p: PQueueStruct);
-    procedure Exchange(p1, p2: PQueueStruct);
-    function Found(p1: PQueueStruct): NativeInt;
-    function Find_Data(const Data: T_): PQueueStruct;
-    function Search_Data_As_Array(const Data: T_): TArray_T_;
-    function Search_Data_As_Order(const Data: T_): TOrder_Data_Pool;
-    function Remove_Data(const Data: T_): Integer;
-    function Repeat_(): TRepeat___; overload;
-    function Repeat_(BI_, EI_: NativeInt): TRepeat___; overload;
-    function Invert_Repeat_(): TInvert_Repeat___; overload;
-    function Invert_Repeat_(BI_, EI_: NativeInt): TInvert_Repeat___; overload;
-    procedure For_C(BP_, EP_: PQueueStruct; OnFor: TQueneStructFor_C); overload;
-    procedure For_M(BP_, EP_: PQueueStruct; OnFor: TQueneStructFor_M); overload;
-    procedure For_P(BP_, EP_: PQueueStruct; OnFor: TQueneStructFor_P); overload;
-    procedure For_C(OnFor: TQueneStructFor_C); overload;
-    procedure For_M(OnFor: TQueneStructFor_M); overload;
-    procedure For_P(OnFor: TQueneStructFor_P); overload;
-    function ToArray(): TArray_T_;
-    function ToOrder(): TOrder_Data_Pool;
-    class procedure Swap_(var Left, Right: T_);
-    procedure Sort_C(Arry_: PQueueArrayStruct; L, R: NativeInt; OnSort: TSort_C); overload;
-    procedure Sort_C(OnSort: TSort_C); overload;
-    procedure Sort_M(Arry_: PQueueArrayStruct; L, R: NativeInt; OnSort: TSort_M); overload;
-    procedure Sort_M(OnSort: TSort_M); overload;
-    procedure Sort_P(Arry_: PQueueArrayStruct; L, R: NativeInt; OnSort: TSort_P); overload;
-    procedure Sort_P(OnSort: TSort_P); overload;
-    function BuildArrayMemory: PQueueArrayStruct;
-    function CheckList: PQueueArrayStruct;
-    function GetList(const Index: NativeInt): PQueueStruct;
-    procedure SetList(const Index: NativeInt; const Value: PQueueStruct);
-    property List[const Index: NativeInt]: PQueueStruct read GetList write SetList;
-    function GetItems(const Index: NativeInt): T_;
-    procedure SetItems(const Index: NativeInt; const Value: T_);
-    property Items[const Index: NativeInt]: T_ read GetItems write SetItems; default;
-    property Num: NativeInt read FNum;
-    property Count: NativeInt read FNum;
-    property OnFree: TOnStruct_Event read FOnFree write FOnFree;
-    property OnAdd: TOnStruct_Event read FOnAdd write FOnAdd;
-{$IFDEF DEBUG}
-    function Test_Check__: Boolean;
-    class procedure Test;
-{$ENDIF DEBUG}
-  end;
-
-  {$IFDEF FPC}generic{$ENDIF FPC}
-  TCriticalBigList<T_> = class(TCore_Object)
-  public type
-
-    PQueueStruct = ^TQueueStruct;
-    PPQueueStruct = ^PQueueStruct;
-    T___ = {$IFDEF FPC}specialize {$ENDIF FPC} TCriticalBigList<T_>;
-
-    TQueueStruct = record
-      Data: T_;
-      Next: PQueueStruct;
-      Prev: PQueueStruct;
-      Instance___: T___;
-    end;
-
-    TRepeat___ = record
-    private
-      // Begin Index
-      BI___: NativeInt;
-      // End Index
-      EI___: NativeInt;
-      // Current index
-      I___: NativeInt;
-      Instance___: T___;
-      p___: PQueueStruct;
-      Is_Discard___: Boolean;
-      procedure Init_(Instance_: T___); overload;
-      procedure Init_(Instance_: T___; BI_, EI_: NativeInt); overload;
-    public
-      property Work: T___ read Instance___;
-      property BI: NativeInt read BI___;
-      property EI: NativeInt read EI___;
-      property I__: NativeInt read I___;
-      property Queue: PQueueStruct read p___;
-      procedure Discard;
-      function Next: Boolean;
-      property Right: Boolean read Next;
-    end;
-
-    TInvert_Repeat___ = record
-    private
-      // Begin Index
-      BI___: NativeInt;
-      // End Index
-      EI___: NativeInt;
-      // Current index
-      I___: NativeInt;
-      Instance___: T___;
-      p___: PQueueStruct;
-      Is_Discard___: Boolean;
-      procedure Init_(Instance_: T___); overload;
-      procedure Init_(Instance_: T___; BI_, EI_: NativeInt); overload;
-    public
-      property Work: T___ read Instance___;
-      property BI: NativeInt read BI___;
-      property EI: NativeInt read EI___;
-      property I__: NativeInt read I___;
-      property Queue: PQueueStruct read p___;
-      procedure Discard;
-      function Prev: Boolean;
-      property Left: Boolean read Prev;
-    end;
-
-    TArray_T_ = array of T_;
-    TOrder_Data_Pool = {$IFDEF FPC}specialize {$ENDIF FPC} TOrderStruct<T_>;
-    TRecycle_Pool__ = {$IFDEF FPC}specialize {$ENDIF FPC} TOrderStruct<PQueueStruct>;
-    TQueueArrayStruct = array [0 .. (MaxInt div SizeOf(Pointer) - 1)] of PQueueStruct;
-    PQueueArrayStruct = ^TQueueArrayStruct;
-    TOnStruct_Event = procedure(var p: T_) of object;
-    TSort_C = function(var Left, Right: T_): ShortInt;
-    TQueneStructFor_C = procedure(Index_: NativeInt; p: PQueueStruct; var Aborted: Boolean);
-    TSort_M = function(var Left, Right: T_): ShortInt of object;
-    TQueneStructFor_M = procedure(Index_: NativeInt; p: PQueueStruct; var Aborted: Boolean) of object;
-{$IFDEF FPC}
-    TQueneStructFor_P = procedure(Index_: NativeInt; p: PQueueStruct; var Aborted: Boolean) is nested;
-    TSort_P = function(var Left, Right: T_): ShortInt is nested;
-{$ELSE FPC}
-    TQueneStructFor_P = reference to procedure(Index_: NativeInt; p: PQueueStruct; var Aborted: Boolean);
-    TSort_P = reference to function(var Left, Right: T_): ShortInt;
+    TSort_P = reference to function(var L, R: T_): Integer;
 {$ENDIF FPC}
   private
     FCritical__: TCritical;
@@ -621,7 +472,7 @@ type
     function CompareData(const Data_1, Data_2: T_): Boolean; virtual;
     procedure Lock;
     procedure UnLock;
-    property Recycle_Pool: TRecycle_Pool__ read FRecycle_Pool__;
+    function Get_Recycle_Pool_Num: NativeInt;
     procedure Push_To_Recycle_Pool(p: PQueueStruct);
     procedure Free_Recycle_Pool;
     procedure Clear;
@@ -632,6 +483,7 @@ type
     procedure AddL(L_: T___);
     function Add_Null(): PQueueStruct;
     function Insert(const Data: T_; To_: PQueueStruct): PQueueStruct;
+    function CopyFrom(Source_: T___): NativeInt;
     procedure Remove_P(p: PQueueStruct);
     procedure Remove_T(const Data: T_);
     procedure Move_Before(p, To_: PQueueStruct);
@@ -640,6 +492,7 @@ type
     procedure Exchange(p1, p2: PQueueStruct);
     function Found(p1: PQueueStruct): NativeInt;
     function Find_Data(const Data: T_): PQueueStruct;
+    function Find_Data_Ptr(const Data_Ptr: P_): PQueueStruct;
     function Search_Data_As_Array(const Data: T_): TArray_T_;
     function Search_Data_As_Order(const Data: T_): TOrder_Data_Pool;
     function Remove_Data(const Data: T_): Integer;
@@ -655,7 +508,6 @@ type
     procedure For_P(OnFor: TQueneStructFor_P); overload;
     function ToArray(): TArray_T_;
     function ToOrder(): TOrder_Data_Pool;
-    class procedure Swap_(var Left, Right: T_);
     procedure Sort_C(Arry_: PQueueArrayStruct; L, R: NativeInt; OnSort: TSort_C); overload;
     procedure Sort_C(OnSort: TSort_C); overload;
     procedure Sort_M(Arry_: PQueueArrayStruct; L, R: NativeInt; OnSort: TSort_M); overload;
@@ -674,11 +526,184 @@ type
     property Count: NativeInt read FNum;
     property OnFree: TOnStruct_Event read FOnFree write FOnFree;
     property OnAdd: TOnStruct_Event read FOnAdd write FOnAdd;
+    class function Null_Data: T_;
 {$IFDEF DEBUG}
     function Test_Check__: Boolean;
     class procedure Test;
 {$ENDIF DEBUG}
   end;
+
+  {$IFDEF FPC}generic{$ENDIF FPC}
+  TCritical_BigList<T_> = class(TCore_Object)
+  public type
+
+    P_ = ^T_;
+    PQueueStruct = ^TQueueStruct;
+    PPQueueStruct = ^PQueueStruct;
+    T___ = {$IFDEF FPC}specialize {$ENDIF FPC} TCritical_BigList<T_>;
+
+    TQueueStruct = record
+      Data: T_;
+      Next: PQueueStruct;
+      Prev: PQueueStruct;
+      Instance___: T___;
+      Recycle___: Boolean;
+    end;
+
+    TRepeat___ = record
+    private
+      // Begin Index
+      BI___: NativeInt;
+      // End Index
+      EI___: NativeInt;
+      // Current index
+      I___: NativeInt;
+      Instance___: T___;
+      p___: PQueueStruct;
+      Is_Discard___: Boolean;
+      procedure Init_(Instance_: T___); overload;
+      procedure Init_(Instance_: T___; BI_, EI_: NativeInt); overload;
+    public
+      property Work: T___ read Instance___;
+      property BI: NativeInt read BI___;
+      property EI: NativeInt read EI___;
+      property I__: NativeInt read I___;
+      property Queue: PQueueStruct read p___;
+      procedure Discard;
+      function Next: Boolean;
+      property Right: Boolean read Next;
+    end;
+
+    TInvert_Repeat___ = record
+    private
+      // Begin Index
+      BI___: NativeInt;
+      // End Index
+      EI___: NativeInt;
+      // Current index
+      I___: NativeInt;
+      Instance___: T___;
+      p___: PQueueStruct;
+      Is_Discard___: Boolean;
+      procedure Init_(Instance_: T___); overload;
+      procedure Init_(Instance_: T___; BI_, EI_: NativeInt); overload;
+    public
+      property Work: T___ read Instance___;
+      property BI: NativeInt read BI___;
+      property EI: NativeInt read EI___;
+      property I__: NativeInt read I___;
+      property Queue: PQueueStruct read p___;
+      procedure Discard;
+      function Prev: Boolean;
+      property Left: Boolean read Prev;
+    end;
+
+    TArray_T_ = array of T_;
+    TOrder_Data_Pool = {$IFDEF FPC}specialize {$ENDIF FPC} TOrderStruct<T_>;
+    TRecycle_Pool__ = {$IFDEF FPC}specialize {$ENDIF FPC} TOrderStruct<PQueueStruct>;
+    TQueueArrayStruct = array [0 .. (MaxInt div SizeOf(Pointer) - 1)] of PQueueStruct;
+    PQueueArrayStruct = ^TQueueArrayStruct;
+    TOnStruct_Event = procedure(var p: T_) of object;
+    TSort_C = function(var L, R: T_): Integer;
+    TQueneStructFor_C = procedure(Index_: NativeInt; p: PQueueStruct; var Aborted: Boolean);
+    TSort_M = function(var L, R: T_): Integer of object;
+    TQueneStructFor_M = procedure(Index_: NativeInt; p: PQueueStruct; var Aborted: Boolean) of object;
+{$IFDEF FPC}
+    TQueneStructFor_P = procedure(Index_: NativeInt; p: PQueueStruct; var Aborted: Boolean) is nested;
+    TSort_P = function(var L, R: T_): Integer is nested;
+{$ELSE FPC}
+    TQueneStructFor_P = reference to procedure(Index_: NativeInt; p: PQueueStruct; var Aborted: Boolean);
+    TSort_P = reference to function(var L, R: T_): Integer;
+{$ENDIF FPC}
+  private
+    FCritical__: TCritical;
+    FRecycle_Pool__: TRecycle_Pool__;
+    FFirst: PQueueStruct;
+    FLast: PQueueStruct;
+    FNum: NativeInt;
+    FOnAdd: TOnStruct_Event;
+    FOnFree: TOnStruct_Event;
+    FChanged: Boolean;
+    FList: Pointer;
+    procedure DoInternalFree(p: PQueueStruct);
+  public
+    property Critical__: TCritical read FCritical__;
+    constructor Create;
+    destructor Destroy; override;
+    procedure DoFree(var Data: T_); virtual;
+    procedure DoAdd(var Data: T_); virtual;
+    function CompareData(const Data_1, Data_2: T_): Boolean; virtual;
+    procedure Lock;
+    procedure UnLock;
+    function Get_Recycle_Pool_Num: NativeInt;
+    procedure Push_To_Recycle_Pool(p: PQueueStruct);
+    procedure Free_Recycle_Pool;
+    procedure Clear;
+    property First: PQueueStruct read FFirst;
+    property Last: PQueueStruct read FLast;
+    procedure Next(Lock_: Boolean); overload; // queue support
+    procedure Next; overload; // queue support
+    function Add(const Data: T_): PQueueStruct;
+    procedure AddL(L_: T___);
+    function Add_Null(Lock_: Boolean): PQueueStruct; overload;
+    function Add_Null(): PQueueStruct; overload;
+    function Insert(const Data: T_; To_: PQueueStruct): PQueueStruct;
+    function CopyFrom(Source_: T___): NativeInt;
+    procedure Remove_P(p: PQueueStruct; Lock_: Boolean); overload;
+    procedure Remove_P(p: PQueueStruct); overload;
+    procedure Remove_T(const Data: T_);
+    procedure Move_Before(p, To_: PQueueStruct);
+    procedure MoveToFirst(p: PQueueStruct);
+    procedure MoveToLast(p: PQueueStruct);
+    procedure Exchange(p1, p2: PQueueStruct);
+    function Found(p1: PQueueStruct): NativeInt;
+    function Find_Data(const Data: T_): PQueueStruct;
+    function Find_Data_Ptr(const Data_Ptr: P_): PQueueStruct;
+    function Search_Data_As_Array(const Data: T_): TArray_T_;
+    function Search_Data_As_Order(const Data: T_): TOrder_Data_Pool;
+    function Remove_Data(const Data: T_): Integer;
+    function Repeat_(): TRepeat___; overload;
+    function Repeat_(BI_, EI_: NativeInt): TRepeat___; overload;
+    function Invert_Repeat_(): TInvert_Repeat___; overload;
+    function Invert_Repeat_(BI_, EI_: NativeInt): TInvert_Repeat___; overload;
+    procedure For_C(BP_, EP_: PQueueStruct; OnFor: TQueneStructFor_C); overload;
+    procedure For_M(BP_, EP_: PQueueStruct; OnFor: TQueneStructFor_M); overload;
+    procedure For_P(BP_, EP_: PQueueStruct; OnFor: TQueneStructFor_P); overload;
+    procedure For_C(OnFor: TQueneStructFor_C); overload;
+    procedure For_M(OnFor: TQueneStructFor_M); overload;
+    procedure For_P(OnFor: TQueneStructFor_P); overload;
+    function ToArray(): TArray_T_;
+    function ToOrder(): TOrder_Data_Pool;
+    procedure Sort_C(Arry_: PQueueArrayStruct; L, R: NativeInt; OnSort: TSort_C); overload;
+    procedure Sort_C(OnSort: TSort_C); overload;
+    procedure Sort_M(Arry_: PQueueArrayStruct; L, R: NativeInt; OnSort: TSort_M); overload;
+    procedure Sort_M(OnSort: TSort_M); overload;
+    procedure Sort_P(Arry_: PQueueArrayStruct; L, R: NativeInt; OnSort: TSort_P); overload;
+    procedure Sort_P(OnSort: TSort_P); overload;
+    function BuildArrayMemory: PQueueArrayStruct;
+    function CheckList: PQueueArrayStruct;
+    function GetList(const Index: NativeInt): PQueueStruct;
+    procedure SetList(const Index: NativeInt; const Value: PQueueStruct);
+    property List[const Index: NativeInt]: PQueueStruct read GetList write SetList;
+    function GetItems(const Index: NativeInt): T_;
+    procedure SetItems(const Index: NativeInt; const Value: T_);
+    property Items[const Index: NativeInt]: T_ read GetItems write SetItems; default;
+    property Num: NativeInt read FNum;
+    property Count: NativeInt read FNum;
+    property OnFree: TOnStruct_Event read FOnFree write FOnFree;
+    property OnAdd: TOnStruct_Event read FOnAdd write FOnAdd;
+    class function Null_Data: T_;
+{$IFDEF DEBUG}
+    function Test_Check__: Boolean;
+    class procedure Test;
+{$ENDIF DEBUG}
+  end;
+
+{$IFDEF FPC}
+  generic TC_BigList<T_> = class(specialize TCritical_BigList<T_>);
+{$ELSE FPC}
+  TC_BigList<T_> = class(TCritical_BigList<T_>);
+{$ENDIF FPC}
 
 {$IFDEF FPC}
   generic TBig_Object_List<T_: TCore_Object> = class(specialize TBigList<T_>)
@@ -692,15 +717,21 @@ type
   end;
 
 {$IFDEF FPC}
-  generic TCritical_Big_Object_List<T_: TCore_Object> = class(specialize TCriticalBigList<T_>)
+  generic TCritical_Big_Object_List<T_: TCore_Object> = class(specialize TCritical_BigList<T_>)
 {$ELSE FPC}
-  TCritical_Big_Object_List<T_: class> = class(TCriticalBigList<T_>)
+  TCritical_Big_Object_List<T_: class> = class(TCritical_BigList<T_>)
 {$ENDIF FPC}
   public
     AutoFreeObject: Boolean;
     constructor Create(AutoFreeObject_: Boolean);
     procedure DoFree(var Data: T_); override;
   end;
+
+{$IFDEF FPC}
+  generic TC_Big_Object_List<T_: TCore_Object> = class(specialize TCritical_Big_Object_List<T_>);
+{$ELSE FPC}
+  TC_Big_Object_List<T_: class> = class(TCritical_Big_Object_List<T_>);
+{$ENDIF FPC}
 
 {$ENDREGION 'BigList'}
 {$REGION 'Hash-Pair'}
@@ -721,6 +752,8 @@ type
     property L: TPair_BigList__ read List;
     constructor Create;
     destructor Destroy; override;
+    procedure DoFree(var Data: TPair); virtual;
+    procedure DoAdd(var Data: TPair); virtual;
     function Add_Pair(Primary: T1_; Second: T2_): PPair__;
   end;
 
@@ -742,6 +775,8 @@ type
     property L: TPair_BigList__ read List;
     constructor Create;
     destructor Destroy; override;
+    procedure DoFree(var Data: TPair); virtual;
+    procedure DoAdd(var Data: TPair); virtual;
     function Add_Pair(Primary: T1_; Second: T2_; Third: T3_): PPair__;
   end;
 
@@ -764,7 +799,34 @@ type
     property L: TPair_BigList__ read List;
     constructor Create;
     destructor Destroy; override;
+    procedure DoFree(var Data: TPair); virtual;
+    procedure DoAdd(var Data: TPair); virtual;
     function Add_Pair(Primary: T1_; Second: T2_; Third: T3_; Fourth: T4_): PPair__;
+  end;
+
+  {$IFDEF FPC}generic{$ENDIF FPC}
+  TPair_Five_Pool<T1_, T2_, T3_, T4_, T5_> = class(TCore_Object)
+  public type
+
+    TPair = record
+      Primary: T1_;
+      Second: T2_;
+      Third: T3_;
+      Fourth: T4_;
+      Five: T5_;
+    end;
+
+    PPair = ^TPair;
+    TPair_BigList__ = {$IFDEF FPC}specialize {$ENDIF FPC} TBigList<TPair>;
+    PPair__ = TPair_BigList__.PQueueStruct;
+  public
+    List: TPair_BigList__;
+    property L: TPair_BigList__ read List;
+    constructor Create;
+    destructor Destroy; override;
+    procedure DoFree(var Data: TPair); virtual;
+    procedure DoAdd(var Data: TPair); virtual;
+    function Add_Pair(Primary: T1_; Second: T2_; Third: T3_; Fourth: T4_; Five: T5_): PPair__;
   end;
 
   {$IFDEF FPC}generic{$ENDIF FPC}
@@ -796,7 +858,7 @@ type
   private
     FQueue_Pool: TPool___;
     FHash_Buffer: TKey_Hash_Buffer;
-    Null_Value: TValue_;
+    FNull_Value: TValue_;
     FOnAdd: TOn_Event;
     FOnFree: TOn_Event;
     function Get_Value_List(const Key_: TKey_; var Key_Hash_: THash): TValue_Pair_Pool__;
@@ -805,6 +867,8 @@ type
     procedure Internal_Do_Queue_Pool_Free(var Data: PPair_Pool_Value__);
     procedure Internal_Do_Free(var Data: TPair);
   public
+    class function Null_Key: TKey_;
+    class function Null_Value: TValue_;
     property Queue_Pool: TPool___ read FQueue_Pool;
     property OnAdd: TOn_Event read FOnAdd write FOnAdd;
     property OnFree: TOn_Event read FOnFree write FOnFree;
@@ -815,6 +879,7 @@ type
     function Get_Key_Hash(const Key_: TKey_): THash; virtual;
     function Compare_Key(const Key_1, Key_2: TKey_): Boolean; virtual;
     function Compare_Value(const Value_1, Value_2: TValue_): Boolean; virtual;
+    procedure Extract_Queue_Pool_Third;
     procedure Clear;
     function Exists_Key(const Key: TKey_): Boolean;
     function Exists_Value(const Data: TValue_): Boolean;
@@ -879,7 +944,7 @@ type
     FCritical__: TCritical;
     FQueue_Pool: TPool___;
     FHash_Buffer: TKey_Hash_Buffer;
-    Null_Value: TValue_;
+    FNull_Value: TValue_;
     FOnAdd: TOn_Event;
     FOnFree: TOn_Event;
     function Get_Value_List(const Key_: TKey_; var Key_Hash_: THash): TValue_Pair_Pool__;
@@ -888,6 +953,8 @@ type
     procedure Internal_Do_Queue_Pool_Free(var Data: PPair_Pool_Value__);
     procedure Internal_Do_Free(var Data: TPair);
   public
+    class function Null_Key: TKey_;
+    class function Null_Value: TValue_;
     property Critical__: TCritical read FCritical__;
     property Queue_Pool: TPool___ read FQueue_Pool;
     property OnAdd: TOn_Event read FOnAdd write FOnAdd;
@@ -899,6 +966,7 @@ type
     function Get_Key_Hash(const Key_: TKey_): THash; virtual;
     function Compare_Key(const Key_1, Key_2: TKey_): Boolean; virtual;
     function Compare_Value(const Value_1, Value_2: TValue_): Boolean; virtual;
+    procedure Extract_Queue_Pool_Third;
     procedure Clear;
     function Exists_Key(const Key: TKey_): Boolean;
     function Exists_Value(const Data: TValue_): Boolean;
@@ -1045,43 +1113,52 @@ type
 {$Region 'ComputeThread'}
   TCompute = class;
 
-  TRunWithThread_C = procedure(ThSender: TCompute);
-  TRunWithThread_M = procedure(ThSender: TCompute) of object;
-  TRunWithThread_C_NP = procedure();
-  TRunWithThread_M_NP = procedure() of object;
+  TRun_Thread_C = procedure(ThSender: TCompute);
+  TRun_Thread_M = procedure(ThSender: TCompute) of object;
+  TRun_Thread_C_NP = procedure();
+  TRun_Thread_M_NP = procedure() of object;
   {$IFDEF FPC}
-  TRunWithThread_P = procedure(ThSender: TCompute) is nested;
-  TRunWithThread_P_NP = procedure() is nested;
+  TRun_Thread_P = procedure(ThSender: TCompute) is nested;
+  TRun_Thread_P_NP = procedure() is nested;
   {$ELSE FPC}
-  TRunWithThread_P = reference to procedure(ThSender: TCompute);
-  TRunWithThread_P_NP = reference to procedure();
+  TRun_Thread_P = reference to procedure(ThSender: TCompute);
+  TRun_Thread_P_NP = reference to procedure();
   {$ENDIF FPC}
   TCoreCompute_Thread_Pool = {$IFDEF FPC}specialize {$ENDIF FPC} TBigList<TCompute>;
 
   TCompute = class(TCore_Thread)
   private
     Thread_Pool_Queue_Data_Ptr: TCoreCompute_Thread_Pool.PQueueStruct;
-    OnRun_C: TRunWithThread_C;
-    OnRun_M: TRunWithThread_M;
-    OnRun_P: TRunWithThread_P;
-    OnRun_C_NP: TRunWithThread_C_NP;
-    OnRun_M_NP: TRunWithThread_M_NP;
-    OnRun_P_NP: TRunWithThread_P_NP;
-    OnDone_C: TRunWithThread_C;
-    OnDone_M: TRunWithThread_M;
-    OnDone_P: TRunWithThread_P;
-    IsRuning, IsExit: PBoolean;
+    OnRun_C: TRun_Thread_C;
+    OnRun_M: TRun_Thread_M;
+    OnRun_P: TRun_Thread_P;
+    OnRun_C_NP: TRun_Thread_C_NP;
+    OnRun_M_NP: TRun_Thread_M_NP;
+    OnRun_P_NP: TRun_Thread_P_NP;
+    OnDone_C: TRun_Thread_C;
+    OnDone_M: TRun_Thread_M;
+    OnDone_P: TRun_Thread_P;
     FRndInstance: Pointer;
+    FStart_Time_Tick: TTimeTick;
+    FThread_Info: string;
+    IsRuning, IsExit: PBoolean;
   protected
     procedure Execute; override;
     procedure Done_Sync;
   public
     UserData: Pointer;
     UserObject: TCore_Object;
+    property Runing_Ptr: PBoolean read IsRuning;
+    property Exit_Ptr: PBoolean read IsExit;
+    property Start_Time_Tick: TTimeTick read FStart_Time_Tick;
+    property Thread_Info: string read FThread_Info write FThread_Info;
 
     constructor Create;
     destructor Destroy; override;
-    class function IDLE_Thread(): NativeInt;
+    class procedure Set_Thread_Info(Thread_Info_: string);
+    class function Get_Core_Thread_Pool: TCoreCompute_Thread_Pool;
+    class function Get_Core_Thread_Dispatch_Critical: TCritical;
+    class function Wait_Thread(): NativeInt;
     class function ActivtedTask(): NativeInt;
     class function WaitTask(): NativeInt;
     class function TotalTask(): NativeInt;
@@ -1090,40 +1167,44 @@ type
     class function GetMaxActivtedParallel(): Integer;
 
     // build-in synchronization
-    class procedure Sync(const OnRun_: TRunWithThread_P_NP); overload;
-    class procedure Sync(const Thread_: TThread; OnRun_: TRunWithThread_P_NP); overload;
-    class procedure SyncC(OnRun_: TRunWithThread_C_NP); overload;
-    class procedure SyncC(const Thread_: TThread; OnRun_: TRunWithThread_C_NP); overload;
-    class procedure SyncM(OnRun_: TRunWithThread_M_NP); overload;
-    class procedure SyncM(const Thread_: TThread; OnRun_: TRunWithThread_M_NP); overload;
-    class procedure SyncP(const OnRun_: TRunWithThread_P_NP); overload;
-    class procedure SyncP(const Thread_: TThread; OnRun_: TRunWithThread_P_NP); overload;
+    class procedure Sync(const OnRun_: TRun_Thread_P_NP); overload;
+    class procedure Sync(const Thread_: TThread; OnRun_: TRun_Thread_P_NP); overload;
+    class procedure SyncC(OnRun_: TRun_Thread_C_NP); overload;
+    class procedure SyncC(const Thread_: TThread; OnRun_: TRun_Thread_C_NP); overload;
+    class procedure SyncM(OnRun_: TRun_Thread_M_NP); overload;
+    class procedure SyncM(const Thread_: TThread; OnRun_: TRun_Thread_M_NP); overload;
+    class procedure SyncP(const OnRun_: TRun_Thread_P_NP); overload;
+    class procedure SyncP(const Thread_: TThread; OnRun_: TRun_Thread_P_NP); overload;
 
     // build-in asynchronous thread
-    class procedure RunC(const Data: Pointer; const Obj: TCore_Object; const OnRun, OnDone: TRunWithThread_C); overload;
-    class procedure RunC(const Data: Pointer; const Obj: TCore_Object; const OnRun, OnDone: TRunWithThread_C; IsRuning_, IsExit_: PBoolean); overload;
-    class procedure RunC(const Data: Pointer; const Obj: TCore_Object; const OnRun: TRunWithThread_C); overload;
-    class procedure RunC(const Data: Pointer; const Obj: TCore_Object; const OnRun: TRunWithThread_C; IsRuning_, IsExit_: PBoolean); overload;
-    class procedure RunC(const OnRun: TRunWithThread_C); overload;
-    class procedure RunC(const OnRun: TRunWithThread_C; IsRuning_, IsExit_: PBoolean); overload;
-    class procedure RunC_NP(const OnRun: TRunWithThread_C_NP); overload;
-    class procedure RunC_NP(const OnRun: TRunWithThread_C_NP; IsRuning_, IsExit_: PBoolean); overload;
-    class procedure RunM(const Data: Pointer; const Obj: TCore_Object; const OnRun, OnDone: TRunWithThread_M); overload;
-    class procedure RunM(const Data: Pointer; const Obj: TCore_Object; const OnRun, OnDone: TRunWithThread_M; IsRuning_, IsExit_: PBoolean); overload;
-    class procedure RunM(const Data: Pointer; const Obj: TCore_Object; const OnRun: TRunWithThread_M); overload;
-    class procedure RunM(const Data: Pointer; const Obj: TCore_Object; const OnRun: TRunWithThread_M; IsRuning_, IsExit_: PBoolean); overload;
-    class procedure RunM(const OnRun: TRunWithThread_M); overload;
-    class procedure RunM(const OnRun: TRunWithThread_M; IsRuning_, IsExit_: PBoolean); overload;
-    class procedure RunM_NP(const OnRun: TRunWithThread_M_NP); overload;
-    class procedure RunM_NP(const OnRun: TRunWithThread_M_NP; IsRuning_, IsExit_: PBoolean); overload;
-    class procedure RunP(const Data: Pointer; const Obj: TCore_Object; const OnRun, OnDone: TRunWithThread_P); overload;
-    class procedure RunP(const Data: Pointer; const Obj: TCore_Object; const OnRun, OnDone: TRunWithThread_P; IsRuning_, IsExit_: PBoolean); overload;
-    class procedure RunP(const Data: Pointer; const Obj: TCore_Object; const OnRun: TRunWithThread_P); overload;
-    class procedure RunP(const Data: Pointer; const Obj: TCore_Object; const OnRun: TRunWithThread_P; IsRuning_, IsExit_: PBoolean); overload;
-    class procedure RunP(const OnRun: TRunWithThread_P); overload;
-    class procedure RunP(const OnRun: TRunWithThread_P; IsRuning_, IsExit_: PBoolean); overload;
-    class procedure RunP_NP(const OnRun: TRunWithThread_P_NP); overload;
-    class procedure RunP_NP(const OnRun: TRunWithThread_P_NP; IsRuning_, IsExit_: PBoolean); overload;
+    class procedure RunC(const Data: Pointer; const Obj: TCore_Object; const OnRun, OnDone: TRun_Thread_C); overload;
+    class procedure RunC(const Data: Pointer; const Obj: TCore_Object; const OnRun, OnDone: TRun_Thread_C; IsRuning_, IsExit_: PBoolean); overload;
+    class procedure RunC(const Data: Pointer; const Obj: TCore_Object; const OnRun: TRun_Thread_C); overload;
+    class procedure RunC(const Data: Pointer; const Obj: TCore_Object; const OnRun: TRun_Thread_C; IsRuning_, IsExit_: PBoolean); overload;
+    class procedure RunC(const OnRun: TRun_Thread_C); overload;
+    class procedure RunC(const OnRun: TRun_Thread_C; IsRuning_, IsExit_: PBoolean); overload;
+    class procedure RunC_NP(const OnRun: TRun_Thread_C_NP); overload;
+    class procedure RunC_NP(const OnRun: TRun_Thread_C_NP; IsRuning_, IsExit_: PBoolean); overload;
+    class procedure RunM(const Data: Pointer; const Obj: TCore_Object; const OnRun, OnDone: TRun_Thread_M); overload;
+    class procedure RunM(const Data: Pointer; const Obj: TCore_Object; const OnRun, OnDone: TRun_Thread_M; IsRuning_, IsExit_: PBoolean); overload;
+    class procedure RunM(const Data: Pointer; const Obj: TCore_Object; const OnRun: TRun_Thread_M); overload;
+    class procedure RunM(const Data: Pointer; const Obj: TCore_Object; const OnRun: TRun_Thread_M; IsRuning_, IsExit_: PBoolean); overload;
+    class procedure RunM(const OnRun: TRun_Thread_M); overload;
+    class procedure RunM(const OnRun: TRun_Thread_M; IsRuning_, IsExit_: PBoolean); overload;
+    class procedure RunM_NP(const OnRun: TRun_Thread_M_NP); overload;
+    class procedure RunM_NP(const OnRun: TRun_Thread_M_NP; IsRuning_, IsExit_: PBoolean); overload;
+    class procedure RunP(const Data: Pointer; const Obj: TCore_Object; const OnRun, OnDone: TRun_Thread_P); overload;
+    class procedure RunP(const Data: Pointer; const Obj: TCore_Object; const OnRun, OnDone: TRun_Thread_P; IsRuning_, IsExit_: PBoolean); overload;
+    class procedure RunP(const Data: Pointer; const Obj: TCore_Object; const OnRun: TRun_Thread_P); overload;
+    class procedure RunP(const Data: Pointer; const Obj: TCore_Object; const OnRun: TRun_Thread_P; IsRuning_, IsExit_: PBoolean); overload;
+    class procedure RunP(const OnRun: TRun_Thread_P); overload;
+    class procedure RunP(const OnRun: TRun_Thread_P; IsRuning_, IsExit_: PBoolean); overload;
+    class procedure RunP_NP(const OnRun: TRun_Thread_P_NP); overload;
+    class procedure RunP_NP(const OnRun: TRun_Thread_P_NP; IsRuning_, IsExit_: PBoolean); overload;
+
+    // free object in thread
+    class procedure PostFreeObjectInThread(const Obj: TObject);
+    class procedure PostFreeObjectInThreadAndNil(var Obj);
 
     // main thread progress
     class procedure ProgressPost();
@@ -1222,68 +1303,6 @@ type
     class procedure LoadFromStream(stream: TCore_Stream); static;
   end;
 {$EndRegion 'MT19937Random'}
-{$Region 'core-const'}
-const
-  {$IF Defined(WIN32)}
-  CurrentPlatform: TExecutePlatform = epWin32;
-  {$ELSEIF Defined(WIN64)}
-  CurrentPlatform: TExecutePlatform = epWin64;
-  {$ELSEIF Defined(OSX)}
-    {$IFDEF CPU64}
-      CurrentPlatform: TExecutePlatform = epOSX64;
-    {$ELSE CPU64}
-      CurrentPlatform: TExecutePlatform = epOSX32;
-    {$IFEND CPU64}
-  {$ELSEIF Defined(IOS)}
-    {$IFDEF CPUARM}
-    CurrentPlatform: TExecutePlatform = epIOS;
-    {$ELSE CPUARM}
-    CurrentPlatform: TExecutePlatform = epIOSSIM;
-    {$ENDIF CPUARM}
-  {$ELSEIF Defined(ANDROID)}
-    {$IFDEF CPU64}
-    CurrentPlatform: TExecutePlatform = epANDROID64;
-    {$ELSE CPU64}
-    CurrentPlatform: TExecutePlatform = epANDROID32;
-    {$IFEND CPU64}
-  {$ELSEIF Defined(Linux)}
-    {$IFDEF CPU64}
-      CurrentPlatform: TExecutePlatform = epLinux64;
-    {$ELSE CPU64}
-      CurrentPlatform: TExecutePlatform = epLinux32;
-    {$IFEND CPU64}
-  {$ELSE}
-  CurrentPlatform: TExecutePlatform = epUnknow;
-  {$IFEND}
-
-  CPU64 = {$IFDEF CPU64}True{$ELSE CPU64}False{$ENDIF CPU64};
-  X64 = CPU64;
-
-  IsDebug = {$IFDEF DEBUG}True{$ELSE DEBUG}False{$ENDIF DEBUG};
-
-  // timetick define
-  C_Tick_Second = TTimeTick(1000);
-  C_Tick_Minute = TTimeTick(C_Tick_Second) * 60;
-  C_Tick_Hour   = TTimeTick(C_Tick_Minute) * 60;
-  C_Tick_Day    = TTimeTick(C_Tick_Hour) * 24;
-  C_Tick_Week   = TTimeTick(C_Tick_Day) * 7;
-  C_Tick_Year   = TTimeTick(C_Tick_Day) * 365;
-
-  // memory align
-  C_MH_MemoryDelta = 0;
-
-  // file mode
-  fmCreate         = Classes.fmCreate;
-  soFromBeginning  = Classes.soFromBeginning;
-  soFromCurrent    = Classes.soFromCurrent;
-  soFromEnd        = Classes.soFromEnd;
-  fmOpenRead       = SysUtils.fmOpenRead;
-  fmOpenWrite      = SysUtils.fmOpenWrite;
-  fmOpenReadWrite  = SysUtils.fmOpenReadWrite;
-  fmShareExclusive = SysUtils.fmShareExclusive;
-  fmShareDenyWrite = SysUtils.fmShareDenyWrite;
-  fmShareDenyNone  = SysUtils.fmShareDenyNone;
-{$EndRegion 'core-const'}
 {$Region 'Parallel-API'}
 
 function Max_Thread_Supported: Integer;
@@ -1388,6 +1407,7 @@ procedure CheckThreadSync; overload;
 function CheckThreadSync(Timeout: Integer): Boolean; overload;
 procedure CheckThread; overload;
 function CheckThread(Timeout: Integer): Boolean; overload;
+function Get_Compiler_Version: string;
 
 // core thread pool
 procedure FreeCoreThreadPool;
@@ -1464,9 +1484,9 @@ procedure AtomInc(var x: Cardinal; const v:Cardinal); {$IFDEF INLINE_ASM} inline
 procedure AtomDec(var x: Cardinal); {$IFDEF INLINE_ASM} inline;{$ENDIF INLINE_ASM} overload;
 procedure AtomDec(var x: Cardinal; const v:Cardinal); {$IFDEF INLINE_ASM} inline;{$ENDIF INLINE_ASM} overload;
 
-procedure FillPtrByte(const dest:Pointer; Size: NativeUInt; const Value: Byte); {$IFDEF INLINE_ASM} inline;{$ENDIF INLINE_ASM}
-procedure FillPtr(const dest:Pointer; Size: NativeUInt; const Value: Byte); {$IFDEF INLINE_ASM} inline;{$ENDIF INLINE_ASM}
-procedure FillByte(const dest:Pointer; Size: NativeUInt; const Value: Byte); {$IFDEF INLINE_ASM} inline;{$ENDIF INLINE_ASM}
+procedure FillPtrByte(const dest: Pointer; Size: NativeUInt; const Value: Byte); {$IFDEF INLINE_ASM} inline;{$ENDIF INLINE_ASM}
+procedure FillPtr(const dest: Pointer; Size: NativeUInt; const Value: Byte); {$IFDEF INLINE_ASM} inline;{$ENDIF INLINE_ASM}
+procedure FillByte(const dest: Pointer; Size: NativeUInt; const Value: Byte); {$IFDEF INLINE_ASM} inline;{$ENDIF INLINE_ASM}
 function CompareMemory(const p1, p2: Pointer; Size: NativeUInt): Boolean; {$IFDEF INLINE_ASM} inline;{$ENDIF INLINE_ASM}
 procedure CopyPtr(const sour, dest: Pointer; Size: NativeUInt); {$IFDEF INLINE_ASM} inline;{$ENDIF INLINE_ASM}
 
@@ -1588,11 +1608,74 @@ function GetOffset(const p_: Pointer; const offset_: NativeInt): Pointer; {$IFDE
 function GetPtr(const p_: Pointer; const offset_: NativeInt): Pointer; {$IFDEF INLINE_ASM} inline;{$ENDIF INLINE_ASM}
 
 {$EndRegion 'core api'}
+{$Region 'core-const'}
+const
+  {$IF Defined(WIN32)}
+  CurrentPlatform: TExecutePlatform = epWin32;
+  {$ELSEIF Defined(WIN64)}
+  CurrentPlatform: TExecutePlatform = epWin64;
+  {$ELSEIF Defined(OSX)}
+    {$IFDEF CPU64}
+      CurrentPlatform: TExecutePlatform = epOSX64;
+    {$ELSE CPU64}
+      CurrentPlatform: TExecutePlatform = epOSX32;
+    {$IFEND CPU64}
+  {$ELSEIF Defined(IOS)}
+    {$IFDEF CPUARM}
+    CurrentPlatform: TExecutePlatform = epIOS;
+    {$ELSE CPUARM}
+    CurrentPlatform: TExecutePlatform = epIOSSIM;
+    {$ENDIF CPUARM}
+  {$ELSEIF Defined(ANDROID)}
+    {$IFDEF CPU64}
+    CurrentPlatform: TExecutePlatform = epANDROID64;
+    {$ELSE CPU64}
+    CurrentPlatform: TExecutePlatform = epANDROID32;
+    {$IFEND CPU64}
+  {$ELSEIF Defined(Linux)}
+    {$IFDEF CPU64}
+      CurrentPlatform: TExecutePlatform = epLinux64;
+    {$ELSE CPU64}
+      CurrentPlatform: TExecutePlatform = epLinux32;
+    {$IFEND CPU64}
+  {$ELSE}
+  CurrentPlatform: TExecutePlatform = epUnknow;
+  {$IFEND}
+
+  CPU64 = {$IFDEF CPU64}True{$ELSE CPU64}False{$ENDIF CPU64};
+  X64 = CPU64;
+
+  IsDebug = {$IFDEF DEBUG}True{$ELSE DEBUG}False{$ENDIF DEBUG};
+
+  // timetick define
+  C_Tick_Second = TTimeTick(1000);
+  C_Tick_Minute = TTimeTick(C_Tick_Second) * 60;
+  C_Tick_Hour   = TTimeTick(C_Tick_Minute) * 60;
+  C_Tick_Day    = TTimeTick(C_Tick_Hour) * 24;
+  C_Tick_Week   = TTimeTick(C_Tick_Day) * 7;
+  C_Tick_Year   = TTimeTick(C_Tick_Day) * 365;
+
+  // memory align
+  C_MH_MemoryDelta = 0;
+
+  // file mode
+  fmCreate         = Classes.fmCreate;
+  soFromBeginning  = Classes.soFromBeginning;
+  soFromCurrent    = Classes.soFromCurrent;
+  soFromEnd        = Classes.soFromEnd;
+  fmOpenRead       = SysUtils.fmOpenRead;
+  fmOpenWrite      = SysUtils.fmOpenWrite;
+  fmOpenReadWrite  = SysUtils.fmOpenReadWrite;
+  fmShareExclusive = SysUtils.fmShareExclusive;
+  fmShareDenyWrite = SysUtils.fmShareDenyWrite;
+  fmShareDenyNone  = SysUtils.fmShareDenyNone;
+{$EndRegion 'core-const'}
 {$Region 'core var'}
 
 type TOnCheckThreadSynchronize = procedure();
 
 var
+  // Synchronize
   Enabled_Check_Thread_Synchronize_System: Boolean;
   Main_Thread_Synchronize_Running: Boolean;
   Main_Thread_OnCheck_Runing: Boolean;
@@ -1615,7 +1698,6 @@ var
   // MainThread TThreadPost
   MainThreadProgress: TThreadPost;
   MainThreadPost: TThreadPost;
-  SysProgress: TThreadPost;
 {$EndRegion 'core var'}
 {$Region 'compatible'}
 {$I Z.Core.Compatible.inc}
@@ -1636,6 +1718,7 @@ begin
     {$IFDEF AUTOREFCOUNT}Obj.DisposeOf;{$ELSE AUTOREFCOUNT}Obj.Free;{$ENDIF AUTOREFCOUNT}
     Result := True;
   except
+    Result := False;
   end;
 end;
 
@@ -1682,27 +1765,27 @@ end;
 
 procedure LockObject(Obj: TObject);
 {$IFNDEF CriticalSimulateAtomic}
-{$IFDEF ANTI_DEAD_ATOMIC_LOCK}
-var
-  d: TTimeTick;
-{$ENDIF ANTI_DEAD_ATOMIC_LOCK}
+  {$IFDEF ANTI_DEAD_ATOMIC_LOCK}
+  var
+    d: TTimeTick;
+  {$ENDIF ANTI_DEAD_ATOMIC_LOCK}
 {$ENDIF CriticalSimulateAtomic}
 begin
 {$IFDEF FPC}
   Lock_Critical_Obj__(Obj);
 {$ELSE FPC}
-{$IFDEF CriticalSimulateAtomic}
-  Lock_Critical_Obj__(Obj);
-{$ELSE CriticalSimulateAtomic}
-  {$IFDEF ANTI_DEAD_ATOMIC_LOCK}
-  d := GetTimeTick;
-  TMonitor.Enter(Obj, 5000);
-  if GetTimeTick - d >= 5000 then
-      RaiseInfo('dead');
-  {$ELSE ANTI_DEAD_ATOMIC_LOCK}
-  TMonitor.Enter(Obj);
-  {$ENDIF ANTI_DEAD_ATOMIC_LOCK}
-{$ENDIF CriticalSimulateAtomic}
+  {$IFDEF CriticalSimulateAtomic}
+    Lock_Critical_Obj__(Obj);
+  {$ELSE CriticalSimulateAtomic}
+    {$IFDEF ANTI_DEAD_ATOMIC_LOCK}
+    d := GetTimeTick;
+    TMonitor.Enter(Obj, 5000);
+    if GetTimeTick - d >= 5000 then
+        RaiseInfo('dead');
+    {$ELSE ANTI_DEAD_ATOMIC_LOCK}
+    TMonitor.Enter(Obj);
+    {$ENDIF ANTI_DEAD_ATOMIC_LOCK}
+  {$ENDIF CriticalSimulateAtomic}
 {$ENDIF FPC}
 end;
 
@@ -1826,7 +1909,7 @@ begin
   s := NativeUInt(sour);
   d := NativeUInt(dest);
   // overlap solve
-  // thanks,qq122742470,wang
+  // thanks,qq122742470,laowang
   // thanks,qq4700653,LOK
   if d > s then
     begin
@@ -2073,10 +2156,11 @@ end;
 {$I Z.Core.ComputeThread.inc}
 
 {$IFDEF FPC}
-{$I Z.Core.FPCParallelFor.inc}
+  {$I Z.Core.FPCParallelFor.inc}
 {$ELSE FPC}
-{$I Z.Core.DelphiParallelFor.inc}
+  {$I Z.Core.DelphiParallelFor.inc}
 {$ENDIF FPC}
+
 {$I Z.Core.AtomVar.inc}
 
 procedure Nop;
@@ -2087,9 +2171,13 @@ function IsDebuging: Boolean;
 begin
   Result := False;
 {$IFDEF DELPHI}
-{$IFDEF MSWINDOWS}
-  Result := DebugHook > 0;
-{$ENDIF MSWINDOWS}
+  {$IFDEF MSWINDOWS}
+    Result := DebugHook > 0;
+  {$ELSE MSWINDOWS}
+    {$IFDEF DEBUG}
+      Result := True;
+    {$ENDIF DEBUG}
+  {$ENDIF MSWINDOWS}
 {$ENDIF DELPHI}
 end;
 
@@ -2162,6 +2250,51 @@ begin
   Result := CheckThreadSynchronize(Timeout);
 end;
 
+function Get_Compiler_Version: string;
+begin
+  Result :=
+  {$IFDEF FPC} 'FPC'
+    {$IFDEF VER2_6_4} + ' 2.6.4'{$ENDIF}
+    {$IFDEF VER3_0_0} + ' 3.0.0'{$ENDIF}
+    {$IFDEF VER3_0_1} + ' 3.0.1'{$ENDIF}
+    {$IFDEF VER3_0_2} + ' 3.0.2'{$ENDIF}
+    {$IFDEF VER3_1_1} + ' 3.1.1'{$ENDIF}
+    {$IFDEF VER3_2} + ' 3.2' {$ENDIF}
+    {$IFDEF VER3_3_1} + ' 3.3.1'{$ENDIF}
+  {$ELSE FPC}
+    {$IFDEF CONDITIONALEXPRESSIONS}  // Delphi 6 or newer
+      {$IF defined(KYLIX3)}'Kylix 3'
+      {$ELSEIF defined(VER140)}'Delphi 6'
+      {$ELSEIF defined(VER150)}'Delphi 7'
+      {$ELSEIF defined(VER160)}'Delphi 8'
+      {$ELSEIF defined(VER170)}'Delphi 2005'
+      {$ELSEIF defined(VER185)}'Delphi 2007'
+      {$ELSEIF defined(VER180)}'Delphi 2006'
+      {$ELSEIF defined(VER200)}'Delphi 2009'
+      {$ELSEIF defined(VER210)}'Delphi 2010'
+      {$ELSEIF defined(VER220)}'Delphi XE'
+      {$ELSEIF defined(VER230)}'Delphi XE2'
+      {$ELSEIF defined(VER240)}'Delphi XE3'
+      {$ELSEIF defined(VER250)}'Delphi XE4'
+      {$ELSEIF defined(VER260)}'Delphi XE5'
+      {$ELSEIF defined(VER265)}'AppMethod 1'
+      {$ELSEIF defined(VER270)}'Delphi XE6'
+      {$ELSEIF defined(VER280)}'Delphi XE7'
+      {$ELSEIF defined(VER290)}'Delphi XE8'
+      {$ELSEIF defined(VER300)}'Delphi 10 Seattle'
+      {$ELSEIF defined(VER310)}'Delphi 10.1 Berlin'
+      {$ELSEIF defined(VER320)}'Delphi 10.2 Tokyo'
+      {$ELSEIF defined(VER330)}'Delphi 10.3 Rio'
+      {$ELSEIF defined(VER340)}'Delphi 10.4'
+      {$ELSEIF defined(VER350)}'Delphi 11'
+      {$ELSEIF defined(VER360)}'Delphi 11.x or 12 last...'
+      {$ELSE}'Unknow Delphi Compiler'
+      {$IFEND}
+    {$ENDIF CONDITIONALEXPRESSIONS}
+  {$ENDIF FPC}
+  {$IFDEF CPU64} + ' 64 bit' {$ELSE CPU64} + ' 32 bit' {$ENDIF CPU64};
+end;
+
 {$I Z.Core.OrderData.inc}
 {$I Z.Core.BigList.inc}
 {$I Z.Core.Hash_Pair.inc}
@@ -2185,7 +2318,6 @@ initialization
   Main_Thread_Synchronize_Running := False;
   Main_Thread_OnCheck_Runing := False;
   MainThreadPost := MainThreadProgress;
-  SysProgress := MainThreadProgress;
 finalization
   FreeCoreThreadPool;
   MainThreadProgress.Free;

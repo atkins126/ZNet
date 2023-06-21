@@ -77,9 +77,9 @@ type
     procedure ExtractTo(Stream_: TCore_Stream);
     procedure Progress;
     procedure Push_To_Recycle_Pool(obj_: TZDB2_MS64; RemoveData_: Boolean); // remove from repeat
-    procedure Free_Recycle_Pool;                                            // remove from repeat
+    procedure Free_Recycle_Pool; // remove from repeat
     function Count: NativeInt;
-    function Repeat_: TZDB2_Big_List_MS64_Decl__.TRepeat___;               // flow simulate
+    function Repeat_: TZDB2_Big_List_MS64_Decl__.TRepeat___; // flow simulate
     function Invert_Repeat_: TZDB2_Big_List_MS64_Decl__.TInvert_Repeat___; // flow simulate
 
     class procedure Test;
@@ -115,9 +115,9 @@ begin
   if (Keep <= 0) and (GetTimeTick - FAlive > FTimeOut) then
     begin
       Save;
-{$IFDEF DEBUG}
+{$IFDEF SHOW_ZDB2_Data_Free_LOG}
       DoStatus('%s -> %s Space Recycle ID %s size:%d', [UnitName, ClassName, CoreSpace.GetSpaceHndAsText(FID).Text, CoreSpace.GetDataSize(FID)]);
-{$ENDIF DEBUG}
+{$ENDIF SHOW_ZDB2_Data_Free_LOG}
     end;
 end;
 

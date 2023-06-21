@@ -195,21 +195,21 @@
     {$DEFINE INLINE_ASM}
     {$R-} { range check }
     {$I-} { Input output checking }
-    {$IF Defined(Android) or Defined(IOS)}
+    {$IF Defined(Android) or Defined(IOS) or Defined(Linux)}
       {$O-} { close optimization }
       {$UNDEF INLINE_ASM}
       {$INLINE OFF} { inline }
     {$ELSE}
       {$O+} { open optimization }
-      {$INLINE AUTO} { inline }
+      {$INLINE ON} { inline }
     {$IFEND}
-  {$ELSE}
+  {$ELSE release}
     {$UNDEF INLINE_ASM}
     {$O-} { close optimization }
     {$R-} { range check }
     {$I-} { Input output checking }
     {$D+} { debug information }
-  {$ENDIF}
+  {$ENDIF release}
 
   {$IF Defined(Android)}
     {$DEFINE SMALL_RASTER_FONT_Build_In}
@@ -244,10 +244,10 @@
 
 // Using fillchar replace of FillPtr
 // Maybe fillchar works on MMX / SSE2,
-// {$Define FillPtr_Used_FillChar}
+{$UNDEF FillPtr_Used_FillChar}
 
 // Using Move replace of CopyPtr
-// {$Define CopyPtr_Used_Move}
+{$UNDEF CopyPtr_Used_Move}
 
 // Sequence packets default are opened in Physics-IO
 // Sequence package can support multi platform keep-alive mode
@@ -259,11 +259,27 @@
 // Sequence packets default are closed in P2PVM-IO
 {$UNDEF UsedSequencePacketOnP2PVM}
 
+// P2PVM packet encryption, if need to be compatible old versions of ZNet, do not used Encrypt_P2PVM_Packet
+{$UNDEF Encrypt_P2PVM_Packet}
+
 // CommunicationFramework used QuietMode
 {$UNDEF Communication_QuietMode}
 
 // Core_Synchronize_Technology is Use TThreadPost technology override for TThread.Synchronize
 {$DEFINE Core_Synchronize_Technology}
+
+// core Limit Maximum TCompute Threads, Some CPU cores are few, which may cause TCompute to stop
+// maybe resident threads consume a large number of threads,include,Z.AI(DNN-Thread Tech),ZDB2(Thread-Queue Tech))
+// MaxComputeThread default limit parameter = CpuCount*20
+{$UNDEF LimitMaxComputeThread}
+
+// when the c4 network is deployed and connected for the first time,
+// if a connection failure occurs, it is mostly due to the server being started or maintained.
+// at this time, c4 will try to connect repeatedly
+// after opening this switch, it can facilitate large-scale system integration and deployment.
+// the fault repair time can only last for 4 hours. If it exceeds this time, it will be considered a failure
+// this "ZNet_C4_Auto_Repair_First_BuildDependNetwork_Fault" is effective for IoT device deployment and large-scale server groups.
+{$DEFINE ZNet_C4_Auto_Repair_First_BuildDependNetwork_Fault}
 
 {$IFDEF DEBUG}
   // initialization status prompt
@@ -272,6 +288,14 @@
   {$WARNINGS ON}
   // JPEG support can output debug info
   {$UNDEF JPEG_Debug}
+  // show ZDB2 free log in progress
+  {$UNDEF SHOW_ZDB2_Data_Free_LOG}
+  // Enabled ZDB2 Load Thread
+  {$UNDEF Enabled_ZDB2_Load_Thread}
+  // show TZDB2_Th_Engine.Build() options
+  {$UNDEF SHOW_ZDB2_THREAD_BUILD_LOG}
+  // show DisposeObject_PrintInfo class log
+  {$DEFINE SHOW_DISPOSEOBJECT_PRINTINFO_LOG}
 {$ELSE DEBUG}
   // initialization status prompt
   {$UNDEF initializationStatus}
@@ -283,6 +307,14 @@
   {$ENDIF FPC}
   // JPEG support can output debug info
   {$UNDEF JPEG_Debug}
+  // show ZDB2 free log in progress
+  {$UNDEF SHOW_ZDB2_Data_Free_LOG}
+  // Enabled ZDB2 Load Thread
+  {$DEFINE Enabled_ZDB2_Load_Thread}
+  // show TZDB2_Th_Engine.Build() options
+  {$UNDEF SHOW_ZDB2_THREAD_BUILD_LOG}
+  // show DisposeObject_PrintInfo class log
+  {$UNDEF SHOW_DISPOSEOBJECT_PRINTINFO_LOG}
 {$ENDIF DEBUG}
 
 {$IFDEF Parallel}
@@ -312,7 +344,7 @@
 {$A+} { Word Align Data }
 {$Q-} { Overflow checking }
 {$B-} { Complete boolean evaluation }
-{$J+} { Writeable typed constants }
+{$J-} { Writeable typed constants }
 
 (*
   Pointer math is simply treating any given typed pointer in some narrow,

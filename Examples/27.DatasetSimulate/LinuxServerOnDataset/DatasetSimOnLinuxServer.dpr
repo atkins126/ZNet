@@ -129,7 +129,7 @@ begin
         queryRec_Ptr^.dPipe := dPipe;
         queryRec_Ptr^.qState := @qState;
         try
-          Allowed := Boolean(queryRec_Ptr^.op.Execute(queryRec_Ptr^.opR));
+          Allowed := Boolean(queryRec_Ptr^.op.OpCode_Execute(queryRec_Ptr^.opR));
           if Allowed then
             nop;
         except
@@ -142,7 +142,7 @@ begin
     procedure(dPipe: TZDBPipeline)
     var
       queryRec_Ptr: POpCodeRun_Record;
-      r_io_def: TPeerClientUserDefineForRecvTunnel_NoAuth;
+      r_io_def: TService_RecvTunnel_UserDefine_NoAuth;
       de: TDataFrameEngine;
       mystream: TMemoryStream64;
     begin
@@ -279,7 +279,7 @@ begin
       serv.Progress;
       serv.zdb.Progress;
       if serv.RecvTunnel.Count > 0 then
-          Z.Core.CheckThreadSynchronize()
+          Z.Core.CheckThreadSynchronize(1)
       else
           Z.Core.CheckThreadSynchronize(10);
     end;

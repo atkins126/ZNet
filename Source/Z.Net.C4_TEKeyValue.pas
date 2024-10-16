@@ -1,8 +1,38 @@
+(*
+https://zpascal.net
+https://github.com/PassByYou888/ZNet
+https://github.com/PassByYou888/zRasterization
+https://github.com/PassByYou888/ZSnappy
+https://github.com/PassByYou888/Z-AI1.4
+https://github.com/PassByYou888/InfiniteIoT
+https://github.com/PassByYou888/zMonitor_3rd_Core
+https://github.com/PassByYou888/tcmalloc4p
+https://github.com/PassByYou888/jemalloc4p
+https://github.com/PassByYou888/zCloud
+https://github.com/PassByYou888/ZServer4D
+https://github.com/PassByYou888/zShell
+https://github.com/PassByYou888/ZDB2.0
+https://github.com/PassByYou888/zGameWare
+https://github.com/PassByYou888/CoreCipher
+https://github.com/PassByYou888/zChinese
+https://github.com/PassByYou888/zSound
+https://github.com/PassByYou888/zExpression
+https://github.com/PassByYou888/ZInstaller2.0
+https://github.com/PassByYou888/zAI
+https://github.com/PassByYou888/NetFileService
+https://github.com/PassByYou888/zAnalysis
+https://github.com/PassByYou888/PascalString
+https://github.com/PassByYou888/zInstaller
+https://github.com/PassByYou888/zTranslate
+https://github.com/PassByYou888/zVision
+https://github.com/PassByYou888/FFMPEG-Header
+*)
 { ****************************************************************************** }
 { * cloud 4.0 text engine key-value service                                    * }
 { ****************************************************************************** }
 unit Z.Net.C4_TEKeyValue;
 
+{$DEFINE FPC_DELPHI_MODE}
 {$I Z.Define.inc}
 
 interface
@@ -15,12 +45,13 @@ uses Variants,
   Z.Geometry2D, Z.DFE, Z.ListEngine,
   Z.Parsing, Z.Expression, Z.OpCode,
   Z.Notify, Z.Cipher, Z.MemoryStream,
+  Z.FragmentBuffer, // solve for discontinuous space
   Z.Net, Z.Net.PhysicsIO, Z.Net.DoubleTunnelIO.NoAuth, Z.Net.C4,
   Z.TextDataEngine,
   Z.ZDB2.TE, Z.ZDB2, Z.HashList.Templet;
 
 type
-  TC40_TEKeyValue_Service_Hash_Pool_Decl = {$IFDEF FPC}specialize {$ENDIF FPC}TString_Big_Hash_Pair_Pool<TZDB2_HashTextEngine>;
+  TC40_TEKeyValue_Service_Hash_Pool_Decl = TString_Big_Hash_Pair_Pool<TZDB2_HashTextEngine>;
 
   TC40_TEKeyValue_Service_Hash_Pool = class(TC40_TEKeyValue_Service_Hash_Pool_Decl)
   public
@@ -87,7 +118,7 @@ type
   TC40_TEKeyValue_Client_GetTE_P = reference to procedure(sender: TC40_TEKeyValue_Client; TE: THashTextEngine);
 {$ENDIF FPC}
 
-  TC40_TEKeyValue_Client_GetTE = class(TOnResultBridge)
+  TC40_TEKeyValue_Client_GetTE = class(TOnResult_Bridge)
   public
     Client: TC40_TEKeyValue_Client;
     OnResultC: TC40_TEKeyValue_Client_GetTE_C;
@@ -105,7 +136,7 @@ type
   TC40_TEKeyValue_Client_GetSection_P = reference to procedure(sender: TC40_TEKeyValue_Client; arry: U_StringArray);
 {$ENDIF FPC}
 
-  TC40_TEKeyValue_Client_GetSection = class(TOnResultBridge)
+  TC40_TEKeyValue_Client_GetSection = class(TOnResult_Bridge)
   public
     Client: TC40_TEKeyValue_Client;
     OnResultC: TC40_TEKeyValue_Client_GetSection_C;
@@ -123,7 +154,7 @@ type
   TC40_TEKeyValue_Client_GetKey_P = reference to procedure(sender: TC40_TEKeyValue_Client; arry: U_StringArray);
 {$ENDIF FPC}
 
-  TC40_TEKeyValue_Client_GetKey = class(TOnResultBridge)
+  TC40_TEKeyValue_Client_GetKey = class(TOnResult_Bridge)
   public
     Client: TC40_TEKeyValue_Client;
     OnResultC: TC40_TEKeyValue_Client_GetKey_C;
@@ -141,7 +172,7 @@ type
   TC40_TEKeyValue_Client_GetTextKey_P = reference to procedure(sender: TC40_TEKeyValue_Client; arry: U_StringArray);
 {$ENDIF FPC}
 
-  TC40_TEKeyValue_Client_GetTextKey = class(TOnResultBridge)
+  TC40_TEKeyValue_Client_GetTextKey = class(TOnResult_Bridge)
   public
     Client: TC40_TEKeyValue_Client;
     OnResultC: TC40_TEKeyValue_Client_GetTextKey_C;
@@ -159,7 +190,7 @@ type
   TC40_TEKeyValue_Client_GetKeyValue_P = reference to procedure(sender: TC40_TEKeyValue_Client; L: THashVariantList);
 {$ENDIF FPC}
 
-  TC40_TEKeyValue_Client_GetKeyValue = class(TOnResultBridge)
+  TC40_TEKeyValue_Client_GetKeyValue = class(TOnResult_Bridge)
   public
     Client: TC40_TEKeyValue_Client;
     OnResultC: TC40_TEKeyValue_Client_GetKeyValue_C;
@@ -177,7 +208,7 @@ type
   TC40_TEKeyValue_Client_GetTextKeyValue_P = reference to procedure(sender: TC40_TEKeyValue_Client; L: THashStringList);
 {$ENDIF FPC}
 
-  TC40_TEKeyValue_Client_GetTextKeyValue = class(TOnResultBridge)
+  TC40_TEKeyValue_Client_GetTextKeyValue = class(TOnResult_Bridge)
   public
     Client: TC40_TEKeyValue_Client;
     OnResultC: TC40_TEKeyValue_Client_GetTextKeyValue_C;
@@ -195,7 +226,7 @@ type
   TC40_TEKeyValue_Client_ExistsTE_P = reference to procedure(sender: TC40_TEKeyValue_Client; state_: Boolean);
 {$ENDIF FPC}
 
-  TC40_TEKeyValue_Client_ExistsTE = class(TOnResultBridge)
+  TC40_TEKeyValue_Client_ExistsTE = class(TOnResult_Bridge)
   public
     Client: TC40_TEKeyValue_Client;
     OnResultC: TC40_TEKeyValue_Client_ExistsTE_C;
@@ -213,7 +244,7 @@ type
   TC40_TEKeyValue_Client_ExistsSection_P = reference to procedure(sender: TC40_TEKeyValue_Client; state_: Boolean);
 {$ENDIF FPC}
 
-  TC40_TEKeyValue_Client_ExistsSection = class(TOnResultBridge)
+  TC40_TEKeyValue_Client_ExistsSection = class(TOnResult_Bridge)
   public
     Client: TC40_TEKeyValue_Client;
     OnResultC: TC40_TEKeyValue_Client_ExistsSection_C;
@@ -231,7 +262,7 @@ type
   TC40_TEKeyValue_Client_ExistsKey_P = reference to procedure(sender: TC40_TEKeyValue_Client; state_: Boolean);
 {$ENDIF FPC}
 
-  TC40_TEKeyValue_Client_ExistsKey = class(TOnResultBridge)
+  TC40_TEKeyValue_Client_ExistsKey = class(TOnResult_Bridge)
   public
     Client: TC40_TEKeyValue_Client;
     OnResultC: TC40_TEKeyValue_Client_ExistsKey_C;
@@ -249,7 +280,7 @@ type
   TC40_TEKeyValue_Client_GetValue_P = reference to procedure(sender: TC40_TEKeyValue_Client; Value_: Variant);
 {$ENDIF FPC}
 
-  TC40_TEKeyValue_Client_GetValue = class(TOnResultBridge)
+  TC40_TEKeyValue_Client_GetValue = class(TOnResult_Bridge)
   public
     Client: TC40_TEKeyValue_Client;
     OnResultC: TC40_TEKeyValue_Client_GetValue_C;
@@ -267,7 +298,7 @@ type
   TC40_TEKeyValue_Client_GetTextValue_P = reference to procedure(sender: TC40_TEKeyValue_Client; Value_: U_String);
 {$ENDIF FPC}
 
-  TC40_TEKeyValue_Client_GetTextValue = class(TOnResultBridge)
+  TC40_TEKeyValue_Client_GetTextValue = class(TOnResult_Bridge)
   public
     Client: TC40_TEKeyValue_Client;
     OnResultC: TC40_TEKeyValue_Client_GetTextValue_C;
@@ -293,7 +324,7 @@ type
   TC40_TEKeyValue_Client_SearchTE_P = reference to procedure(sender: TC40_TEKeyValue_Client; arry: TC40_TEKeyValue_Client_SearchTE_Result_Array);
 {$ENDIF FPC}
 
-  TC40_TEKeyValue_Client_SearchTE = class(TOnResultBridge)
+  TC40_TEKeyValue_Client_SearchTE = class(TOnResult_Bridge)
   public
     Client: TC40_TEKeyValue_Client;
     OnResultC: TC40_TEKeyValue_Client_SearchTE_C;
@@ -388,7 +419,7 @@ type
     procedure SearchTE_P(filter_, exclude_, search_: U_String; search_word_: Boolean; MaxNum_: Integer; OnResult: TC40_TEKeyValue_Client_SearchTE_P);
   end;
 
-  TC40_TEKeyValue_Client_List = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<TC40_TEKeyValue_Client>;
+  TC40_TEKeyValue_Client_List = TGenericsList<TC40_TEKeyValue_Client>;
 
 implementation
 
@@ -718,7 +749,7 @@ begin
     end;
 end;
 
-procedure TC40_TEKeyValue_Service.CC_Compress_And_Reload(  var OP_Param: TOpParam);
+procedure TC40_TEKeyValue_Service.CC_Compress_And_Reload(var OP_Param: TOpParam);
 var
   New_F: U_String;
   FS: TCore_FileStream;
@@ -731,7 +762,7 @@ end;
 
 constructor TC40_TEKeyValue_Service.Create(PhysicsService_: TC40_PhysicsService; ServiceTyp, Param_: U_String);
 var
-  fs: TCore_Stream;
+  FS: TCore_Stream;
   TE: TZDB2_HashTextEngine;
   TEName_: SystemString;
 begin
@@ -742,27 +773,27 @@ begin
   ParamList.SetDefaultValue('OnlyInstance', if_(ServiceInfo.OnlyInstance, 'True', 'False'));
 
   // cmd
-  DTNoAuthService.RecvTunnel.RegisterDirectStream('Rebuild').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_Rebuild;
-  DTNoAuthService.RecvTunnel.RegisterStream('GetTE').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_GetTE;
-  DTNoAuthService.RecvTunnel.RegisterDirectStream('SetTE').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_SetTE;
-  DTNoAuthService.RecvTunnel.RegisterDirectStream('MergeTE').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_MergeTE;
-  DTNoAuthService.RecvTunnel.RegisterDirectStream('RemoveTE').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_RemoveTE;
-  DTNoAuthService.RecvTunnel.RegisterDirectStream('SearchAndRemoveTE').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_SearchAndRemoveTE;
-  DTNoAuthService.RecvTunnel.RegisterStream('GetSection').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_GetSection;
-  DTNoAuthService.RecvTunnel.RegisterStream('GetKey').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_GetKey;
-  DTNoAuthService.RecvTunnel.RegisterStream('GetTextKey').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_GetTextKey;
-  DTNoAuthService.RecvTunnel.RegisterStream('GetKeyValue').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_GetKeyValue;
-  DTNoAuthService.RecvTunnel.RegisterStream('GetTextKeyValue').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_GetTextKeyValue;
-  DTNoAuthService.RecvTunnel.RegisterStream('ExistsTE').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_ExistsTE;
-  DTNoAuthService.RecvTunnel.RegisterStream('ExistsSection').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_ExistsSection;
-  DTNoAuthService.RecvTunnel.RegisterStream('ExistsKey').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_ExistsKey;
-  DTNoAuthService.RecvTunnel.RegisterDirectStream('RemoveSection').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_RemoveSection;
-  DTNoAuthService.RecvTunnel.RegisterDirectStream('RemoveKey').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_RemoveKey;
-  DTNoAuthService.RecvTunnel.RegisterStream('GetValue').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_GetValue;
-  DTNoAuthService.RecvTunnel.RegisterStream('GetTextValue').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_GetTextValue;
-  DTNoAuthService.RecvTunnel.RegisterDirectStream('SetValue').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_SetValue;
-  DTNoAuthService.RecvTunnel.RegisterDirectStream('SetTextValue').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_SetTextValue;
-  DTNoAuthService.RecvTunnel.RegisterStream('SearchTE').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_SearchTE;
+  DTNoAuthService.RecvTunnel.RegisterDirectStream('Rebuild').OnExecute := cmd_Rebuild;
+  DTNoAuthService.RecvTunnel.RegisterStream('GetTE').OnExecute := cmd_GetTE;
+  DTNoAuthService.RecvTunnel.RegisterDirectStream('SetTE').OnExecute := cmd_SetTE;
+  DTNoAuthService.RecvTunnel.RegisterDirectStream('MergeTE').OnExecute := cmd_MergeTE;
+  DTNoAuthService.RecvTunnel.RegisterDirectStream('RemoveTE').OnExecute := cmd_RemoveTE;
+  DTNoAuthService.RecvTunnel.RegisterDirectStream('SearchAndRemoveTE').OnExecute := cmd_SearchAndRemoveTE;
+  DTNoAuthService.RecvTunnel.RegisterStream('GetSection').OnExecute := cmd_GetSection;
+  DTNoAuthService.RecvTunnel.RegisterStream('GetKey').OnExecute := cmd_GetKey;
+  DTNoAuthService.RecvTunnel.RegisterStream('GetTextKey').OnExecute := cmd_GetTextKey;
+  DTNoAuthService.RecvTunnel.RegisterStream('GetKeyValue').OnExecute := cmd_GetKeyValue;
+  DTNoAuthService.RecvTunnel.RegisterStream('GetTextKeyValue').OnExecute := cmd_GetTextKeyValue;
+  DTNoAuthService.RecvTunnel.RegisterStream('ExistsTE').OnExecute := cmd_ExistsTE;
+  DTNoAuthService.RecvTunnel.RegisterStream('ExistsSection').OnExecute := cmd_ExistsSection;
+  DTNoAuthService.RecvTunnel.RegisterStream('ExistsKey').OnExecute := cmd_ExistsKey;
+  DTNoAuthService.RecvTunnel.RegisterDirectStream('RemoveSection').OnExecute := cmd_RemoveSection;
+  DTNoAuthService.RecvTunnel.RegisterDirectStream('RemoveKey').OnExecute := cmd_RemoveKey;
+  DTNoAuthService.RecvTunnel.RegisterStream('GetValue').OnExecute := cmd_GetValue;
+  DTNoAuthService.RecvTunnel.RegisterStream('GetTextValue').OnExecute := cmd_GetTextValue;
+  DTNoAuthService.RecvTunnel.RegisterDirectStream('SetValue').OnExecute := cmd_SetValue;
+  DTNoAuthService.RecvTunnel.RegisterDirectStream('SetTextValue').OnExecute := cmd_SetTextValue;
+  DTNoAuthService.RecvTunnel.RegisterStream('SearchTE').OnExecute := cmd_SearchTE;
 
   // init DB
   ZDB2RecycleMemoryTimeOut := EStrToInt64(ParamList.GetDefaultValue('RecycleMemory', '30*1000'), 30 * 1000);
@@ -780,15 +811,27 @@ begin
   Check_And_Replace_ZDB2_Extract_FileName(C40_TEKeyValue_DB_FileName);
 
   if EStrToBool(ParamList.GetDefaultValue('ForeverSave', 'True'), True) and umlFileExists(C40_TEKeyValue_DB_FileName) then
-      fs := TCore_FileStream.Create(C40_TEKeyValue_DB_FileName, fmOpenReadWrite)
+    begin
+{$IFDEF C4_Safe_Flush}
+      FS := TSafe_Flush_Stream.Create(C40_TEKeyValue_DB_FileName, False, True);
+{$ELSE C4_Safe_Flush}
+      FS := TCore_FileStream.Create(C40_TEKeyValue_DB_FileName, fmOpenReadWrite);
+{$ENDIF C4_Safe_Flush}
+    end
   else
-      fs := TCore_FileStream.Create(C40_TEKeyValue_DB_FileName, fmCreate);
+    begin
+{$IFDEF C4_Safe_Flush}
+      FS := TSafe_Flush_Stream.Create(C40_TEKeyValue_DB_FileName, True, True);
+{$ELSE C4_Safe_Flush}
+      FS := TCore_FileStream.Create(C40_TEKeyValue_DB_FileName, fmCreate);
+{$ENDIF C4_Safe_Flush}
+    end;
 
   TEKeyValue_DB := TZDB2_List_HashTextEngine.Create(
     TZDB2_HashTextEngine,
     nil,
     ZDB2RecycleMemoryTimeOut,
-    fs,
+    FS,
     False,
     ZDB2DeltaSpace,
     ZDB2BlockSize,
@@ -815,7 +858,7 @@ begin
   if not C40_QuietMode then
       DoStatus('extract Text Engine Database done.');
 
-  Register_ConsoleCommand('Compress_And_Reload', 'Compress and reload.').OnEvent_M := {$IFDEF FPC}@{$ENDIF FPC}CC_Compress_And_Reload;
+  Register_ConsoleCommand('Compress_And_Reload', 'Compress and reload.').OnEvent_M := CC_Compress_And_Reload;
 end;
 
 destructor TC40_TEKeyValue_Service.Destroy;
@@ -877,10 +920,10 @@ begin
 
   try
     if Assigned(OnResultC) then
-        OnResultC(Client, TE);
-    if Assigned(OnResultM) then
-        OnResultM(Client, TE);
-    if Assigned(OnResultP) then
+        OnResultC(Client, TE)
+    else if Assigned(OnResultM) then
+        OnResultM(Client, TE)
+    else if Assigned(OnResultP) then
         OnResultP(Client, TE);
   except
   end;
@@ -911,10 +954,10 @@ begin
 
   try
     if Assigned(OnResultC) then
-        OnResultC(Client, arry);
-    if Assigned(OnResultM) then
-        OnResultM(Client, arry);
-    if Assigned(OnResultP) then
+        OnResultC(Client, arry)
+    else if Assigned(OnResultM) then
+        OnResultM(Client, arry)
+    else if Assigned(OnResultP) then
         OnResultP(Client, arry);
   except
   end;
@@ -946,10 +989,10 @@ begin
 
   try
     if Assigned(OnResultC) then
-        OnResultC(Client, arry);
-    if Assigned(OnResultM) then
-        OnResultM(Client, arry);
-    if Assigned(OnResultP) then
+        OnResultC(Client, arry)
+    else if Assigned(OnResultM) then
+        OnResultM(Client, arry)
+    else if Assigned(OnResultP) then
         OnResultP(Client, arry);
   except
   end;
@@ -981,10 +1024,10 @@ begin
 
   try
     if Assigned(OnResultC) then
-        OnResultC(Client, arry);
-    if Assigned(OnResultM) then
-        OnResultM(Client, arry);
-    if Assigned(OnResultP) then
+        OnResultC(Client, arry)
+    else if Assigned(OnResultM) then
+        OnResultM(Client, arry)
+    else if Assigned(OnResultP) then
         OnResultP(Client, arry);
   except
   end;
@@ -1010,10 +1053,10 @@ begin
 
   try
     if Assigned(OnResultC) then
-        OnResultC(Client, L);
-    if Assigned(OnResultM) then
-        OnResultM(Client, L);
-    if Assigned(OnResultP) then
+        OnResultC(Client, L)
+    else if Assigned(OnResultM) then
+        OnResultM(Client, L)
+    else if Assigned(OnResultP) then
         OnResultP(Client, L);
   except
   end;
@@ -1038,10 +1081,10 @@ begin
 
   try
     if Assigned(OnResultC) then
-        OnResultC(Client, L);
-    if Assigned(OnResultM) then
-        OnResultM(Client, L);
-    if Assigned(OnResultP) then
+        OnResultC(Client, L)
+    else if Assigned(OnResultM) then
+        OnResultM(Client, L)
+    else if Assigned(OnResultP) then
         OnResultP(Client, L);
   except
   end;
@@ -1065,10 +1108,10 @@ begin
 
   try
     if Assigned(OnResultC) then
-        OnResultC(Client, state_);
-    if Assigned(OnResultM) then
-        OnResultM(Client, state_);
-    if Assigned(OnResultP) then
+        OnResultC(Client, state_)
+    else if Assigned(OnResultM) then
+        OnResultM(Client, state_)
+    else if Assigned(OnResultP) then
         OnResultP(Client, state_);
   except
   end;
@@ -1092,10 +1135,10 @@ begin
 
   try
     if Assigned(OnResultC) then
-        OnResultC(Client, state_);
-    if Assigned(OnResultM) then
-        OnResultM(Client, state_);
-    if Assigned(OnResultP) then
+        OnResultC(Client, state_)
+    else if Assigned(OnResultM) then
+        OnResultM(Client, state_)
+    else if Assigned(OnResultP) then
         OnResultP(Client, state_);
   except
   end;
@@ -1119,10 +1162,10 @@ begin
 
   try
     if Assigned(OnResultC) then
-        OnResultC(Client, state_);
-    if Assigned(OnResultM) then
-        OnResultM(Client, state_);
-    if Assigned(OnResultP) then
+        OnResultC(Client, state_)
+    else if Assigned(OnResultM) then
+        OnResultM(Client, state_)
+    else if Assigned(OnResultP) then
         OnResultP(Client, state_);
   except
   end;
@@ -1147,10 +1190,10 @@ begin
 
   try
     if Assigned(OnResultC) then
-        OnResultC(Client, Value_);
-    if Assigned(OnResultM) then
-        OnResultM(Client, Value_);
-    if Assigned(OnResultP) then
+        OnResultC(Client, Value_)
+    else if Assigned(OnResultM) then
+        OnResultM(Client, Value_)
+    else if Assigned(OnResultP) then
         OnResultP(Client, Value_);
   except
   end;
@@ -1176,10 +1219,10 @@ begin
 
   try
     if Assigned(OnResultC) then
-        OnResultC(Client, Value_);
-    if Assigned(OnResultM) then
-        OnResultM(Client, Value_);
-    if Assigned(OnResultP) then
+        OnResultC(Client, Value_)
+    else if Assigned(OnResultM) then
+        OnResultM(Client, Value_)
+    else if Assigned(OnResultP) then
         OnResultP(Client, Value_);
   except
   end;
@@ -1214,10 +1257,10 @@ begin
 
   try
     if Assigned(OnResultC) then
-        OnResultC(Client, arry);
-    if Assigned(OnResultM) then
-        OnResultM(Client, arry);
-    if Assigned(OnResultP) then
+        OnResultC(Client, arry)
+    else if Assigned(OnResultM) then
+        OnResultM(Client, arry)
+    else if Assigned(OnResultP) then
         OnResultP(Client, arry);
   except
   end;
@@ -1257,14 +1300,14 @@ end;
 
 procedure TC40_TEKeyValue_Client.GetTE_Bridge(TEName_: U_String; Bridge_IO_: TPeerIO);
 var
-  tmp: TStreamEventBridge;
+  tmp: TStream_Event_Bridge;
   D: TDFE;
 begin
-  tmp := TStreamEventBridge.Create(Bridge_IO_);
+  tmp := TStream_Event_Bridge.Create(Bridge_IO_);
 
   D := TDFE.Create;
   D.WriteString(TEName_);
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetTE', D, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetTE', D, tmp.DoStreamEvent);
   disposeObject(D);
 end;
 
@@ -1279,7 +1322,7 @@ begin
 
   D := TDFE.Create;
   D.WriteString(TEName_);
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetTE', D, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetTE', D, tmp.DoStreamEvent);
   disposeObject(D);
 end;
 
@@ -1294,7 +1337,7 @@ begin
 
   D := TDFE.Create;
   D.WriteString(TEName_);
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetTE', D, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetTE', D, tmp.DoStreamEvent);
   disposeObject(D);
 end;
 
@@ -1309,7 +1352,7 @@ begin
 
   D := TDFE.Create;
   D.WriteString(TEName_);
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetTE', D, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetTE', D, tmp.DoStreamEvent);
   disposeObject(D);
 end;
 
@@ -1357,14 +1400,14 @@ end;
 
 procedure TC40_TEKeyValue_Client.GetSection_Bridge(TEName_: U_String; Bridge_IO_: TPeerIO);
 var
-  tmp: TStreamEventBridge;
+  tmp: TStream_Event_Bridge;
   D: TDFE;
 begin
-  tmp := TStreamEventBridge.Create(Bridge_IO_);
+  tmp := TStream_Event_Bridge.Create(Bridge_IO_);
 
   D := TDFE.Create;
   D.WriteString(TEName_);
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetSection', D, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetSection', D, tmp.DoStreamEvent);
   disposeObject(D);
 end;
 
@@ -1379,7 +1422,7 @@ begin
 
   D := TDFE.Create;
   D.WriteString(TEName_);
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetSection', D, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetSection', D, tmp.DoStreamEvent);
   disposeObject(D);
 end;
 
@@ -1394,7 +1437,7 @@ begin
 
   D := TDFE.Create;
   D.WriteString(TEName_);
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetSection', D, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetSection', D, tmp.DoStreamEvent);
   disposeObject(D);
 end;
 
@@ -1409,21 +1452,21 @@ begin
 
   D := TDFE.Create;
   D.WriteString(TEName_);
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetSection', D, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetSection', D, tmp.DoStreamEvent);
   disposeObject(D);
 end;
 
 procedure TC40_TEKeyValue_Client.GetKey_Bridge(TEName_, Section_: U_String; Bridge_IO_: TPeerIO);
 var
-  tmp: TStreamEventBridge;
+  tmp: TStream_Event_Bridge;
   D: TDFE;
 begin
-  tmp := TStreamEventBridge.Create(Bridge_IO_);
+  tmp := TStream_Event_Bridge.Create(Bridge_IO_);
 
   D := TDFE.Create;
   D.WriteString(TEName_);
   D.WriteString(Section_);
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetKey', D, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetKey', D, tmp.DoStreamEvent);
   disposeObject(D);
 end;
 
@@ -1439,7 +1482,7 @@ begin
   D := TDFE.Create;
   D.WriteString(TEName_);
   D.WriteString(Section_);
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetKey', D, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetKey', D, tmp.DoStreamEvent);
   disposeObject(D);
 end;
 
@@ -1455,7 +1498,7 @@ begin
   D := TDFE.Create;
   D.WriteString(TEName_);
   D.WriteString(Section_);
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetKey', D, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetKey', D, tmp.DoStreamEvent);
   disposeObject(D);
 end;
 
@@ -1471,21 +1514,21 @@ begin
   D := TDFE.Create;
   D.WriteString(TEName_);
   D.WriteString(Section_);
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetKey', D, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetKey', D, tmp.DoStreamEvent);
   disposeObject(D);
 end;
 
 procedure TC40_TEKeyValue_Client.GetTextKey_Bridge(TEName_, Section_: U_String; Bridge_IO_: TPeerIO);
 var
-  tmp: TStreamEventBridge;
+  tmp: TStream_Event_Bridge;
   D: TDFE;
 begin
-  tmp := TStreamEventBridge.Create(Bridge_IO_);
+  tmp := TStream_Event_Bridge.Create(Bridge_IO_);
 
   D := TDFE.Create;
   D.WriteString(TEName_);
   D.WriteString(Section_);
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetTextKey', D, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetTextKey', D, tmp.DoStreamEvent);
   disposeObject(D);
 end;
 
@@ -1501,7 +1544,7 @@ begin
   D := TDFE.Create;
   D.WriteString(TEName_);
   D.WriteString(Section_);
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetTextKey', D, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetTextKey', D, tmp.DoStreamEvent);
   disposeObject(D);
 end;
 
@@ -1517,7 +1560,7 @@ begin
   D := TDFE.Create;
   D.WriteString(TEName_);
   D.WriteString(Section_);
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetTextKey', D, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetTextKey', D, tmp.DoStreamEvent);
   disposeObject(D);
 end;
 
@@ -1533,21 +1576,21 @@ begin
   D := TDFE.Create;
   D.WriteString(TEName_);
   D.WriteString(Section_);
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetTextKey', D, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetTextKey', D, tmp.DoStreamEvent);
   disposeObject(D);
 end;
 
 procedure TC40_TEKeyValue_Client.GetKeyValue_Bridge(TEName_, Section_: U_String; Bridge_IO_: TPeerIO);
 var
-  tmp: TStreamEventBridge;
+  tmp: TStream_Event_Bridge;
   D: TDFE;
 begin
-  tmp := TStreamEventBridge.Create(Bridge_IO_);
+  tmp := TStream_Event_Bridge.Create(Bridge_IO_);
 
   D := TDFE.Create;
   D.WriteString(TEName_);
   D.WriteString(Section_);
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetKeyValue', D, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetKeyValue', D, tmp.DoStreamEvent);
   disposeObject(D);
 end;
 
@@ -1563,7 +1606,7 @@ begin
   D := TDFE.Create;
   D.WriteString(TEName_);
   D.WriteString(Section_);
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetKeyValue', D, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetKeyValue', D, tmp.DoStreamEvent);
   disposeObject(D);
 end;
 
@@ -1579,7 +1622,7 @@ begin
   D := TDFE.Create;
   D.WriteString(TEName_);
   D.WriteString(Section_);
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetKeyValue', D, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetKeyValue', D, tmp.DoStreamEvent);
   disposeObject(D);
 end;
 
@@ -1595,21 +1638,21 @@ begin
   D := TDFE.Create;
   D.WriteString(TEName_);
   D.WriteString(Section_);
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetKeyValue', D, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetKeyValue', D, tmp.DoStreamEvent);
   disposeObject(D);
 end;
 
 procedure TC40_TEKeyValue_Client.GetTextKeyValue_Bridge(TEName_, Section_: U_String; Bridge_IO_: TPeerIO);
 var
-  tmp: TStreamEventBridge;
+  tmp: TStream_Event_Bridge;
   D: TDFE;
 begin
-  tmp := TStreamEventBridge.Create(Bridge_IO_);
+  tmp := TStream_Event_Bridge.Create(Bridge_IO_);
 
   D := TDFE.Create;
   D.WriteString(TEName_);
   D.WriteString(Section_);
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetTextKeyValue', D, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetTextKeyValue', D, tmp.DoStreamEvent);
   disposeObject(D);
 end;
 
@@ -1625,7 +1668,7 @@ begin
   D := TDFE.Create;
   D.WriteString(TEName_);
   D.WriteString(Section_);
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetTextKeyValue', D, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetTextKeyValue', D, tmp.DoStreamEvent);
   disposeObject(D);
 end;
 
@@ -1641,7 +1684,7 @@ begin
   D := TDFE.Create;
   D.WriteString(TEName_);
   D.WriteString(Section_);
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetTextKeyValue', D, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetTextKeyValue', D, tmp.DoStreamEvent);
   disposeObject(D);
 end;
 
@@ -1657,20 +1700,20 @@ begin
   D := TDFE.Create;
   D.WriteString(TEName_);
   D.WriteString(Section_);
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetTextKeyValue', D, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetTextKeyValue', D, tmp.DoStreamEvent);
   disposeObject(D);
 end;
 
 procedure TC40_TEKeyValue_Client.ExistsTE_Bridge(TEName_: U_String; Bridge_IO_: TPeerIO);
 var
-  tmp: TStreamEventBridge;
+  tmp: TStream_Event_Bridge;
   D: TDFE;
 begin
-  tmp := TStreamEventBridge.Create(Bridge_IO_);
+  tmp := TStream_Event_Bridge.Create(Bridge_IO_);
 
   D := TDFE.Create;
   D.WriteString(TEName_);
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('ExistsTE', D, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('ExistsTE', D, tmp.DoStreamEvent);
   disposeObject(D);
 end;
 
@@ -1685,7 +1728,7 @@ begin
 
   D := TDFE.Create;
   D.WriteString(TEName_);
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('ExistsTE', D, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('ExistsTE', D, tmp.DoStreamEvent);
   disposeObject(D);
 end;
 
@@ -1700,7 +1743,7 @@ begin
 
   D := TDFE.Create;
   D.WriteString(TEName_);
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('ExistsTE', D, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('ExistsTE', D, tmp.DoStreamEvent);
   disposeObject(D);
 end;
 
@@ -1715,21 +1758,21 @@ begin
 
   D := TDFE.Create;
   D.WriteString(TEName_);
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('ExistsTE', D, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('ExistsTE', D, tmp.DoStreamEvent);
   disposeObject(D);
 end;
 
 procedure TC40_TEKeyValue_Client.ExistsSection_Bridge(TEName_, Section_: U_String; Bridge_IO_: TPeerIO);
 var
-  tmp: TStreamEventBridge;
+  tmp: TStream_Event_Bridge;
   D: TDFE;
 begin
-  tmp := TStreamEventBridge.Create(Bridge_IO_);
+  tmp := TStream_Event_Bridge.Create(Bridge_IO_);
 
   D := TDFE.Create;
   D.WriteString(TEName_);
   D.WriteString(Section_);
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('ExistsSection', D, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('ExistsSection', D, tmp.DoStreamEvent);
   disposeObject(D);
 end;
 
@@ -1745,7 +1788,7 @@ begin
   D := TDFE.Create;
   D.WriteString(TEName_);
   D.WriteString(Section_);
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('ExistsSection', D, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('ExistsSection', D, tmp.DoStreamEvent);
   disposeObject(D);
 end;
 
@@ -1761,7 +1804,7 @@ begin
   D := TDFE.Create;
   D.WriteString(TEName_);
   D.WriteString(Section_);
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('ExistsSection', D, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('ExistsSection', D, tmp.DoStreamEvent);
   disposeObject(D);
 end;
 
@@ -1777,22 +1820,22 @@ begin
   D := TDFE.Create;
   D.WriteString(TEName_);
   D.WriteString(Section_);
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('ExistsSection', D, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('ExistsSection', D, tmp.DoStreamEvent);
   disposeObject(D);
 end;
 
 procedure TC40_TEKeyValue_Client.ExistsKey_Bridge(TEName_, Section_, Key_: U_String; Bridge_IO_: TPeerIO);
 var
-  tmp: TStreamEventBridge;
+  tmp: TStream_Event_Bridge;
   D: TDFE;
 begin
-  tmp := TStreamEventBridge.Create(Bridge_IO_);
+  tmp := TStream_Event_Bridge.Create(Bridge_IO_);
 
   D := TDFE.Create;
   D.WriteString(TEName_);
   D.WriteString(Section_);
   D.WriteString(Key_);
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('ExistsKey', D, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('ExistsKey', D, tmp.DoStreamEvent);
   disposeObject(D);
 end;
 
@@ -1809,7 +1852,7 @@ begin
   D.WriteString(TEName_);
   D.WriteString(Section_);
   D.WriteString(Key_);
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('ExistsKey', D, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('ExistsKey', D, tmp.DoStreamEvent);
   disposeObject(D);
 end;
 
@@ -1826,7 +1869,7 @@ begin
   D.WriteString(TEName_);
   D.WriteString(Section_);
   D.WriteString(Key_);
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('ExistsKey', D, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('ExistsKey', D, tmp.DoStreamEvent);
   disposeObject(D);
 end;
 
@@ -1843,7 +1886,7 @@ begin
   D.WriteString(TEName_);
   D.WriteString(Section_);
   D.WriteString(Key_);
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('ExistsKey', D, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('ExistsKey', D, tmp.DoStreamEvent);
   disposeObject(D);
 end;
 
@@ -1872,17 +1915,17 @@ end;
 
 procedure TC40_TEKeyValue_Client.GetValue_Bridge(TEName_, Section_, Key_: U_String; Default_: Variant; Bridge_IO_: TPeerIO);
 var
-  tmp: TStreamEventBridge;
+  tmp: TStream_Event_Bridge;
   D: TDFE;
 begin
-  tmp := TStreamEventBridge.Create(Bridge_IO_);
+  tmp := TStream_Event_Bridge.Create(Bridge_IO_);
 
   D := TDFE.Create;
   D.WriteString(TEName_);
   D.WriteString(Section_);
   D.WriteString(Key_);
   D.WriteVariant(Default_);
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetValue', D, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetValue', D, tmp.DoStreamEvent);
   disposeObject(D);
 end;
 
@@ -1900,7 +1943,7 @@ begin
   D.WriteString(Section_);
   D.WriteString(Key_);
   D.WriteVariant(Default_);
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetValue', D, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetValue', D, tmp.DoStreamEvent);
   disposeObject(D);
 end;
 
@@ -1918,7 +1961,7 @@ begin
   D.WriteString(Section_);
   D.WriteString(Key_);
   D.WriteVariant(Default_);
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetValue', D, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetValue', D, tmp.DoStreamEvent);
   disposeObject(D);
 end;
 
@@ -1936,23 +1979,23 @@ begin
   D.WriteString(Section_);
   D.WriteString(Key_);
   D.WriteVariant(Default_);
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetValue', D, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetValue', D, tmp.DoStreamEvent);
   disposeObject(D);
 end;
 
 procedure TC40_TEKeyValue_Client.GetTextValue_Bridge(TEName_, Section_, Key_, Default_: U_String; Bridge_IO_: TPeerIO);
 var
-  tmp: TStreamEventBridge;
+  tmp: TStream_Event_Bridge;
   D: TDFE;
 begin
-  tmp := TStreamEventBridge.Create(Bridge_IO_);
+  tmp := TStream_Event_Bridge.Create(Bridge_IO_);
 
   D := TDFE.Create;
   D.WriteString(TEName_);
   D.WriteString(Section_);
   D.WriteString(Key_);
   D.WriteVariant(Default_);
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetValue', D, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetValue', D, tmp.DoStreamEvent);
   disposeObject(D);
 end;
 
@@ -1970,7 +2013,7 @@ begin
   D.WriteString(Section_);
   D.WriteString(Key_);
   D.WriteString(Default_);
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetTextValue', D, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetTextValue', D, tmp.DoStreamEvent);
   disposeObject(D);
 end;
 
@@ -1988,7 +2031,7 @@ begin
   D.WriteString(Section_);
   D.WriteString(Key_);
   D.WriteString(Default_);
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetTextValue', D, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetTextValue', D, tmp.DoStreamEvent);
   disposeObject(D);
 end;
 
@@ -2006,7 +2049,7 @@ begin
   D.WriteString(Section_);
   D.WriteString(Key_);
   D.WriteString(Default_);
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetTextValue', D, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetTextValue', D, tmp.DoStreamEvent);
   disposeObject(D);
 end;
 
@@ -2038,10 +2081,10 @@ end;
 
 procedure TC40_TEKeyValue_Client.SearchTE_Bridge(filter_, exclude_, search_: U_String; search_word_: Boolean; MaxNum_: Integer; Bridge_IO_: TPeerIO);
 var
-  tmp: TStreamEventBridge;
+  tmp: TStream_Event_Bridge;
   D: TDFE;
 begin
-  tmp := TStreamEventBridge.Create(Bridge_IO_);
+  tmp := TStream_Event_Bridge.Create(Bridge_IO_);
 
   D := TDFE.Create;
   D.WriteString(filter_);
@@ -2049,7 +2092,7 @@ begin
   D.WriteString(search_);
   D.WriteBool(search_word_);
   D.WriteInteger(MaxNum_);
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('SearchTE', D, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('SearchTE', D, tmp.DoStreamEvent);
   disposeObject(D);
 end;
 
@@ -2068,7 +2111,7 @@ begin
   D.WriteString(search_);
   D.WriteBool(search_word_);
   D.WriteInteger(MaxNum_);
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('SearchTE', D, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('SearchTE', D, tmp.DoStreamEvent);
   disposeObject(D);
 end;
 
@@ -2087,7 +2130,7 @@ begin
   D.WriteString(search_);
   D.WriteBool(search_word_);
   D.WriteInteger(MaxNum_);
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('SearchTE', D, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('SearchTE', D, tmp.DoStreamEvent);
   disposeObject(D);
 end;
 
@@ -2106,7 +2149,7 @@ begin
   D.WriteString(search_);
   D.WriteBool(search_word_);
   D.WriteInteger(MaxNum_);
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('SearchTE', D, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('SearchTE', D, tmp.DoStreamEvent);
   disposeObject(D);
 end;
 
@@ -2115,3 +2158,4 @@ initialization
 RegisterC40('TEKeyValue', TC40_TEKeyValue_Service, TC40_TEKeyValue_Client);
 
 end.
+ 

@@ -8,7 +8,7 @@ uses
   FMX.StdCtrls, FMX.Controls.Presentation, FMX.ScrollBox, FMX.Memo,
 
   Z.Net.Client.Indy, Z.DFE,
-  Z.Net, Z.Core, Z.Status;
+  Z.Net, Z.Core, Z.Status, FMX.Memo.Types;
 
 type
   TFMXDRClientForm = class(TForm)
@@ -63,12 +63,12 @@ end;
 
 procedure TFMXDRClientForm.SendRequestBtnClick(Sender: TObject);
 var
-  SendDe: TDataFrameEngine;
+  SendDe: TDFE;
 begin
   // 异步方式发送，并且接收Stream指令，反馈以proc回调触发
-  SendDe := TDataFrameEngine.Create;
+  SendDe := TDFE.Create;
   client.SendStreamCmdP('DelayResponse', SendDe,
-    procedure(Sender: TPeerClient; ResultData: TDataFrameEngine)
+    procedure(Sender: TPeerClient; ResultData: TDFE)
     begin
       while ResultData.Reader.NotEnd do
           DoStatus('server response:%s', [ResultData.Reader.ReadString]);
@@ -78,6 +78,7 @@ end;
 
 procedure TFMXDRClientForm.Timer1Timer(Sender: TObject);
 begin
+  CheckThread;
   client.Progress;
 end;
 

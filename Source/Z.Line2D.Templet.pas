@@ -1,8 +1,38 @@
+(*
+https://zpascal.net
+https://github.com/PassByYou888/ZNet
+https://github.com/PassByYou888/zRasterization
+https://github.com/PassByYou888/ZSnappy
+https://github.com/PassByYou888/Z-AI1.4
+https://github.com/PassByYou888/InfiniteIoT
+https://github.com/PassByYou888/zMonitor_3rd_Core
+https://github.com/PassByYou888/tcmalloc4p
+https://github.com/PassByYou888/jemalloc4p
+https://github.com/PassByYou888/zCloud
+https://github.com/PassByYou888/ZServer4D
+https://github.com/PassByYou888/zShell
+https://github.com/PassByYou888/ZDB2.0
+https://github.com/PassByYou888/zGameWare
+https://github.com/PassByYou888/CoreCipher
+https://github.com/PassByYou888/zChinese
+https://github.com/PassByYou888/zSound
+https://github.com/PassByYou888/zExpression
+https://github.com/PassByYou888/ZInstaller2.0
+https://github.com/PassByYou888/zAI
+https://github.com/PassByYou888/NetFileService
+https://github.com/PassByYou888/zAnalysis
+https://github.com/PassByYou888/PascalString
+https://github.com/PassByYou888/zInstaller
+https://github.com/PassByYou888/zTranslate
+https://github.com/PassByYou888/zVision
+https://github.com/PassByYou888/FFMPEG-Header
+*)
 { ****************************************************************************** }
 { * line 2d                                                                    * }
 { ****************************************************************************** }
 unit Z.Line2D.Templet;
 
+{$DEFINE FPC_DELPHI_MODE}
 {$I Z.Define.inc}
 
 interface
@@ -10,13 +40,13 @@ interface
 uses Z.Core;
 
 type
-  {$IFDEF FPC}generic{$ENDIF FPC}
-  TLine_2D_Templet<T_> = class(TCore_Object)
+  TLine_2D_Templet<T_> = class(TCore_Object_Intermediate)
   public type
     TTArry_ = array [0 .. 0] of T_;
     PTArry_ = ^TTArry_;
     PT_ = ^T_;
-  private var
+  private
+  var
     FData: PTArry_;
     FWidth, FHeight: NativeInt;
     FValue: T_;
@@ -39,11 +69,11 @@ implementation
 {$IFDEF OverflowCheck}{$Q-}{$ENDIF}
 
 
-procedure TLine_2D_Templet{$IFNDEF FPC}<T_>{$ENDIF FPC}.CreateDone;
+procedure TLine_2D_Templet<T_>.CreateDone;
 begin
 end;
 
-constructor TLine_2D_Templet{$IFNDEF FPC}<T_>{$ENDIF FPC}.Create(const data_: Pointer; const width_, height_: NativeInt; const Value_: T_; const LineTail_: Boolean);
+constructor TLine_2D_Templet<T_>.Create(const data_: Pointer; const width_, height_: NativeInt; const Value_: T_; const LineTail_: Boolean);
 begin
   inherited Create;
   FData := PTArry_(data_);
@@ -54,12 +84,12 @@ begin
   CreateDone();
 end;
 
-destructor TLine_2D_Templet{$IFNDEF FPC}<T_>{$ENDIF FPC}.Destroy;
+destructor TLine_2D_Templet<T_>.Destroy;
 begin
   inherited Destroy;
 end;
 
-procedure TLine_2D_Templet{$IFNDEF FPC}<T_>{$ENDIF FPC}.VertLine(X, y1, y2: NativeInt);
+procedure TLine_2D_Templet<T_>.VertLine(X, y1, y2: NativeInt);
 var
   i: NativeInt;
   p: PT_;
@@ -78,7 +108,7 @@ begin
       y2 := FHeight - 1;
 
   if y2 < y1 then
-      Swap(y1, y2);
+      TSwap<NativeInt>.Do_(y1, y2);
 
   p := @FData^[X + y1 * FWidth];
   for i := y1 to y2 do
@@ -88,7 +118,7 @@ begin
     end;
 end;
 
-procedure TLine_2D_Templet{$IFNDEF FPC}<T_>{$ENDIF FPC}.HorzLine(x1, Y, x2: NativeInt);
+procedure TLine_2D_Templet<T_>.HorzLine(x1, Y, x2: NativeInt);
 var
   i: NativeInt;
   p: PT_;
@@ -107,7 +137,7 @@ begin
       x2 := FWidth - 1;
 
   if x1 > x2 then
-      Swap(x1, x2);
+      TSwap<NativeInt>.Do_(x1, x2);
 
   p := @FData^[x1 + Y * FWidth];
 
@@ -118,7 +148,7 @@ begin
     end;
 end;
 
-procedure TLine_2D_Templet{$IFNDEF FPC}<T_>{$ENDIF FPC}.Line(x1, y1, x2, y2: NativeInt);
+procedure TLine_2D_Templet<T_>.Line(x1, y1, x2, y2: NativeInt);
 var
   dy, dx, SY, SX, i, Delta: NativeInt;
   pi, pl: NativeInt;
@@ -210,21 +240,23 @@ begin
       Process(@FData^[pi], FValue);
 end;
 
-procedure TLine_2D_Templet{$IFNDEF FPC}<T_>{$ENDIF FPC}.FillBox(x1, y1, x2, y2: NativeInt);
+procedure TLine_2D_Templet<T_>.FillBox(x1, y1, x2, y2: NativeInt);
 var
   i: Integer;
 begin
   if y1 > y2 then
-      Swap(y1, y2);
+      TSwap<NativeInt>.Do_(y1, y2);
   for i := y1 to y2 do
       HorzLine(x1, i, x2);
 end;
 
-procedure TLine_2D_Templet{$IFNDEF FPC}<T_>{$ENDIF FPC}.Process(const vp: PT_; const v: T_);
+procedure TLine_2D_Templet<T_>.Process(const vp: PT_; const v: T_);
 begin
   vp^ := v;
 end;
 {$IFDEF RangeCheck}{$R+}{$ENDIF}
 {$IFDEF OverflowCheck}{$Q+}{$ENDIF}
 
+
 end.
+ 

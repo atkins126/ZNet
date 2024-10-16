@@ -1,8 +1,38 @@
+(*
+https://zpascal.net
+https://github.com/PassByYou888/ZNet
+https://github.com/PassByYou888/zRasterization
+https://github.com/PassByYou888/ZSnappy
+https://github.com/PassByYou888/Z-AI1.4
+https://github.com/PassByYou888/InfiniteIoT
+https://github.com/PassByYou888/zMonitor_3rd_Core
+https://github.com/PassByYou888/tcmalloc4p
+https://github.com/PassByYou888/jemalloc4p
+https://github.com/PassByYou888/zCloud
+https://github.com/PassByYou888/ZServer4D
+https://github.com/PassByYou888/zShell
+https://github.com/PassByYou888/ZDB2.0
+https://github.com/PassByYou888/zGameWare
+https://github.com/PassByYou888/CoreCipher
+https://github.com/PassByYou888/zChinese
+https://github.com/PassByYou888/zSound
+https://github.com/PassByYou888/zExpression
+https://github.com/PassByYou888/ZInstaller2.0
+https://github.com/PassByYou888/zAI
+https://github.com/PassByYou888/NetFileService
+https://github.com/PassByYou888/zAnalysis
+https://github.com/PassByYou888/PascalString
+https://github.com/PassByYou888/zInstaller
+https://github.com/PassByYou888/zTranslate
+https://github.com/PassByYou888/zVision
+https://github.com/PassByYou888/FFMPEG-Header
+*)
 { ****************************************************************************** }
 { * ZDB 2.0 file support                                                       * }
 { ****************************************************************************** }
 unit Z.ZDB2.FileEncoder;
 
+{$DEFINE FPC_DELPHI_MODE}
 {$I Z.Define.inc}
 
 interface
@@ -16,9 +46,9 @@ uses Z.Core,
   Z.HashList.Templet, Z.DFE, Z.ZDB2, Z.IOThread, Z.Cipher;
 
 type
-  TZDB2_File_HndList = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<Integer>;
+  TZDB2_File_HndList = TGenericsList<Integer>;
 
-  TZDB2_FI = class
+  TZDB2_FI = class(TCore_Object_Intermediate)
   public
     FileName: U_String;
     FileMD5: TMD5;
@@ -34,8 +64,8 @@ type
     procedure LoadFromStream(stream: TMS64);
   end;
 
-  TZDB2_FI_Pool_Decl = {$IFDEF FPC}specialize {$ENDIF FPC} TBigList<TZDB2_FI>;
-  TZDB2_FI_Hash_Decl = {$IFDEF FPC}specialize {$ENDIF FPC} TPascalString_Big_Hash_Pair_Pool<TZDB2_FI>;
+  TZDB2_FI_Pool_Decl = TBigList<TZDB2_FI>;
+  TZDB2_FI_Hash_Decl = TPascalString_Big_Hash_Pair_Pool<TZDB2_FI>;
 
   TZDB2_FI_Hash = class(TZDB2_FI_Hash_Decl)
   public
@@ -67,7 +97,7 @@ type
 
   TOn_ZDB2_File_OnProgress = procedure(State_: SystemString; Total, Current1, Current2: Int64) of object;
 
-  TZDB2_File_Encoder = class
+  TZDB2_File_Encoder = class(TCore_Object_Intermediate)
   private
     FCore: TZDB2_Core_Space;
     FPlace: TZDB2_Space_Planner;
@@ -105,7 +135,7 @@ type
     procedure Process; override;
   end;
 
-  TZDB2_File_Decoder = class
+  TZDB2_File_Decoder = class(TCore_Object_Intermediate)
   private
     FCore: TZDB2_Core_Space;
     FIO_Thread: TIO_Thread_Base;
@@ -429,7 +459,7 @@ begin
   CompleteSize_ := 0;
 
 {$IFDEF FPC}
-  TCompute.RunP_NP(@FPC_ThRun_);
+  TCompute.RunP_NP(FPC_ThRun_);
 {$ELSE FPC}
   TCompute.RunP_NP(procedure
     var
@@ -531,7 +561,7 @@ var
   fAry: U_StringArray;
   n: SystemString;
 begin
-  fAry := umlGetFileListWithFullPath(Directory_);
+  fAry := umlGet_File_Full_Array(Directory_);
   for n in fAry do
     if not FAborted then
         EncodeFromFile(n, OwnerPath_, chunkSize_, CM, BlockSize_)
@@ -540,7 +570,7 @@ begin
 
   if IncludeSub then
     begin
-      fAry := umlGetDirListWithFullPath(Directory_);
+      fAry := umlGet_Path_Full_Array(Directory_);
       for n in fAry do
         if not FAborted then
             EncodeFromDirectory(n, IncludeSub, umlCombineWinPath(OwnerPath_, umlGetLastStr(n, '\/')), chunkSize_, CM, BlockSize_)
@@ -577,7 +607,7 @@ begin
   DisposeObject(d);
   FPlace.Flush;
   PInteger(@FCore.UserCustomHeader^[$F0])^ := FileInfo_ID;
-  FCore.Save;
+  FCore.Flush;
   FEncoderFiles.Clear;
   FFlushed := True;
 end;
@@ -818,7 +848,7 @@ begin
   Activted := TAtomBool.Create(True);
 
 {$IFDEF FPC}
-  TCompute.RunP_NP(@FPC_ThRun_);
+  TCompute.RunP_NP(FPC_ThRun_);
 {$ELSE FPC}
   TCompute.RunP_NP(procedure
     var
@@ -977,3 +1007,4 @@ initialization
 finalization
 
 end.
+ 

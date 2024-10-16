@@ -1,8 +1,38 @@
+(*
+https://zpascal.net
+https://github.com/PassByYou888/ZNet
+https://github.com/PassByYou888/zRasterization
+https://github.com/PassByYou888/ZSnappy
+https://github.com/PassByYou888/Z-AI1.4
+https://github.com/PassByYou888/InfiniteIoT
+https://github.com/PassByYou888/zMonitor_3rd_Core
+https://github.com/PassByYou888/tcmalloc4p
+https://github.com/PassByYou888/jemalloc4p
+https://github.com/PassByYou888/zCloud
+https://github.com/PassByYou888/ZServer4D
+https://github.com/PassByYou888/zShell
+https://github.com/PassByYou888/ZDB2.0
+https://github.com/PassByYou888/zGameWare
+https://github.com/PassByYou888/CoreCipher
+https://github.com/PassByYou888/zChinese
+https://github.com/PassByYou888/zSound
+https://github.com/PassByYou888/zExpression
+https://github.com/PassByYou888/ZInstaller2.0
+https://github.com/PassByYou888/zAI
+https://github.com/PassByYou888/NetFileService
+https://github.com/PassByYou888/zAnalysis
+https://github.com/PassByYou888/PascalString
+https://github.com/PassByYou888/zInstaller
+https://github.com/PassByYou888/zTranslate
+https://github.com/PassByYou888/zVision
+https://github.com/PassByYou888/FFMPEG-Header
+*)
 { ****************************************************************************** }
 { * cloud 4.0 framework-VM                                                     * }
 { ****************************************************************************** }
 unit Z.Net.C4.VM;
 
+{$DEFINE FPC_DELPHI_MODE}
 {$I Z.Define.inc}
 
 interface
@@ -29,8 +59,8 @@ uses
 type
   TC40_NoAuth_VM_Service = class(TC40_Custom_VM_Service)
   protected
-    procedure DoLinkSuccess_Event(Sender: TDTService_NoAuth; UserDefineIO: TPeerClientUserDefineForRecvTunnel_NoAuth); virtual;
-    procedure DoUserOut_Event(Sender: TDTService_NoAuth; UserDefineIO: TPeerClientUserDefineForRecvTunnel_NoAuth); virtual;
+    procedure DoLinkSuccess_Event(Sender: TDTService_NoAuth; UserDefineIO: TService_RecvTunnel_UserDefine_NoAuth); virtual;
+    procedure DoUserOut_Event(Sender: TDTService_NoAuth; UserDefineIO: TService_RecvTunnel_UserDefine_NoAuth); virtual;
   public
     Service: TDT_P2PVM_NoAuth_Service;
     DTNoAuthService: TDTService_NoAuth;
@@ -82,8 +112,8 @@ type
   protected
     procedure DoUserReg_Event(Sender: TDTService_VirtualAuth; RegIO: TVirtualRegIO); virtual;
     procedure DoUserAuth_Event(Sender: TDTService_VirtualAuth; AuthIO: TVirtualAuthIO); virtual;
-    procedure DoLinkSuccess_Event(Sender: TDTService_VirtualAuth; UserDefineIO: TPeerClientUserDefineForRecvTunnel_VirtualAuth); virtual;
-    procedure DoUserOut_Event(Sender: TDTService_VirtualAuth; UserDefineIO: TPeerClientUserDefineForRecvTunnel_VirtualAuth); virtual;
+    procedure DoLinkSuccess_Event(Sender: TDTService_VirtualAuth; UserDefineIO: TService_RecvTunnel_UserDefine_VirtualAuth); virtual;
+    procedure DoUserOut_Event(Sender: TDTService_VirtualAuth; UserDefineIO: TService_RecvTunnel_UserDefine_VirtualAuth); virtual;
   public
     Service: TDT_P2PVM_VirtualAuth_Service;
     DTVirtualAuthService: TDTService_VirtualAuth;
@@ -133,8 +163,8 @@ type
 
   TC40_VM_Service = class(TC40_Custom_VM_Service)
   protected
-    procedure DoLinkSuccess_Event(Sender: TDTService; UserDefineIO: TPeerClientUserDefineForRecvTunnel); virtual;
-    procedure DoUserOut_Event(Sender: TDTService; UserDefineIO: TPeerClientUserDefineForRecvTunnel); virtual;
+    procedure DoLinkSuccess_Event(Sender: TDTService; UserDefineIO: TService_RecvTunnel_UserDefine); virtual;
+    procedure DoUserOut_Event(Sender: TDTService; UserDefineIO: TService_RecvTunnel_UserDefine); virtual;
   public
     Service: TDT_P2PVM_Service;
     DTVirtualAuthService: TDTService;
@@ -184,12 +214,12 @@ type
 
 implementation
 
-procedure TC40_NoAuth_VM_Service.DoLinkSuccess_Event(Sender: TDTService_NoAuth; UserDefineIO: TPeerClientUserDefineForRecvTunnel_NoAuth);
+procedure TC40_NoAuth_VM_Service.DoLinkSuccess_Event(Sender: TDTService_NoAuth; UserDefineIO: TService_RecvTunnel_UserDefine_NoAuth);
 begin
   DoLinkSuccess(UserDefineIO);
 end;
 
-procedure TC40_NoAuth_VM_Service.DoUserOut_Event(Sender: TDTService_NoAuth; UserDefineIO: TPeerClientUserDefineForRecvTunnel_NoAuth);
+procedure TC40_NoAuth_VM_Service.DoUserOut_Event(Sender: TDTService_NoAuth; UserDefineIO: TService_RecvTunnel_UserDefine_NoAuth);
 begin
   DoUserOut(UserDefineIO);
 end;
@@ -210,8 +240,8 @@ begin
   Service.RecvTunnel.SyncOnCompleteBuffer := True;
   Service.QuietMode := C40_QuietMode;
 
-  Service.DTService.OnLinkSuccess := {$IFDEF FPC}@{$ENDIF FPC}DoLinkSuccess_Event;
-  Service.DTService.OnUserOut := {$IFDEF FPC}@{$ENDIF FPC}DoUserOut_Event;
+  Service.DTService.OnLinkSuccess := DoLinkSuccess_Event;
+  Service.DTService.OnUserOut := DoUserOut_Event;
   Service.DTService.FileSystem := EStrToBool(ParamList.GetDefaultValue('FileSystem', umlBoolToStr(Service.DTService.FileSystem)), Service.DTService.FileSystem);
   Service.DTService.PublicFileDirectory := umlCombinePath(C40_RootPath, ClassName);
   if not umlDirectoryExists(Service.DTService.PublicFileDirectory) then
@@ -273,7 +303,7 @@ begin
   Client.RecvTunnel.SyncOnCompleteBuffer := True;
   Client.QuietMode := C40_QuietMode;
 
-  Client.OnTunnelLink := {$IFDEF FPC}@{$ENDIF FPC}Do_DT_P2PVM_NoAuth_Custom_Client_TunnelLink;
+  Client.OnTunnelLink := Do_DT_P2PVM_NoAuth_Custom_Client_TunnelLink;
   DTNoAuthClient := Client.DTClient;
   Client.PhysicsTunnel.OnInterface := Self;
 end;
@@ -352,12 +382,12 @@ begin
   AuthIO.Accept;
 end;
 
-procedure TC40_VirtualAuth_VM_Service.DoLinkSuccess_Event(Sender: TDTService_VirtualAuth; UserDefineIO: TPeerClientUserDefineForRecvTunnel_VirtualAuth);
+procedure TC40_VirtualAuth_VM_Service.DoLinkSuccess_Event(Sender: TDTService_VirtualAuth; UserDefineIO: TService_RecvTunnel_UserDefine_VirtualAuth);
 begin
   DoLinkSuccess(UserDefineIO);
 end;
 
-procedure TC40_VirtualAuth_VM_Service.DoUserOut_Event(Sender: TDTService_VirtualAuth; UserDefineIO: TPeerClientUserDefineForRecvTunnel_VirtualAuth);
+procedure TC40_VirtualAuth_VM_Service.DoUserOut_Event(Sender: TDTService_VirtualAuth; UserDefineIO: TService_RecvTunnel_UserDefine_VirtualAuth);
 begin
   DoUserOut(UserDefineIO);
 end;
@@ -378,10 +408,10 @@ begin
   Service.RecvTunnel.SyncOnCompleteBuffer := True;
   Service.QuietMode := C40_QuietMode;
 
-  Service.DTService.OnUserAuth := {$IFDEF FPC}@{$ENDIF FPC}DoUserAuth_Event;
-  Service.DTService.OnUserReg := {$IFDEF FPC}@{$ENDIF FPC}DoUserReg_Event;
-  Service.DTService.OnLinkSuccess := {$IFDEF FPC}@{$ENDIF FPC}DoLinkSuccess_Event;
-  Service.DTService.OnUserOut := {$IFDEF FPC}@{$ENDIF FPC}DoUserOut_Event;
+  Service.DTService.OnUserAuth := DoUserAuth_Event;
+  Service.DTService.OnUserReg := DoUserReg_Event;
+  Service.DTService.OnLinkSuccess := DoLinkSuccess_Event;
+  Service.DTService.OnUserOut := DoUserOut_Event;
   Service.DTService.FileSystem := EStrToBool(ParamList.GetDefaultValue('FileSystem', umlBoolToStr(Service.DTService.FileSystem)), Service.DTService.FileSystem);
   Service.DTService.PublicFileDirectory := umlCombinePath(C40_RootPath, ClassName);
   if not umlDirectoryExists(Service.DTService.PublicFileDirectory) then
@@ -443,7 +473,7 @@ begin
   Client.RecvTunnel.SyncOnCompleteBuffer := True;
   Client.QuietMode := C40_QuietMode;
 
-  Client.OnTunnelLink := {$IFDEF FPC}@{$ENDIF FPC}Do_DT_P2PVM_VirtualAuth_Custom_Client_TunnelLink;
+  Client.OnTunnelLink := Do_DT_P2PVM_VirtualAuth_Custom_Client_TunnelLink;
   DTVirtualAuthClient := Client.DTClient;
   Client.PhysicsTunnel.OnInterface := Self;
 end;
@@ -512,12 +542,12 @@ begin
   Result := TDataStoreClient_VirtualAuth;
 end;
 
-procedure TC40_VM_Service.DoLinkSuccess_Event(Sender: TDTService; UserDefineIO: TPeerClientUserDefineForRecvTunnel);
+procedure TC40_VM_Service.DoLinkSuccess_Event(Sender: TDTService; UserDefineIO: TService_RecvTunnel_UserDefine);
 begin
   DoLinkSuccess(UserDefineIO);
 end;
 
-procedure TC40_VM_Service.DoUserOut_Event(Sender: TDTService; UserDefineIO: TPeerClientUserDefineForRecvTunnel);
+procedure TC40_VM_Service.DoUserOut_Event(Sender: TDTService; UserDefineIO: TService_RecvTunnel_UserDefine);
 begin
   DoUserOut(UserDefineIO);
 end;
@@ -538,8 +568,8 @@ begin
   Service.RecvTunnel.SyncOnCompleteBuffer := True;
   Service.QuietMode := C40_QuietMode;
 
-  Service.DTService.OnLinkSuccess := {$IFDEF FPC}@{$ENDIF FPC}DoLinkSuccess_Event;
-  Service.DTService.OnUserOut := {$IFDEF FPC}@{$ENDIF FPC}DoUserOut_Event;
+  Service.DTService.OnLinkSuccess := DoLinkSuccess_Event;
+  Service.DTService.OnUserOut := DoUserOut_Event;
   Service.DTService.FileSystem := EStrToBool(ParamList.GetDefaultValue('FileSystem', umlBoolToStr(Service.DTService.FileSystem)), Service.DTService.FileSystem);
   Service.DTService.RootPath := umlCombinePath(C40_RootPath, ClassName);
   Service.DTService.PublicPath := Service.DTService.RootPath;
@@ -602,7 +632,7 @@ begin
   Client.RecvTunnel.SyncOnCompleteBuffer := True;
   Client.QuietMode := C40_QuietMode;
 
-  Client.OnTunnelLink := {$IFDEF FPC}@{$ENDIF FPC}Do_DT_P2PVM_Custom_Client_TunnelLink;
+  Client.OnTunnelLink := Do_DT_P2PVM_Custom_Client_TunnelLink;
   DTVirtualAuthClient := Client.DTClient;
   Client.PhysicsTunnel.OnInterface := Self;
 end;
@@ -672,3 +702,4 @@ begin
 end;
 
 end.
+ 

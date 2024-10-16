@@ -1,13 +1,42 @@
+(*
+https://zpascal.net
+https://github.com/PassByYou888/ZNet
+https://github.com/PassByYou888/zRasterization
+https://github.com/PassByYou888/ZSnappy
+https://github.com/PassByYou888/Z-AI1.4
+https://github.com/PassByYou888/InfiniteIoT
+https://github.com/PassByYou888/zMonitor_3rd_Core
+https://github.com/PassByYou888/tcmalloc4p
+https://github.com/PassByYou888/jemalloc4p
+https://github.com/PassByYou888/zCloud
+https://github.com/PassByYou888/ZServer4D
+https://github.com/PassByYou888/zShell
+https://github.com/PassByYou888/ZDB2.0
+https://github.com/PassByYou888/zGameWare
+https://github.com/PassByYou888/CoreCipher
+https://github.com/PassByYou888/zChinese
+https://github.com/PassByYou888/zSound
+https://github.com/PassByYou888/zExpression
+https://github.com/PassByYou888/ZInstaller2.0
+https://github.com/PassByYou888/zAI
+https://github.com/PassByYou888/NetFileService
+https://github.com/PassByYou888/zAnalysis
+https://github.com/PassByYou888/PascalString
+https://github.com/PassByYou888/zInstaller
+https://github.com/PassByYou888/zTranslate
+https://github.com/PassByYou888/zVision
+https://github.com/PassByYou888/FFMPEG-Header
+*)
 { ****************************************************************************** }
 { * DataStore Service NoAuth                                                   * }
 { ****************************************************************************** }
 
 unit Z.Net.DataStoreService.NoAuth;
 
+{$DEFINE FPC_DELPHI_MODE}
 {$I Z.Define.inc}
 
 interface
-
 
 uses Z.Core, Z.ListEngine, Z.UnicodeMixedLib, Z.DFE, Z.MemoryStream, Z.Net, Z.TextDataEngine,
   Z.Status, Z.Cadencer, Z.Notify, Z.PascalStrings, Z.UPascalStrings, Z.Cipher, Z.ZDB.Engine, Z.ZDB.ItemStream_LIB, Z.Compress,
@@ -16,9 +45,9 @@ uses Z.Core, Z.ListEngine, Z.UnicodeMixedLib, Z.DFE, Z.MemoryStream, Z.Net, Z.Te
 
 type
   TDataStoreService_NoAuth = class;
-  TDataStoreService_PeerClientSendTunnel_NoAuth = class;
+  TDataStoreService_SendTunnel_UserDefine_NoAuth = class;
 
-  TDataStoreService_PeerClientRecvTunnel_NoAuth = class(TPeerClientUserDefineForRecvTunnel_NoAuth)
+  TDataStoreService_RecvTunnel_UserDefine_NoAuth = class(TService_RecvTunnel_UserDefine_NoAuth)
   private
     FPostPerformaceCounter: Integer;
     FLastPostPerformaceTime: TTimeTick;
@@ -34,19 +63,19 @@ type
 
     procedure Progress; override;
 
-    function SendTunnelDefine: TDataStoreService_PeerClientSendTunnel_NoAuth;
+    function SendTunnelDefine: TDataStoreService_SendTunnel_UserDefine_NoAuth;
     property PostCounterOfPerSec: Double read FPostCounterOfPerSec;
 
     { data security }
     procedure EncryptBuffer(sour: Pointer; Size: NativeInt; Encrypt: Boolean);
   end;
 
-  TDataStoreService_PeerClientSendTunnel_NoAuth = class(TPeerClientUserDefineForSendTunnel_NoAuth)
+  TDataStoreService_SendTunnel_UserDefine_NoAuth = class(TService_SendTunnel_UserDefine_NoAuth)
   public
     constructor Create(Owner_: TPeerIO); override;
     destructor Destroy; override;
 
-    function RecvTunnelDefine: TDataStoreService_PeerClientRecvTunnel_NoAuth;
+    function RecvTunnelDefine: TDataStoreService_RecvTunnel_UserDefine_NoAuth;
   end;
 
   TDataStoreService_NoAuth = class(TZNet_DoubleTunnelService_NoAuth, IZDBLocalManagerNotify)
@@ -71,8 +100,8 @@ type
     procedure DownloadQueryFilterMethod(dPipe: TZDBPipeline; var qState: TQueryState; var Allowed: Boolean);
     procedure DownloadQueryWithIDFilterMethod(dPipe: TZDBPipeline; var qState: TQueryState; var Allowed: Boolean);
 
-    procedure UserOut(UserDefineIO: TPeerClientUserDefineForRecvTunnel_NoAuth); override;
-    procedure UserLinkSuccess(UserDefineIO: TPeerClientUserDefineForRecvTunnel_NoAuth); override;
+    procedure UserOut(UserDefineIO: TService_RecvTunnel_UserDefine_NoAuth); override;
+    procedure UserLinkSuccess(UserDefineIO: TService_RecvTunnel_UserDefine_NoAuth); override;
 
     procedure Command_InitDB(Sender: TPeerIO; InData: TDFE); virtual;
     procedure Command_CloseDB(Sender: TPeerIO; InData: TDFE); virtual;
@@ -123,7 +152,7 @@ type
     procedure Progress; override;
     procedure CadencerProgress(Sender: TObject; const deltaTime, newTime: Double); override;
 
-    function GetDataStoreUserDefine(RecvCli: TPeerIO): TDataStoreService_PeerClientRecvTunnel_NoAuth;
+    function GetDataStoreUserDefine(RecvCli: TPeerIO): TDataStoreService_RecvTunnel_UserDefine_NoAuth;
 
     function RegisterQuery_C(QuerierName_: SystemString): TTDataStoreService_Query_C;
     procedure UnRegisterQuery_C(QuerierName_: SystemString);
@@ -190,7 +219,7 @@ type
 
     procedure QueryDBC(RegistedQuerier_: SystemString; SyncToClient, WriteResultToOutputDB, InMem, ReverseQuery: Boolean; dataBaseName_, OutputDatabaseName_: SystemString;
       fragmentReponseTime, MaxWait: Double; MaxQueryResult: Int64;
-      RemoteParams: THashVariantList;                                           { service ref remote parameter }
+      RemoteParams: THashVariantList; { service ref remote parameter }
       UserPointer: Pointer; UserObject: TCore_Object; UserVariant: Variant; { local event parameter }
       OnQuery_C: TUserFillQueryData_C; OnDone_C: TUserQueryDoneNotify_C); overload;
 
@@ -201,7 +230,7 @@ type
 
     procedure QueryDBM(RegistedQuerier_: SystemString; SyncToClient, WriteResultToOutputDB, InMem, ReverseQuery: Boolean; dataBaseName_, OutputDatabaseName_: SystemString;
       fragmentReponseTime, MaxWait: Double; MaxQueryResult: Int64;
-      RemoteParams: THashVariantList;                                           { service ref remote parameter }
+      RemoteParams: THashVariantList; { service ref remote parameter }
       UserPointer: Pointer; UserObject: TCore_Object; UserVariant: Variant; { local event parameter }
       OnQuery_M: TUserFillQueryData_M; OnDone_M: TUserQueryDoneNotify_M); overload;
 
@@ -212,7 +241,7 @@ type
 
     procedure QueryDBP(RegistedQuerier_: SystemString; SyncToClient, WriteResultToOutputDB, InMem, ReverseQuery: Boolean; dataBaseName_, OutputDatabaseName_: SystemString;
       fragmentReponseTime, MaxWait: Double; MaxQueryResult: Int64;
-      RemoteParams: THashVariantList;                                           { service ref remote parameter }
+      RemoteParams: THashVariantList; { service ref remote parameter }
       UserPointer: Pointer; UserObject: TCore_Object; UserVariant: Variant; { local event parameter }
       OnQuery_P: TUserFillQueryData_P; OnDone_P: TUserQueryDoneNotify_P); overload;
 
@@ -387,7 +416,7 @@ type
     BackcallPtr: UInt64;
   end;
 
-constructor TDataStoreService_PeerClientRecvTunnel_NoAuth.Create(Owner_: TPeerIO);
+constructor TDataStoreService_RecvTunnel_UserDefine_NoAuth.Create(Owner_: TPeerIO);
 type
   TCipherDef = array [0 .. 4] of TCipherSecurity;
 const
@@ -411,13 +440,13 @@ begin
   FCipherInstance.ProcessTail := True;
 end;
 
-destructor TDataStoreService_PeerClientRecvTunnel_NoAuth.Destroy;
+destructor TDataStoreService_RecvTunnel_UserDefine_NoAuth.Destroy;
 begin
   DisposeObjectAndNil(FCipherInstance);
   inherited Destroy;
 end;
 
-procedure TDataStoreService_PeerClientRecvTunnel_NoAuth.Progress;
+procedure TDataStoreService_RecvTunnel_UserDefine_NoAuth.Progress;
 var
   lastTime: TTimeTick;
 begin
@@ -440,12 +469,12 @@ begin
     end;
 end;
 
-function TDataStoreService_PeerClientRecvTunnel_NoAuth.SendTunnelDefine: TDataStoreService_PeerClientSendTunnel_NoAuth;
+function TDataStoreService_RecvTunnel_UserDefine_NoAuth.SendTunnelDefine: TDataStoreService_SendTunnel_UserDefine_NoAuth;
 begin
-  Result := SendTunnel as TDataStoreService_PeerClientSendTunnel_NoAuth;
+  Result := SendTunnel as TDataStoreService_SendTunnel_UserDefine_NoAuth;
 end;
 
-procedure TDataStoreService_PeerClientRecvTunnel_NoAuth.EncryptBuffer(sour: Pointer; Size: NativeInt; Encrypt: Boolean);
+procedure TDataStoreService_RecvTunnel_UserDefine_NoAuth.EncryptBuffer(sour: Pointer; Size: NativeInt; Encrypt: Boolean);
 begin
   if FCipherInstance = nil then
       exit;
@@ -455,19 +484,19 @@ begin
       FCipherInstance.Decrypt(sour, Size);
 end;
 
-constructor TDataStoreService_PeerClientSendTunnel_NoAuth.Create(Owner_: TPeerIO);
+constructor TDataStoreService_SendTunnel_UserDefine_NoAuth.Create(Owner_: TPeerIO);
 begin
   inherited Create(Owner_);
 end;
 
-destructor TDataStoreService_PeerClientSendTunnel_NoAuth.Destroy;
+destructor TDataStoreService_SendTunnel_UserDefine_NoAuth.Destroy;
 begin
   inherited Destroy;
 end;
 
-function TDataStoreService_PeerClientSendTunnel_NoAuth.RecvTunnelDefine: TDataStoreService_PeerClientRecvTunnel_NoAuth;
+function TDataStoreService_SendTunnel_UserDefine_NoAuth.RecvTunnelDefine: TDataStoreService_RecvTunnel_UserDefine_NoAuth;
 begin
-  Result := RecvTunnel as TDataStoreService_PeerClientRecvTunnel_NoAuth;
+  Result := RecvTunnel as TDataStoreService_RecvTunnel_UserDefine_NoAuth;
 end;
 
 procedure TDataStoreService_NoAuth.CreateQuery(pipe: TZDBPipeline);
@@ -492,7 +521,7 @@ begin
   DestStream := TMS64.Create;
   DestStream.SwapInstance(FragmentSource);
 
-  TDataStoreService_PeerClientRecvTunnel_NoAuth(pl.RecvTunnel).EncryptBuffer(DestStream.Memory, DestStream.Size, True);
+  TDataStoreService_RecvTunnel_UserDefine_NoAuth(pl.RecvTunnel).EncryptBuffer(DestStream.Memory, DestStream.Size, True);
 
   ClearBatchStream(pl.SendTunnel.Owner);
   PostBatchStream(pl.SendTunnel.Owner, DestStream, True);
@@ -567,7 +596,7 @@ begin
   end;
 end;
 
-procedure TDataStoreService_NoAuth.UserOut(UserDefineIO: TPeerClientUserDefineForRecvTunnel_NoAuth);
+procedure TDataStoreService_NoAuth.UserOut(UserDefineIO: TService_RecvTunnel_UserDefine_NoAuth);
 var
   i: Integer;
   pl: TTDataStoreService_DBPipeline;
@@ -581,13 +610,13 @@ begin
   inherited UserOut(UserDefineIO);
 end;
 
-procedure TDataStoreService_NoAuth.UserLinkSuccess(UserDefineIO: TPeerClientUserDefineForRecvTunnel_NoAuth);
+procedure TDataStoreService_NoAuth.UserLinkSuccess(UserDefineIO: TService_RecvTunnel_UserDefine_NoAuth);
 var
-  RT: TDataStoreService_PeerClientRecvTunnel_NoAuth;
+  RT: TDataStoreService_RecvTunnel_UserDefine_NoAuth;
   de: TDFE;
   arr: TDFArrayByte;
 begin
-  RT := UserDefineIO as TDataStoreService_PeerClientRecvTunnel_NoAuth;
+  RT := UserDefineIO as TDataStoreService_RecvTunnel_UserDefine_NoAuth;
   de := TDFE.Create;
   de.WriteByte(Byte(RT.FDataStoreCipherSecurity));
   arr := de.WriteArrayByte;
@@ -599,7 +628,7 @@ end;
 
 procedure TDataStoreService_NoAuth.Command_InitDB(Sender: TPeerIO; InData: TDFE);
 var
-  RT: TDataStoreService_PeerClientRecvTunnel_NoAuth;
+  RT: TDataStoreService_RecvTunnel_UserDefine_NoAuth;
   InMem: Boolean;
   dataBaseName_: SystemString;
 begin
@@ -617,7 +646,7 @@ end;
 
 procedure TDataStoreService_NoAuth.Command_CloseDB(Sender: TPeerIO; InData: TDFE);
 var
-  RT: TDataStoreService_PeerClientRecvTunnel_NoAuth;
+  RT: TDataStoreService_RecvTunnel_UserDefine_NoAuth;
   dataBaseName_: SystemString;
   CloseAndDeleted: Boolean;
 begin
@@ -636,7 +665,7 @@ end;
 
 procedure TDataStoreService_NoAuth.Command_CopyDB(Sender: TPeerIO; InData: TDFE);
 var
-  RT: TDataStoreService_PeerClientRecvTunnel_NoAuth;
+  RT: TDataStoreService_RecvTunnel_UserDefine_NoAuth;
   dataBaseName_, copy2N: SystemString;
   BackcallPtr: UInt64;
   p: POnStorePosTransformTrigger_NoAuth;
@@ -652,12 +681,12 @@ begin
   new(p);
   p^.Client_SendTunnel_ID := RT.SendTunnelID;
   p^.BackcallPtr := BackcallPtr;
-  FZDBLocal.CopyDB(dataBaseName_, copy2N, p, {$IFDEF FPC}@{$ENDIF FPC}StorePosTransform);
+  FZDBLocal.CopyDB(dataBaseName_, copy2N, p, StorePosTransform);
 end;
 
 procedure TDataStoreService_NoAuth.Command_CompressDB(Sender: TPeerIO; InData: TDFE);
 var
-  RT: TDataStoreService_PeerClientRecvTunnel_NoAuth;
+  RT: TDataStoreService_RecvTunnel_UserDefine_NoAuth;
   dataBaseName_: SystemString;
   BackcallPtr: UInt64;
   p: POnStorePosTransformTrigger_NoAuth;
@@ -672,12 +701,12 @@ begin
   new(p);
   p^.Client_SendTunnel_ID := RT.SendTunnelID;
   p^.BackcallPtr := BackcallPtr;
-  FZDBLocal.CompressDB(dataBaseName_, p, {$IFDEF FPC}@{$ENDIF FPC}StorePosTransform);
+  FZDBLocal.CompressDB(dataBaseName_, p, StorePosTransform);
 end;
 
 procedure TDataStoreService_NoAuth.Command_ReplaceDB(Sender: TPeerIO; InData: TDFE);
 var
-  RT: TDataStoreService_PeerClientRecvTunnel_NoAuth;
+  RT: TDataStoreService_RecvTunnel_UserDefine_NoAuth;
   dataBaseName_, replaceN: SystemString;
 begin
   RT := GetDataStoreUserDefine(Sender);
@@ -691,7 +720,7 @@ end;
 
 procedure TDataStoreService_NoAuth.Command_ResetData(Sender: TPeerIO; InData: TDFE);
 var
-  RT: TDataStoreService_PeerClientRecvTunnel_NoAuth;
+  RT: TDataStoreService_RecvTunnel_UserDefine_NoAuth;
   dataBaseName_: SystemString;
 begin
   RT := GetDataStoreUserDefine(Sender);
@@ -704,7 +733,7 @@ end;
 
 procedure TDataStoreService_NoAuth.Command_QueryDB(Sender: TPeerIO; InData: TDFE);
 var
-  RT: TDataStoreService_PeerClientRecvTunnel_NoAuth;
+  RT: TDataStoreService_RecvTunnel_UserDefine_NoAuth;
   RegedQueryName: SystemString;
   SyncToClient, WriteResultToOutputDB, InMem, ReverseQuery: Boolean;
   dataBaseName_, OutputDatabaseName_: SystemString;
@@ -742,7 +771,7 @@ begin
       AutoDestoryOutputDB := False;
 
   pl := TTDataStoreService_DBPipeline(FZDBLocal.QueryDB(WriteResultToOutputDB, InMem, ReverseQuery, dataBaseName_, OutputDatabaseName_,
-    AutoDestoryOutputDB, FPerQueryPipelineDelayFreeTime, fragmentReponseTime, MaxWait, 0, MaxQueryResult));
+      AutoDestoryOutputDB, FPerQueryPipelineDelayFreeTime, fragmentReponseTime, MaxWait, 0, MaxQueryResult));
   pl.SendTunnel := RT.SendTunnelDefine;
   pl.RecvTunnel := RT;
   pl.BackcallPtr := InData.Reader.ReadPointer;
@@ -760,14 +789,14 @@ begin
     end
   else
     begin
-      pl.OnDataFilter_M := {$IFDEF FPC}@{$ENDIF FPC}DownloadQueryFilterMethod;
+      pl.OnDataFilter_M := DownloadQueryFilterMethod;
     end;
   ClearBatchStream(RT.SendTunnelDefine.Owner);
 end;
 
 procedure TDataStoreService_NoAuth.Command_DownloadDB(Sender: TPeerIO; InData: TDFE);
 var
-  RT: TDataStoreService_PeerClientRecvTunnel_NoAuth;
+  RT: TDataStoreService_RecvTunnel_UserDefine_NoAuth;
   ReverseQuery: Boolean;
   dataBaseName_: SystemString;
   pl: TTDataStoreService_DBPipeline;
@@ -789,13 +818,13 @@ begin
   pl.SyncToClient := True;
   pl.WriteFragmentBuffer := pl.SyncToClient;
 
-  pl.OnDataFilter_M := {$IFDEF FPC}@{$ENDIF FPC}DownloadQueryFilterMethod;
+  pl.OnDataFilter_M := DownloadQueryFilterMethod;
   ClearBatchStream(RT.SendTunnelDefine.Owner);
 end;
 
 procedure TDataStoreService_NoAuth.Command_DownloadDBWithID(Sender: TPeerIO; InData: TDFE);
 var
-  RT: TDataStoreService_PeerClientRecvTunnel_NoAuth;
+  RT: TDataStoreService_RecvTunnel_UserDefine_NoAuth;
   ReverseQuery: Boolean;
   dataBaseName_: SystemString;
   downloadWithID: Cardinal;
@@ -822,13 +851,13 @@ begin
   { user download with ID }
   pl.UserVariant := downloadWithID;
 
-  pl.OnDataFilter_M := {$IFDEF FPC}@{$ENDIF FPC}DownloadQueryWithIDFilterMethod;
+  pl.OnDataFilter_M := DownloadQueryWithIDFilterMethod;
   ClearBatchStream(RT.SendTunnelDefine.Owner);
 end;
 
 procedure TDataStoreService_NoAuth.Command_RequestDownloadAssembleStream(Sender: TPeerIO; InData: TDFE);
 var
-  RT: TDataStoreService_PeerClientRecvTunnel_NoAuth;
+  RT: TDataStoreService_RecvTunnel_UserDefine_NoAuth;
   dataBaseName_: SystemString;
   StorePos: Int64;
   BackcallPtr: UInt64;
@@ -860,7 +889,7 @@ end;
 
 procedure TDataStoreService_NoAuth.Command_RequestFastDownloadAssembleStream(Sender: TPeerIO; InData: TDFE);
 var
-  RT: TDataStoreService_PeerClientRecvTunnel_NoAuth;
+  RT: TDataStoreService_RecvTunnel_UserDefine_NoAuth;
   dataBaseName_: SystemString;
   StorePos: Int64;
   BackcallPtr: UInt64;
@@ -890,7 +919,7 @@ end;
 
 procedure TDataStoreService_NoAuth.Command_FastPostCompleteBuffer(Sender: TPeerIO; InData: PByte; DataSize: NativeInt);
 var
-  RT: TDataStoreService_PeerClientRecvTunnel_NoAuth;
+  RT: TDataStoreService_RecvTunnel_UserDefine_NoAuth;
   dataBaseName_: TPascalString;
   itmID: Cardinal;
   StorePos: Int64;
@@ -912,7 +941,7 @@ end;
 
 procedure TDataStoreService_NoAuth.Command_FastInsertCompleteBuffer(Sender: TPeerIO; InData: PByte; DataSize: NativeInt);
 var
-  RT: TDataStoreService_PeerClientRecvTunnel_NoAuth;
+  RT: TDataStoreService_RecvTunnel_UserDefine_NoAuth;
   dataBaseName_: TPascalString;
   itmID: Cardinal;
   StorePos: Int64;
@@ -934,7 +963,7 @@ end;
 
 procedure TDataStoreService_NoAuth.Command_FastModifyCompleteBuffer(Sender: TPeerIO; InData: PByte; DataSize: NativeInt);
 var
-  RT: TDataStoreService_PeerClientRecvTunnel_NoAuth;
+  RT: TDataStoreService_RecvTunnel_UserDefine_NoAuth;
   dataBaseName_: TPascalString;
   itmID: Cardinal;
   StorePos: Int64;
@@ -956,7 +985,7 @@ end;
 
 procedure TDataStoreService_NoAuth.Command_CompletedPostAssembleStream(Sender: TPeerIO; InData: TDFE);
 var
-  RT: TDataStoreService_PeerClientRecvTunnel_NoAuth;
+  RT: TDataStoreService_RecvTunnel_UserDefine_NoAuth;
   dataBaseName_: SystemString;
   dID: Cardinal;
   p: PBigStreamBatchPostData;
@@ -979,7 +1008,7 @@ end;
 
 procedure TDataStoreService_NoAuth.Command_CompletedInsertAssembleStream(Sender: TPeerIO; InData: TDFE);
 var
-  RT: TDataStoreService_PeerClientRecvTunnel_NoAuth;
+  RT: TDataStoreService_RecvTunnel_UserDefine_NoAuth;
   dataBaseName_: SystemString;
   dStorePos: Int64;
   dID: Cardinal;
@@ -1004,7 +1033,7 @@ end;
 
 procedure TDataStoreService_NoAuth.Command_CompletedModifyAssembleStream(Sender: TPeerIO; InData: TDFE);
 var
-  RT: TDataStoreService_PeerClientRecvTunnel_NoAuth;
+  RT: TDataStoreService_RecvTunnel_UserDefine_NoAuth;
   dataBaseName_: SystemString;
   dStorePos: Int64;
   p: PBigStreamBatchPostData;
@@ -1034,7 +1063,7 @@ end;
 
 procedure TDataStoreService_NoAuth.Command_DeleteData(Sender: TPeerIO; InData: TDFE);
 var
-  RT: TDataStoreService_PeerClientRecvTunnel_NoAuth;
+  RT: TDataStoreService_RecvTunnel_UserDefine_NoAuth;
   dataBaseName_: SystemString;
   dStorePos: Int64;
 begin
@@ -1050,7 +1079,7 @@ end;
 
 procedure TDataStoreService_NoAuth.Command_GetDBList(Sender: TPeerIO; InData, OutData: TDFE);
 var
-  RT: TDataStoreService_PeerClientRecvTunnel_NoAuth;
+  RT: TDataStoreService_RecvTunnel_UserDefine_NoAuth;
   lst: TCore_ListForObj;
   i: Integer;
   Database_: TZDBLMStore;
@@ -1071,7 +1100,7 @@ end;
 
 procedure TDataStoreService_NoAuth.Command_GetQueryList(Sender: TPeerIO; InData, OutData: TDFE);
 var
-  RT: TDataStoreService_PeerClientRecvTunnel_NoAuth;
+  RT: TDataStoreService_RecvTunnel_UserDefine_NoAuth;
   i: Integer;
   pl: TTDataStoreService_DBPipeline;
 begin
@@ -1089,7 +1118,7 @@ end;
 
 procedure TDataStoreService_NoAuth.Command_GetQueryState(Sender: TPeerIO; InData, OutData: TDFE);
 var
-  RT: TDataStoreService_PeerClientRecvTunnel_NoAuth;
+  RT: TDataStoreService_RecvTunnel_UserDefine_NoAuth;
   PipeName_: SystemString;
   pl: TTDataStoreService_DBPipeline;
   ps: TPipeState;
@@ -1137,7 +1166,7 @@ end;
 
 procedure TDataStoreService_NoAuth.Command_QueryStop(Sender: TPeerIO; InData: TDFE);
 var
-  RT: TDataStoreService_PeerClientRecvTunnel_NoAuth;
+  RT: TDataStoreService_RecvTunnel_UserDefine_NoAuth;
   PipeName_: SystemString;
   pl: TTDataStoreService_DBPipeline;
 begin
@@ -1156,7 +1185,7 @@ end;
 
 procedure TDataStoreService_NoAuth.Command_QueryPause(Sender: TPeerIO; InData: TDFE);
 var
-  RT: TDataStoreService_PeerClientRecvTunnel_NoAuth;
+  RT: TDataStoreService_RecvTunnel_UserDefine_NoAuth;
   PipeName_: SystemString;
   pl: TTDataStoreService_DBPipeline;
 begin
@@ -1175,7 +1204,7 @@ end;
 
 procedure TDataStoreService_NoAuth.Command_QueryPlay(Sender: TPeerIO; InData: TDFE);
 var
-  RT: TDataStoreService_PeerClientRecvTunnel_NoAuth;
+  RT: TDataStoreService_RecvTunnel_UserDefine_NoAuth;
   PipeName_: SystemString;
   pl: TTDataStoreService_DBPipeline;
 begin
@@ -1270,8 +1299,8 @@ end;
 constructor TDataStoreService_NoAuth.Create(RecvTunnel_, SendTunnel_: TZNet_Server);
 begin
   inherited Create(RecvTunnel_, SendTunnel_);
-  FRecvTunnel.PeerClientUserDefineClass := TDataStoreService_PeerClientRecvTunnel_NoAuth;
-  FSendTunnel.PeerClientUserDefineClass := TDataStoreService_PeerClientSendTunnel_NoAuth;
+  FRecvTunnel.PeerClientUserDefineClass := TDataStoreService_RecvTunnel_UserDefine_NoAuth;
+  FSendTunnel.PeerClientUserDefineClass := TDataStoreService_SendTunnel_UserDefine_NoAuth;
 
   FZDBLocal := TZDBLocalManager.Create;
   FZDBLocal.PipelineClass := TTDataStoreService_DBPipeline;
@@ -1292,35 +1321,35 @@ procedure TDataStoreService_NoAuth.RegisterCommand;
 begin
   inherited RegisterCommand;
 
-  FRecvTunnel.RegisterDirectStream(C_InitDB).OnExecute := {$IFDEF FPC}@{$ENDIF FPC}Command_InitDB;
-  FRecvTunnel.RegisterDirectStream(C_CloseDB).OnExecute := {$IFDEF FPC}@{$ENDIF FPC}Command_CloseDB;
+  FRecvTunnel.RegisterDirectStream(C_InitDB).OnExecute := Command_InitDB;
+  FRecvTunnel.RegisterDirectStream(C_CloseDB).OnExecute := Command_CloseDB;
 
-  FRecvTunnel.RegisterDirectStream(C_CopyDB).OnExecute := {$IFDEF FPC}@{$ENDIF FPC}Command_CopyDB;
-  FRecvTunnel.RegisterDirectStream(C_CompressDB).OnExecute := {$IFDEF FPC}@{$ENDIF FPC}Command_CompressDB;
-  FRecvTunnel.RegisterDirectStream(C_ReplaceDB).OnExecute := {$IFDEF FPC}@{$ENDIF FPC}Command_ReplaceDB;
-  FRecvTunnel.RegisterDirectStream(C_ResetData).OnExecute := {$IFDEF FPC}@{$ENDIF FPC}Command_ResetData;
+  FRecvTunnel.RegisterDirectStream(C_CopyDB).OnExecute := Command_CopyDB;
+  FRecvTunnel.RegisterDirectStream(C_CompressDB).OnExecute := Command_CompressDB;
+  FRecvTunnel.RegisterDirectStream(C_ReplaceDB).OnExecute := Command_ReplaceDB;
+  FRecvTunnel.RegisterDirectStream(C_ResetData).OnExecute := Command_ResetData;
 
-  FRecvTunnel.RegisterDirectStream(C_QueryDB).OnExecute := {$IFDEF FPC}@{$ENDIF FPC}Command_QueryDB;
-  FRecvTunnel.RegisterDirectStream(C_DownloadDB).OnExecute := {$IFDEF FPC}@{$ENDIF FPC}Command_DownloadDB;
-  FRecvTunnel.RegisterDirectStream(C_DownloadDBWithID).OnExecute := {$IFDEF FPC}@{$ENDIF FPC}Command_DownloadDBWithID;
-  FRecvTunnel.RegisterDirectStream(C_RequestDownloadAssembleStream).OnExecute := {$IFDEF FPC}@{$ENDIF FPC}Command_RequestDownloadAssembleStream;
-  FRecvTunnel.RegisterDirectStream(C_RequestFastDownloadAssembleStrea).OnExecute := {$IFDEF FPC}@{$ENDIF FPC}Command_RequestFastDownloadAssembleStream;
+  FRecvTunnel.RegisterDirectStream(C_QueryDB).OnExecute := Command_QueryDB;
+  FRecvTunnel.RegisterDirectStream(C_DownloadDB).OnExecute := Command_DownloadDB;
+  FRecvTunnel.RegisterDirectStream(C_DownloadDBWithID).OnExecute := Command_DownloadDBWithID;
+  FRecvTunnel.RegisterDirectStream(C_RequestDownloadAssembleStream).OnExecute := Command_RequestDownloadAssembleStream;
+  FRecvTunnel.RegisterDirectStream(C_RequestFastDownloadAssembleStrea).OnExecute := Command_RequestFastDownloadAssembleStream;
 
-  FRecvTunnel.RegisterCompleteBuffer(C_FastPostCompleteBuffer).OnExecute := {$IFDEF FPC}@{$ENDIF FPC}Command_FastPostCompleteBuffer;
-  FRecvTunnel.RegisterCompleteBuffer(C_FastInsertCompleteBuffer).OnExecute := {$IFDEF FPC}@{$ENDIF FPC}Command_FastInsertCompleteBuffer;
-  FRecvTunnel.RegisterCompleteBuffer(C_FastModifyCompleteBuffer).OnExecute := {$IFDEF FPC}@{$ENDIF FPC}Command_FastModifyCompleteBuffer;
+  FRecvTunnel.RegisterCompleteBuffer(C_FastPostCompleteBuffer).OnExecute := Command_FastPostCompleteBuffer;
+  FRecvTunnel.RegisterCompleteBuffer(C_FastInsertCompleteBuffer).OnExecute := Command_FastInsertCompleteBuffer;
+  FRecvTunnel.RegisterCompleteBuffer(C_FastModifyCompleteBuffer).OnExecute := Command_FastModifyCompleteBuffer;
 
-  FRecvTunnel.RegisterDirectStream(C_CompletedPostAssembleStream).OnExecute := {$IFDEF FPC}@{$ENDIF FPC}Command_CompletedPostAssembleStream;
-  FRecvTunnel.RegisterDirectStream(C_CompletedInsertAssembleStream).OnExecute := {$IFDEF FPC}@{$ENDIF FPC}Command_CompletedInsertAssembleStream;
-  FRecvTunnel.RegisterDirectStream(C_CompletedModifyAssembleStream).OnExecute := {$IFDEF FPC}@{$ENDIF FPC}Command_CompletedModifyAssembleStream;
-  FRecvTunnel.RegisterDirectStream(C_DeleteData).OnExecute := {$IFDEF FPC}@{$ENDIF FPC}Command_DeleteData;
+  FRecvTunnel.RegisterDirectStream(C_CompletedPostAssembleStream).OnExecute := Command_CompletedPostAssembleStream;
+  FRecvTunnel.RegisterDirectStream(C_CompletedInsertAssembleStream).OnExecute := Command_CompletedInsertAssembleStream;
+  FRecvTunnel.RegisterDirectStream(C_CompletedModifyAssembleStream).OnExecute := Command_CompletedModifyAssembleStream;
+  FRecvTunnel.RegisterDirectStream(C_DeleteData).OnExecute := Command_DeleteData;
 
-  FRecvTunnel.RegisterStream(C_GetDBList).OnExecute := {$IFDEF FPC}@{$ENDIF FPC}Command_GetDBList;
-  FRecvTunnel.RegisterStream(C_GetQueryList).OnExecute := {$IFDEF FPC}@{$ENDIF FPC}Command_GetQueryList;
-  FRecvTunnel.RegisterStream(C_GetQueryState).OnExecute := {$IFDEF FPC}@{$ENDIF FPC}Command_GetQueryState;
-  FRecvTunnel.RegisterDirectStream(C_QueryStop).OnExecute := {$IFDEF FPC}@{$ENDIF FPC}Command_QueryStop;
-  FRecvTunnel.RegisterDirectStream(C_QueryPause).OnExecute := {$IFDEF FPC}@{$ENDIF FPC}Command_QueryPause;
-  FRecvTunnel.RegisterDirectStream(C_QueryPlay).OnExecute := {$IFDEF FPC}@{$ENDIF FPC}Command_QueryPlay;
+  FRecvTunnel.RegisterStream(C_GetDBList).OnExecute := Command_GetDBList;
+  FRecvTunnel.RegisterStream(C_GetQueryList).OnExecute := Command_GetQueryList;
+  FRecvTunnel.RegisterStream(C_GetQueryState).OnExecute := Command_GetQueryState;
+  FRecvTunnel.RegisterDirectStream(C_QueryStop).OnExecute := Command_QueryStop;
+  FRecvTunnel.RegisterDirectStream(C_QueryPause).OnExecute := Command_QueryPause;
+  FRecvTunnel.RegisterDirectStream(C_QueryPlay).OnExecute := Command_QueryPlay;
 end;
 
 procedure TDataStoreService_NoAuth.UnRegisterCommand;
@@ -1366,9 +1395,9 @@ begin
   inherited CadencerProgress(Sender, deltaTime, newTime);
 end;
 
-function TDataStoreService_NoAuth.GetDataStoreUserDefine(RecvCli: TPeerIO): TDataStoreService_PeerClientRecvTunnel_NoAuth;
+function TDataStoreService_NoAuth.GetDataStoreUserDefine(RecvCli: TPeerIO): TDataStoreService_RecvTunnel_UserDefine_NoAuth;
 begin
-  Result := RecvCli.UserDefine as TDataStoreService_PeerClientRecvTunnel_NoAuth;
+  Result := RecvCli.UserDefine as TDataStoreService_RecvTunnel_UserDefine_NoAuth;
 end;
 
 function TDataStoreService_NoAuth.RegisterQuery_C(QuerierName_: SystemString): TTDataStoreService_Query_C;
@@ -1399,7 +1428,7 @@ function TDataStoreService_NoAuth.PostCounterOfPerSec: Double;
 var
   IO_Array: TIO_Array;
   pcid: Cardinal;
-  RT: TDataStoreService_PeerClientRecvTunnel_NoAuth;
+  RT: TDataStoreService_RecvTunnel_UserDefine_NoAuth;
 begin
   Result := 0;
   FRecvTunnel.GetIO_Array(IO_Array);
@@ -1466,28 +1495,28 @@ begin
           begin
             FillFragmentSourceC(BackcallPtr^.UserPointer, BackcallPtr^.UserObject, BackcallPtr^.UserVariant, dataBaseName_, PipeName_, M, BackcallPtr^.OnUserQuery_C);
             M.Position := 0;
-          end;
-        if Assigned(BackcallPtr^.OnUserQuery_M) then
+          end
+        else if Assigned(BackcallPtr^.OnUserQuery_M) then
           begin
             FillFragmentSourceM(BackcallPtr^.UserPointer, BackcallPtr^.UserObject, BackcallPtr^.UserVariant, dataBaseName_, PipeName_, M, BackcallPtr^.OnUserQuery_M);
             M.Position := 0;
-          end;
-        if Assigned(BackcallPtr^.OnUserQuery_P) then
+          end
+        else if Assigned(BackcallPtr^.OnUserQuery_P) then
           begin
             FillFragmentSourceP(BackcallPtr^.UserPointer, BackcallPtr^.UserObject, BackcallPtr^.UserVariant, dataBaseName_, PipeName_, M, BackcallPtr^.OnUserQuery_P);
             M.Position := 0;
-          end;
-        if Assigned(BackcallPtr^.OnQuery_C) then
+          end
+        else if Assigned(BackcallPtr^.OnQuery_C) then
           begin
             FillFragmentSourceC(dataBaseName_, PipeName_, M, BackcallPtr^.OnQuery_C);
             M.Position := 0;
-          end;
-        if Assigned(BackcallPtr^.OnQuery_M) then
+          end
+        else if Assigned(BackcallPtr^.OnQuery_M) then
           begin
             FillFragmentSourceM(dataBaseName_, PipeName_, M, BackcallPtr^.OnQuery_M);
             M.Position := 0;
-          end;
-        if Assigned(BackcallPtr^.OnQuery_P) then
+          end
+        else if Assigned(BackcallPtr^.OnQuery_P) then
           begin
             FillFragmentSourceP(dataBaseName_, PipeName_, M, BackcallPtr^.OnQuery_P);
             M.Position := 0;
@@ -1515,17 +1544,17 @@ begin
     begin
       try
         if Assigned(BackcallPtr^.OnUserDone_C) then
-            BackcallPtr^.OnUserDone_C(BackcallPtr^.UserPointer, BackcallPtr^.UserObject, BackcallPtr^.UserVariant, dataBaseName_, OutputDatabaseName_, PipeName_, TotalResultCount);
-        if Assigned(BackcallPtr^.OnUserDone_M) then
-            BackcallPtr^.OnUserDone_M(BackcallPtr^.UserPointer, BackcallPtr^.UserObject, BackcallPtr^.UserVariant, dataBaseName_, OutputDatabaseName_, PipeName_, TotalResultCount);
-        if Assigned(BackcallPtr^.OnUserDone_P) then
+            BackcallPtr^.OnUserDone_C(BackcallPtr^.UserPointer, BackcallPtr^.UserObject, BackcallPtr^.UserVariant, dataBaseName_, OutputDatabaseName_, PipeName_, TotalResultCount)
+        else if Assigned(BackcallPtr^.OnUserDone_M) then
+            BackcallPtr^.OnUserDone_M(BackcallPtr^.UserPointer, BackcallPtr^.UserObject, BackcallPtr^.UserVariant, dataBaseName_, OutputDatabaseName_, PipeName_, TotalResultCount)
+        else if Assigned(BackcallPtr^.OnUserDone_P) then
             BackcallPtr^.OnUserDone_P(BackcallPtr^.UserPointer, BackcallPtr^.UserObject, BackcallPtr^.UserVariant, dataBaseName_, OutputDatabaseName_, PipeName_, TotalResultCount);
 
         if Assigned(BackcallPtr^.OnDone_C) then
-            BackcallPtr^.OnDone_C(dataBaseName_, OutputDatabaseName_, PipeName_, TotalResultCount);
-        if Assigned(BackcallPtr^.OnDone_M) then
-            BackcallPtr^.OnDone_M(dataBaseName_, OutputDatabaseName_, PipeName_, TotalResultCount);
-        if Assigned(BackcallPtr^.OnDone_P) then
+            BackcallPtr^.OnDone_C(dataBaseName_, OutputDatabaseName_, PipeName_, TotalResultCount)
+        else if Assigned(BackcallPtr^.OnDone_M) then
+            BackcallPtr^.OnDone_M(dataBaseName_, OutputDatabaseName_, PipeName_, TotalResultCount)
+        else if Assigned(BackcallPtr^.OnDone_P) then
             BackcallPtr^.OnDone_P(dataBaseName_, OutputDatabaseName_, PipeName_, TotalResultCount);
       except
       end;
@@ -1567,29 +1596,28 @@ begin
               begin
                 BackcallPtr^.OnUserDone_C(BackcallPtr^.UserPointer, BackcallPtr^.UserObject, BackcallPtr^.UserVariant, dataBaseName_, dStorePos, tmp);
                 tmp.Position := 0;
-              end;
-            if Assigned(BackcallPtr^.OnUserDone_M) then
+              end
+            else if Assigned(BackcallPtr^.OnUserDone_M) then
               begin
                 BackcallPtr^.OnUserDone_M(BackcallPtr^.UserPointer, BackcallPtr^.UserObject, BackcallPtr^.UserVariant, dataBaseName_, dStorePos, tmp);
                 tmp.Position := 0;
-              end;
-            if Assigned(BackcallPtr^.OnUserDone_P) then
+              end
+            else if Assigned(BackcallPtr^.OnUserDone_P) then
               begin
                 BackcallPtr^.OnUserDone_P(BackcallPtr^.UserPointer, BackcallPtr^.UserObject, BackcallPtr^.UserVariant, dataBaseName_, dStorePos, tmp);
                 tmp.Position := 0;
-              end;
-
-            if Assigned(BackcallPtr^.OnDone_C) then
+              end
+            else if Assigned(BackcallPtr^.OnDone_C) then
               begin
                 BackcallPtr^.OnDone_C(dataBaseName_, dStorePos, tmp);
                 tmp.Position := 0;
-              end;
-            if Assigned(BackcallPtr^.OnDone_M) then
+              end
+            else if Assigned(BackcallPtr^.OnDone_M) then
               begin
                 BackcallPtr^.OnDone_M(dataBaseName_, dStorePos, tmp);
                 tmp.Position := 0;
-              end;
-            if Assigned(BackcallPtr^.OnDone_P) then
+              end
+            else if Assigned(BackcallPtr^.OnDone_P) then
               begin
                 BackcallPtr^.OnDone_P(dataBaseName_, dStorePos, tmp);
                 tmp.Position := 0;
@@ -1636,29 +1664,28 @@ begin
               begin
                 BackcallPtr^.OnUserDone_C(BackcallPtr^.UserPointer, BackcallPtr^.UserObject, BackcallPtr^.UserVariant, dataBaseName_, dStorePos, tmp);
                 tmp.Position := 0;
-              end;
-            if Assigned(BackcallPtr^.OnUserDone_M) then
+              end
+            else if Assigned(BackcallPtr^.OnUserDone_M) then
               begin
                 BackcallPtr^.OnUserDone_M(BackcallPtr^.UserPointer, BackcallPtr^.UserObject, BackcallPtr^.UserVariant, dataBaseName_, dStorePos, tmp);
                 tmp.Position := 0;
-              end;
-            if Assigned(BackcallPtr^.OnUserDone_P) then
+              end
+            else if Assigned(BackcallPtr^.OnUserDone_P) then
               begin
                 BackcallPtr^.OnUserDone_P(BackcallPtr^.UserPointer, BackcallPtr^.UserObject, BackcallPtr^.UserVariant, dataBaseName_, dStorePos, tmp);
                 tmp.Position := 0;
-              end;
-
-            if Assigned(BackcallPtr^.OnDone_C) then
+              end
+            else if Assigned(BackcallPtr^.OnDone_C) then
               begin
                 BackcallPtr^.OnDone_C(dataBaseName_, dStorePos, tmp);
                 tmp.Position := 0;
-              end;
-            if Assigned(BackcallPtr^.OnDone_M) then
+              end
+            else if Assigned(BackcallPtr^.OnDone_M) then
               begin
                 BackcallPtr^.OnDone_M(dataBaseName_, dStorePos, tmp);
                 tmp.Position := 0;
-              end;
-            if Assigned(BackcallPtr^.OnDone_P) then
+              end
+            else if Assigned(BackcallPtr^.OnDone_P) then
               begin
                 BackcallPtr^.OnDone_P(dataBaseName_, dStorePos, tmp);
                 tmp.Position := 0;
@@ -1695,10 +1722,10 @@ begin
   if BackcallPtr <> nil then
     begin
       if Assigned(BackcallPtr^.OnDone_C) then
-          BackcallPtr^.OnDone_C(@TransformBuff);
-      if Assigned(BackcallPtr^.OnDone_M) then
-          BackcallPtr^.OnDone_M(@TransformBuff);
-      if Assigned(BackcallPtr^.OnDone_P) then
+          BackcallPtr^.OnDone_C(@TransformBuff)
+      else if Assigned(BackcallPtr^.OnDone_M) then
+          BackcallPtr^.OnDone_M(@TransformBuff)
+      else if Assigned(BackcallPtr^.OnDone_P) then
           BackcallPtr^.OnDone_P(@TransformBuff);
     end;
 
@@ -1723,12 +1750,12 @@ end;
 procedure TDataStoreClient_NoAuth.RegisterCommand;
 begin
   inherited RegisterCommand;
-  FRecvTunnel.RegisterDirectStream(C_DataStoreSecurity).OnExecute := {$IFDEF FPC}@{$ENDIF FPC}Command_DataStoreSecurity;
-  FRecvTunnel.RegisterDirectStream(C_CompletedFragmentBigStream).OnExecute := {$IFDEF FPC}@{$ENDIF FPC}Command_CompletedFragmentBigStream;
-  FRecvTunnel.RegisterDirectStream(C_CompletedQuery).OnExecute := {$IFDEF FPC}@{$ENDIF FPC}Command_CompletedQuery;
-  FRecvTunnel.RegisterDirectStream(C_CompletedDownloadAssemble).OnExecute := {$IFDEF FPC}@{$ENDIF FPC}Command_CompletedDownloadAssemble;
-  FRecvTunnel.RegisterDirectStream(C_CompletedFastDownloadAssemble).OnExecute := {$IFDEF FPC}@{$ENDIF FPC}Command_CompletedFastDownloadAssemble;
-  FRecvTunnel.RegisterDirectStream(C_CompletedStorePosTransform).OnExecute := {$IFDEF FPC}@{$ENDIF FPC}Command_CompletedStorePosTransform;
+  FRecvTunnel.RegisterDirectStream(C_DataStoreSecurity).OnExecute := Command_DataStoreSecurity;
+  FRecvTunnel.RegisterDirectStream(C_CompletedFragmentBigStream).OnExecute := Command_CompletedFragmentBigStream;
+  FRecvTunnel.RegisterDirectStream(C_CompletedQuery).OnExecute := Command_CompletedQuery;
+  FRecvTunnel.RegisterDirectStream(C_CompletedDownloadAssemble).OnExecute := Command_CompletedDownloadAssemble;
+  FRecvTunnel.RegisterDirectStream(C_CompletedFastDownloadAssemble).OnExecute := Command_CompletedFastDownloadAssemble;
+  FRecvTunnel.RegisterDirectStream(C_CompletedStorePosTransform).OnExecute := Command_CompletedStorePosTransform;
 end;
 
 procedure TDataStoreClient_NoAuth.UnRegisterCommand;
@@ -1897,7 +1924,7 @@ begin
 
   de.WriteString(RegistedQuerier_);
   de.WriteBool(False); { sync to client }
-  de.WriteBool(True);  { write output Database_ }
+  de.WriteBool(True); { write output Database_ }
   de.WriteBool(False); { in memory }
   de.WriteBool(ReverseQuery);
   de.WriteString(dataBaseName_);
@@ -1953,7 +1980,7 @@ end;
 
 procedure TDataStoreClient_NoAuth.QueryDBC(RegistedQuerier_: SystemString; SyncToClient, WriteResultToOutputDB, InMem, ReverseQuery: Boolean; dataBaseName_, OutputDatabaseName_: SystemString;
   fragmentReponseTime, MaxWait: Double; MaxQueryResult: Int64;
-  RemoteParams: THashVariantList;                                           { service ref remote parameter }
+  RemoteParams: THashVariantList; { service ref remote parameter }
   UserPointer: Pointer; UserObject: TCore_Object; UserVariant: Variant; { local event parameter }
   OnQuery_C: TUserFillQueryData_C; OnDone_C: TUserQueryDoneNotify_C);
 var
@@ -1984,7 +2011,7 @@ end;
 
 procedure TDataStoreClient_NoAuth.QueryDBM(RegistedQuerier_: SystemString; SyncToClient, WriteResultToOutputDB, InMem, ReverseQuery: Boolean; dataBaseName_, OutputDatabaseName_: SystemString;
   fragmentReponseTime, MaxWait: Double; MaxQueryResult: Int64;
-  RemoteParams: THashVariantList;                                           { service ref remote parameter }
+  RemoteParams: THashVariantList; { service ref remote parameter }
   UserPointer: Pointer; UserObject: TCore_Object; UserVariant: Variant; { local event parameter }
   OnQuery_M: TUserFillQueryData_M; OnDone_M: TUserQueryDoneNotify_M);
 var
@@ -2015,7 +2042,7 @@ end;
 
 procedure TDataStoreClient_NoAuth.QueryDBP(RegistedQuerier_: SystemString; SyncToClient, WriteResultToOutputDB, InMem, ReverseQuery: Boolean; dataBaseName_, OutputDatabaseName_: SystemString;
   fragmentReponseTime, MaxWait: Double; MaxQueryResult: Int64;
-  RemoteParams: THashVariantList;                                           { service ref remote parameter }
+  RemoteParams: THashVariantList; { service ref remote parameter }
   UserPointer: Pointer; UserObject: TCore_Object; UserVariant: Variant; { local event parameter }
   OnQuery_P: TUserFillQueryData_P; OnDone_P: TUserQueryDoneNotify_P);
 var
@@ -3210,3 +3237,4 @@ begin
 end;
 
 end.
+ 

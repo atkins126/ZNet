@@ -9,7 +9,7 @@ uses
   Z.Core, Z.ZDB.Engine, Z.ZDB.LocalManager, Z.Status, Z.DFE, Z.PascalStrings,
   Z.ListEngine, Z.UnicodeMixedLib, Z.MemoryStream, Z.Expression, Z.OpCode,
   Z.Net, Z.Net.DoubleTunnelIO.NoAuth,
-  Z.Net.Client.CrossSocket;
+  Z.Net.Client.CrossSocket, FMX.Memo.Types;
 
 type
   TMyQueryClient = class(TZNet_DoubleTunnelClient_NoAuth)
@@ -24,7 +24,7 @@ type
       OnResult: TQueryMyDatabaseResultProc;
     end;
   private
-    procedure cmd_QueryDone(Sender: TPeerIO; InData: TDataFrameEngine);
+    procedure cmd_QueryDone(Sender: TPeerIO; InData: TDFE);
   public
     procedure QueryMyDatabase(sql: SystemString; OnResult: TQueryMyDatabaseResultProc);
     procedure RegisterCommand; override;
@@ -64,7 +64,7 @@ implementation
 {$R *.fmx}
 
 
-procedure TMyQueryClient.cmd_QueryDone(Sender: TPeerIO; InData: TDataFrameEngine);
+procedure TMyQueryClient.cmd_QueryDone(Sender: TPeerIO; InData: TDFE);
 var
   p: PQueryRunStruct;
 begin
@@ -80,14 +80,14 @@ end;
 procedure TMyQueryClient.QueryMyDatabase(sql: SystemString; OnResult: TQueryMyDatabaseResultProc);
 var
   p: PQueryRunStruct;
-  de: TDataFrameEngine;
+  de: TDFE;
 begin
   new(p);
   p^.QueryResultCount := -1;
   p^.PipelineName := '';
   p^.OnResult := OnResult;
 
-  de := TDataFrameEngine.Create;
+  de := TDFE.Create;
   de.WritePointer(p);
   de.WriteString(sql);
   SendTunnel.SendDirectStreamCmd('QueryMyDatabase', de);
@@ -165,6 +165,7 @@ end;
 
 procedure TForm1.Timer1Timer(Sender: TObject);
 begin
+  CheckThread;
   myQueryClient.Progress;
 end;
 

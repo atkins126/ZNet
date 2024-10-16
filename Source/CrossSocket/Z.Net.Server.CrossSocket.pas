@@ -1,3 +1,32 @@
+(*
+https://zpascal.net
+https://github.com/PassByYou888/ZNet
+https://github.com/PassByYou888/zRasterization
+https://github.com/PassByYou888/ZSnappy
+https://github.com/PassByYou888/Z-AI1.4
+https://github.com/PassByYou888/InfiniteIoT
+https://github.com/PassByYou888/zMonitor_3rd_Core
+https://github.com/PassByYou888/tcmalloc4p
+https://github.com/PassByYou888/jemalloc4p
+https://github.com/PassByYou888/zCloud
+https://github.com/PassByYou888/ZServer4D
+https://github.com/PassByYou888/zShell
+https://github.com/PassByYou888/ZDB2.0
+https://github.com/PassByYou888/zGameWare
+https://github.com/PassByYou888/CoreCipher
+https://github.com/PassByYou888/zChinese
+https://github.com/PassByYou888/zSound
+https://github.com/PassByYou888/zExpression
+https://github.com/PassByYou888/ZInstaller2.0
+https://github.com/PassByYou888/zAI
+https://github.com/PassByYou888/NetFileService
+https://github.com/PassByYou888/zAnalysis
+https://github.com/PassByYou888/PascalString
+https://github.com/PassByYou888/zInstaller
+https://github.com/PassByYou888/zTranslate
+https://github.com/PassByYou888/zVision
+https://github.com/PassByYou888/FFMPEG-Header
+*)
 { ****************************************************************************** }
 { * CrossSocket support                                                        * }
 { ****************************************************************************** }
@@ -334,36 +363,27 @@ begin
 end;
 
 procedure TZNet_Server_CrossSocket.DoConnected(Sender: TObject; AConnection: ICrossConnection);
+var
+  p_io: TCrossSocketServer_PeerIO;
 begin
-  TCompute.SyncP(procedure
-    var
-      p_io: TCrossSocketServer_PeerIO;
-    begin
-      p_io := TCrossSocketServer_PeerIO.Create(Self, AConnection.ConnectionIntf);
-      AConnection.UserObject := p_io;
-      p_io.OnSendBackcall := DoSendBuffResult;
-    end);
+  p_io := TCrossSocketServer_PeerIO.Create(Self, AConnection.ConnectionIntf);
+  AConnection.UserObject := p_io;
+  p_io.OnSendBackcall := DoSendBuffResult;
 end;
 
 procedure TZNet_Server_CrossSocket.DoDisconnect(Sender: TObject; AConnection: ICrossConnection);
+var
+  p_io: TCrossSocketServer_PeerIO;
 begin
   if AConnection.UserObject is TCrossSocketServer_PeerIO then
     begin
-      TCompute.SyncP(procedure
-        var
-          p_io: TCrossSocketServer_PeerIO;
+      p_io := TCrossSocketServer_PeerIO(AConnection.UserObject);
+      if p_io <> nil then
         begin
-          try
-            p_io := TCrossSocketServer_PeerIO(AConnection.UserObject);
-            if p_io <> nil then
-              begin
-                p_io.IOInterface := nil;
-                AConnection.UserObject := nil;
-                DisposeObject(p_io);
-              end;
-          except
-          end;
-        end);
+          p_io.IOInterface := nil;
+          AConnection.UserObject := nil;
+          p_io.DelayFree;
+        end;
     end;
 end;
 
@@ -403,13 +423,7 @@ end;
 
 constructor TZNet_Server_CrossSocket.Create;
 begin
-  CreateTh(
-{$IFDEF DEBUG}
-  2
-{$ELSE DEBUG}
-  Z.Core.Get_Parallel_Granularity
-{$ENDIF DEBUG}
-  );
+  CreateTh({$IFDEF DEBUG}1{$ELSE DEBUG}2{$ENDIF DEBUG} ); // ZNet内部走的并发模型,不会阻塞线程,普通服务器并发线程2个就够了,如果高并发服务器,给8个线程
 end;
 
 constructor TZNet_Server_CrossSocket.CreateTh(maxThPool: Word);
@@ -426,12 +440,19 @@ begin
   FBindPort := 0;
   FBindHost := '';
   FMaxConnection := 20000;
-  name:='Cross-Socket-Server';
+  name := 'Cross-Socket-Server';
 end;
 
 destructor TZNet_Server_CrossSocket.Destroy;
 begin
   StopService;
+  // CrossSocket使用了RTL的Synchronize机制,这是兼容UI的机制,在服务器领域这是非常蛋疼的东西
+  // soft_synchronize_technology是Synchronize硬件仿真技术,用于DLL和静态库使用独立线程仿真RTL主线程,
+  // 使用soft_synchronize_technology系技术,必须非常小心,同步队列一旦出问题都是传导型的问题
+  // 如果开启了soft_synchronize_technology,这里必须同步一下
+  // 同步的作用是清理IO同步事件,以免卡端口,导致PostQueuedCompletionStatus消息过去卡队列
+  // 无论Used_Soft_Synchronize是否开启Check_Soft_Thread_Synchronize都会清理掉当前的UI同步队列.
+  Check_Soft_Thread_Synchronize(0, False);
   try
       DisposeObject(FDriver);
   except
@@ -449,14 +470,14 @@ begin
   Successed := False;
   try
     ICrossSocket(FDriver).Listen(Host, Port,
-      procedure(Listen: ICrossListen; Success_: Boolean)
+        procedure(Listen: ICrossListen; Success_: Boolean)
       begin
         Completed := True;
         Successed := Success_;
       end);
 
     while not Completed do
-        CheckThreadSynchronize(5);
+        Check_Soft_Thread_Synchronize(5, False);
 
     FBindPort := Port;
     FBindHost := Host;
@@ -500,3 +521,4 @@ initialization
 finalization
 
 end.
+ 

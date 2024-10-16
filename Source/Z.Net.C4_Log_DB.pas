@@ -1,8 +1,38 @@
+(*
+https://zpascal.net
+https://github.com/PassByYou888/ZNet
+https://github.com/PassByYou888/zRasterization
+https://github.com/PassByYou888/ZSnappy
+https://github.com/PassByYou888/Z-AI1.4
+https://github.com/PassByYou888/InfiniteIoT
+https://github.com/PassByYou888/zMonitor_3rd_Core
+https://github.com/PassByYou888/tcmalloc4p
+https://github.com/PassByYou888/jemalloc4p
+https://github.com/PassByYou888/zCloud
+https://github.com/PassByYou888/ZServer4D
+https://github.com/PassByYou888/zShell
+https://github.com/PassByYou888/ZDB2.0
+https://github.com/PassByYou888/zGameWare
+https://github.com/PassByYou888/CoreCipher
+https://github.com/PassByYou888/zChinese
+https://github.com/PassByYou888/zSound
+https://github.com/PassByYou888/zExpression
+https://github.com/PassByYou888/ZInstaller2.0
+https://github.com/PassByYou888/zAI
+https://github.com/PassByYou888/NetFileService
+https://github.com/PassByYou888/zAnalysis
+https://github.com/PassByYou888/PascalString
+https://github.com/PassByYou888/zInstaller
+https://github.com/PassByYou888/zTranslate
+https://github.com/PassByYou888/zVision
+https://github.com/PassByYou888/FFMPEG-Header
+*)
 { ****************************************************************************** }
 { * cloud 4.0 log database                                                     * }
 { ****************************************************************************** }
 unit Z.Net.C4_Log_DB;
 
+{$DEFINE FPC_DELPHI_MODE}
 {$I Z.Define.inc}
 
 interface
@@ -14,6 +44,7 @@ uses
   Z.Core, Z.PascalStrings, Z.UPascalStrings, Z.Status, Z.UnicodeMixedLib, Z.ListEngine,
   Z.Geometry2D, Z.DFE, Z.Json, Z.Expression,
   Z.Notify, Z.Cipher, Z.MemoryStream,
+  Z.FragmentBuffer, // solve for discontinuous space
   Z.ZDB2, Z.ZDB2.HS, Z.HashList.Templet,
   Z.Net, Z.Net.PhysicsIO, Z.Net.DoubleTunnelIO.NoAuth, Z.Net.C4;
 
@@ -28,10 +59,10 @@ type
     FileName: U_String;
   end;
 
-  TLog_DB_Pool = {$IFDEF FPC}specialize {$ENDIF FPC}TGeneric_String_Object_Hash<TC40_Log_DB_ZDB2_HashString>;
-  TLog_DB_List = {$IFDEF FPC}specialize {$ENDIF FPC}TBigList<TC40_Log_DB_ZDB2_HashString>;
+  TLog_DB_Pool = TGeneric_String_Object_Hash<TC40_Log_DB_ZDB2_HashString>;
+  TLog_DB_List = TBigList<TC40_Log_DB_ZDB2_HashString>;
 
-  TC40_Log_DB_Service_RecvTunnel_NoAuth = class(TPeerClientUserDefineForRecvTunnel_NoAuth)
+  TC40_Log_DB_Service_RecvTunnel_NoAuth = class(TService_RecvTunnel_UserDefine_NoAuth)
   public
     Log_DB_Service: TC40_Log_DB_Service;
     Sync_Log: Boolean;
@@ -41,8 +72,8 @@ type
 
   TC40_Log_DB_Service = class(TC40_Base_NoAuth_Service)
   protected
-    procedure DoLinkSuccess_Event(sender: TDTService_NoAuth; UserDefineIO: TPeerClientUserDefineForRecvTunnel_NoAuth); override;
-    procedure DoUserOut_Event(sender: TDTService_NoAuth; UserDefineIO: TPeerClientUserDefineForRecvTunnel_NoAuth); override;
+    procedure DoLinkSuccess_Event(sender: TDTService_NoAuth; UserDefineIO: TService_RecvTunnel_UserDefine_NoAuth); override;
+    procedure DoUserOut_Event(sender: TDTService_NoAuth; UserDefineIO: TService_RecvTunnel_UserDefine_NoAuth); override;
   private
     procedure cmd_PostLog(sender: TPeerIO; InData: TDFE);
     procedure cmd_QueryLog(sender: TPeerIO; InData, OutData: TDFE);
@@ -95,7 +126,7 @@ type
 
   TArrayLogData = array of TLogData__;
 
-  TLogData_List_Decl = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<PLogData__>;
+  TLogData_List_Decl = TGenericsList<PLogData__>;
 
   TLogData_List = class(TLogData_List_Decl)
   public
@@ -119,7 +150,7 @@ type
   TON_QueryLogP = reference to procedure(sender: TC40_Log_DB_Client; LogDB: SystemString; arry: TArrayLogData);
 {$ENDIF FPC}
 
-  TON_QueryLog = class(TOnResultBridge)
+  TON_QueryLog = class(TOnResult_Bridge)
   public
     Client: TC40_Log_DB_Client;
     LogDB: SystemString;
@@ -138,7 +169,7 @@ type
   TON_GetLogDBP = reference to procedure(sender: TC40_Log_DB_Client; arry: U_StringArray);
 {$ENDIF FPC}
 
-  TON_GetLogDB = class(TOnResultBridge)
+  TON_GetLogDB = class(TOnResult_Bridge)
   public
     Client: TC40_Log_DB_Client;
     OnResultC: TON_GetLogDBC;
@@ -191,7 +222,7 @@ type
     procedure Enabled_LogMonitor(Sync_Log: Boolean);
   end;
 
-  TC40_Log_DB_Client_List = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<TC40_Log_DB_Client>;
+  TC40_Log_DB_Client_List = TGenericsList<TC40_Log_DB_Client>;
 
 function MakeNowDateStr(): SystemString;
 
@@ -263,7 +294,7 @@ begin
   inherited Destroy;
 end;
 
-procedure TC40_Log_DB_Service.DoLinkSuccess_Event(sender: TDTService_NoAuth; UserDefineIO: TPeerClientUserDefineForRecvTunnel_NoAuth);
+procedure TC40_Log_DB_Service.DoLinkSuccess_Event(sender: TDTService_NoAuth; UserDefineIO: TService_RecvTunnel_UserDefine_NoAuth);
 var
   IO_Def: TC40_Log_DB_Service_RecvTunnel_NoAuth;
 begin
@@ -272,7 +303,7 @@ begin
   IO_Def.Log_DB_Service := self;
 end;
 
-procedure TC40_Log_DB_Service.DoUserOut_Event(sender: TDTService_NoAuth; UserDefineIO: TPeerClientUserDefineForRecvTunnel_NoAuth);
+procedure TC40_Log_DB_Service.DoUserOut_Event(sender: TDTService_NoAuth; UserDefineIO: TService_RecvTunnel_UserDefine_NoAuth);
 begin
   inherited DoUserOut_Event(sender, UserDefineIO);
 end;
@@ -420,7 +451,7 @@ var
   fArry: U_StringArray;
   fn: U_SystemString;
 begin
-  fArry := umlGetFileListWithFullPath(C40_DB_Directory);
+  fArry := umlGet_File_Full_Array(C40_DB_Directory);
   for fn in fArry do
     if umlMultipleMatch(True, '*.Log_ZDB2', fn) then
         OutData.WriteString(umlChangeFileExt(umlGetFileName(fn), ''));
@@ -481,14 +512,14 @@ begin
   DTNoAuth.RecvTunnel.PeerClientUserDefineClass := TC40_Log_DB_Service_RecvTunnel_NoAuth;
 
   DTNoAuthService.RecvTunnel.SendDataCompressed := True;
-  DTNoAuthService.RecvTunnel.RegisterDirectStream('PostLog').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_PostLog;
-  DTNoAuthService.RecvTunnel.RegisterStream('QueryLog').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_QueryLog;
-  DTNoAuthService.RecvTunnel.RegisterDirectStream('QueryAndRemoveLog').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_QueryAndRemoveLog;
-  DTNoAuthService.RecvTunnel.RegisterDirectStream('RemoveLog').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_RemoveLog;
-  DTNoAuthService.RecvTunnel.RegisterStream('GetLogDB').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_GetLogDB;
-  DTNoAuthService.RecvTunnel.RegisterDirectStream('CloseDB').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_CloseDB;
-  DTNoAuthService.RecvTunnel.RegisterDirectStream('RemoveDB').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_RemoveDB;
-  DTNoAuthService.RecvTunnel.RegisterDirectStream('Enabled_LogMonitor').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_Enabled_LogMonitor;
+  DTNoAuthService.RecvTunnel.RegisterDirectStream('PostLog').OnExecute := cmd_PostLog;
+  DTNoAuthService.RecvTunnel.RegisterStream('QueryLog').OnExecute := cmd_QueryLog;
+  DTNoAuthService.RecvTunnel.RegisterDirectStream('QueryAndRemoveLog').OnExecute := cmd_QueryAndRemoveLog;
+  DTNoAuthService.RecvTunnel.RegisterDirectStream('RemoveLog').OnExecute := cmd_RemoveLog;
+  DTNoAuthService.RecvTunnel.RegisterStream('GetLogDB').OnExecute := cmd_GetLogDB;
+  DTNoAuthService.RecvTunnel.RegisterDirectStream('CloseDB').OnExecute := cmd_CloseDB;
+  DTNoAuthService.RecvTunnel.RegisterDirectStream('RemoveDB').OnExecute := cmd_RemoveDB;
+  DTNoAuthService.RecvTunnel.RegisterDirectStream('Enabled_LogMonitor').OnExecute := cmd_Enabled_LogMonitor;
   Service.QuietMode := True;
   // is only instance
   ServiceInfo.OnlyInstance := True;
@@ -527,12 +558,12 @@ end;
 procedure TC40_Log_DB_Service.SafeCheck;
 begin
   inherited SafeCheck;
-  DB_Pool.ProgressM({$IFDEF FPC}@{$ENDIF FPC}Do_DB_Pool_SafeCheck);
+  DB_Pool.ProgressM(Do_DB_Pool_SafeCheck);
 end;
 
 procedure TC40_Log_DB_Service.Progress;
 begin
-  DB_Pool.ProgressM({$IFDEF FPC}@{$ENDIF FPC}Do_DB_Pool_Progress);
+  DB_Pool.ProgressM(Do_DB_Pool_Progress);
 
   while WaitFreeList.Count > 0 do
     begin
@@ -551,7 +582,7 @@ end;
 function TC40_Log_DB_Service.GetDB(const LogDB: SystemString): TC40_Log_DB_ZDB2_HashString;
 var
   fn: U_String;
-  fs: TCore_FileStream;
+  fs: TCore_Stream;
   LogDB_: U_String;
 begin
   LogDB_ := umlConverStrToFileName(LogDB);
@@ -562,12 +593,24 @@ begin
       fn := umlCombineFileName(C40_DB_Directory, LogDB_.Text + '.Log_ZDB2');
       try
         if EStrToBool(ParamList.GetDefaultValue('ForeverSave', 'True'), True) and umlFileExists(fn) then
-            fs := TCore_FileStream.Create(fn, fmOpenReadWrite)
+          begin
+{$IFDEF C4_Safe_Flush}
+            fs := TSafe_Flush_Stream.Create(fn, False, True);
+{$ELSE C4_Safe_Flush}
+            fs := TCore_FileStream.Create(fn, fmOpenReadWrite);
+{$ENDIF C4_Safe_Flush}
+          end
         else
+          begin
+{$IFDEF C4_Safe_Flush}
+            fs := TSafe_Flush_Stream.Create(fn, True, True);
+{$ELSE C4_Safe_Flush}
             fs := TCore_FileStream.Create(fn, fmCreate);
+{$ENDIF C4_Safe_Flush}
+          end;
         Result := TC40_Log_DB_ZDB2_HashString.Create(
           TZDB2_HashString,
-{$IFDEF FPC}@{$ENDIF FPC}Do_Create_ZDB2_HashString,
+          Do_Create_ZDB2_HashString,
           ZDB2RecycleMemoryTimeOut,
           fs,
           False,
@@ -740,10 +783,10 @@ begin
 
   try
     if Assigned(OnResultC) then
-        OnResultC(Client, LogDB, arry);
-    if Assigned(OnResultM) then
-        OnResultM(Client, LogDB, arry);
-    if Assigned(OnResultP) then
+        OnResultC(Client, LogDB, arry)
+    else if Assigned(OnResultM) then
+        OnResultM(Client, LogDB, arry)
+    else if Assigned(OnResultP) then
         OnResultP(Client, LogDB, arry);
   except
   end;
@@ -771,10 +814,10 @@ begin
 
   try
     if Assigned(OnResultC) then
-        OnResultC(Client, arry);
-    if Assigned(OnResultM) then
-        OnResultM(Client, arry);
-    if Assigned(OnResultP) then
+        OnResultC(Client, arry)
+    else if Assigned(OnResultM) then
+        OnResultM(Client, arry)
+    else if Assigned(OnResultP) then
         OnResultP(Client, arry);
   except
   end;
@@ -797,7 +840,7 @@ constructor TC40_Log_DB_Client.Create(PhysicsTunnel_: TC40_PhysicsTunnel; source
 begin
   inherited Create(PhysicsTunnel_, source_, Param_);
   Client.QuietMode := True;
-  DTNoAuthClient.RecvTunnel.RegisterDirectStream('Log').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_Log;
+  DTNoAuthClient.RecvTunnel.RegisterDirectStream('Log').OnExecute := cmd_Log;
   ON_C40_Log_DB_Client_Interface := nil;
 end;
 
@@ -839,7 +882,7 @@ begin
   d.WriteDouble(eTime);
   d.WriteString(filter1);
   d.WriteString(filter2);
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('QueryLog', d, {$IFDEF FPC}@{$ENDIF FPC}TStreamEventBridge.Create(Bridge_IO_).DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('QueryLog', d, TStream_Event_Bridge.Create(Bridge_IO_).DoStreamEvent);
   disposeObject(d);
 end;
 
@@ -859,7 +902,7 @@ begin
   d.WriteDouble(eTime);
   d.WriteString(filter1);
   d.WriteString(filter2);
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('QueryLog', d, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('QueryLog', d, tmp.DoStreamEvent);
   disposeObject(d);
 end;
 
@@ -879,7 +922,7 @@ begin
   d.WriteDouble(eTime);
   d.WriteString(filter1);
   d.WriteString(filter2);
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('QueryLog', d, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('QueryLog', d, tmp.DoStreamEvent);
   disposeObject(d);
 end;
 
@@ -899,7 +942,7 @@ begin
   d.WriteDouble(eTime);
   d.WriteString(filter1);
   d.WriteString(filter2);
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('QueryLog', d, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('QueryLog', d, tmp.DoStreamEvent);
   disposeObject(d);
 end;
 
@@ -958,7 +1001,7 @@ var
   d: TDFE;
 begin
   d := TDFE.Create;
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetLogDB', d, {$IFDEF FPC}@{$ENDIF FPC}TStreamEventBridge.Create(Bridge_IO_).DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetLogDB', d, TStream_Event_Bridge.Create(Bridge_IO_).DoStreamEvent);
   disposeObject(d);
 end;
 
@@ -972,7 +1015,7 @@ begin
   tmp.OnResultC := OnResult;
 
   d := TDFE.Create;
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetLogDB', d, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetLogDB', d, tmp.DoStreamEvent);
   disposeObject(d);
 end;
 
@@ -986,7 +1029,7 @@ begin
   tmp.OnResultM := OnResult;
 
   d := TDFE.Create;
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetLogDB', d, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetLogDB', d, tmp.DoStreamEvent);
   disposeObject(d);
 end;
 
@@ -1000,7 +1043,7 @@ begin
   tmp.OnResultP := OnResult;
 
   d := TDFE.Create;
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetLogDB', d, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('GetLogDB', d, tmp.DoStreamEvent);
   disposeObject(d);
 end;
 
@@ -1039,3 +1082,4 @@ initialization
 RegisterC40('Log', TC40_Log_DB_Service, TC40_Log_DB_Client);
 
 end.
+ 

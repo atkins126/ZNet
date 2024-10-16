@@ -1,8 +1,38 @@
+(*
+https://zpascal.net
+https://github.com/PassByYou888/ZNet
+https://github.com/PassByYou888/zRasterization
+https://github.com/PassByYou888/ZSnappy
+https://github.com/PassByYou888/Z-AI1.4
+https://github.com/PassByYou888/InfiniteIoT
+https://github.com/PassByYou888/zMonitor_3rd_Core
+https://github.com/PassByYou888/tcmalloc4p
+https://github.com/PassByYou888/jemalloc4p
+https://github.com/PassByYou888/zCloud
+https://github.com/PassByYou888/ZServer4D
+https://github.com/PassByYou888/zShell
+https://github.com/PassByYou888/ZDB2.0
+https://github.com/PassByYou888/zGameWare
+https://github.com/PassByYou888/CoreCipher
+https://github.com/PassByYou888/zChinese
+https://github.com/PassByYou888/zSound
+https://github.com/PassByYou888/zExpression
+https://github.com/PassByYou888/ZInstaller2.0
+https://github.com/PassByYou888/zAI
+https://github.com/PassByYou888/NetFileService
+https://github.com/PassByYou888/zAnalysis
+https://github.com/PassByYou888/PascalString
+https://github.com/PassByYou888/zInstaller
+https://github.com/PassByYou888/zTranslate
+https://github.com/PassByYou888/zVision
+https://github.com/PassByYou888/FFMPEG-Header
+*)
 { ****************************************************************************** }
 { * ZDB 2.0 Pair String-Stream for HPC                                         * }
 { ****************************************************************************** }
 unit Z.ZDB2.Thread.Pair_String_Stream;
 
+{$DEFINE FPC_DELPHI_MODE}
 {$I Z.Define.inc}
 
 interface
@@ -20,7 +50,7 @@ type
   TZDB2_Pair_String_Stream_Tool = class;
   TZDB2_Pair_String_Stream_Data = class;
 
-  TZDB2_Pair_String_Stream_Pool__ = {$IFDEF FPC}specialize {$ENDIF FPC} TCritical_String_Big_Hash_Pair_Pool<TZDB2_Pair_String_Stream_Data>;
+  TZDB2_Pair_String_Stream_Pool__ = TCritical_String_Big_Hash_Pair_Pool<TZDB2_Pair_String_Stream_Data>;
 
   TZDB2_Pair_String_Stream_Pool = class(TZDB2_Pair_String_Stream_Pool__)
   public
@@ -36,7 +66,7 @@ type
     destructor Destroy; override;
   end;
 
-  TZDB2_Pair_String_Stream_Tool = class
+  TZDB2_Pair_String_Stream_Tool = class(TCore_Object_Intermediate)
   private
     procedure Do_Th_Data_Loaded(Sender: TZDB2_Th_Engine_Data; IO_: TMS64);
   public
@@ -71,7 +101,9 @@ type
     procedure Backup(Reserve_: Word);
     procedure Backup_If_No_Exists();
     // flush
-    procedure Flush;
+    procedure Flush; overload;
+    procedure Flush(WaitQueue_: Boolean); overload;
+    function Flush_Is_Busy: Boolean;
     // fragment number
     function Num: NativeInt;
     // recompute totalfragment number
@@ -153,7 +185,7 @@ end;
 function TZDB2_Pair_String_Stream_Tool.BuildMemory(): TZDB2_Th_Engine;
 begin
   Result := TZDB2_Th_Engine.Create(ZDB2_Marshal);
-  Result.Mode := smBigData;
+  Result.Cache_Mode := smBigData;
   Result.Database_File := '';
   Result.OnlyRead := False;
   Result.Cipher_Security := TCipherSecurity.csNone;
@@ -163,7 +195,7 @@ end;
 function TZDB2_Pair_String_Stream_Tool.BuildOrOpen(FileName_: U_String; OnlyRead_, Encrypt_: Boolean): TZDB2_Th_Engine;
 begin
   Result := TZDB2_Th_Engine.Create(ZDB2_Marshal);
-  Result.Mode := smNormal;
+  Result.Cache_Mode := smNormal;
   Result.Database_File := FileName_;
   Result.OnlyRead := OnlyRead_;
 
@@ -183,7 +215,7 @@ end;
 function TZDB2_Pair_String_Stream_Tool.BuildOrOpen(FileName_: U_String; OnlyRead_, Encrypt_: Boolean; cfg: THashStringList): TZDB2_Th_Engine;
 begin
   Result := TZDB2_Th_Engine.Create(ZDB2_Marshal);
-  Result.Mode := smNormal;
+  Result.Cache_Mode := smNormal;
   Result.Database_File := FileName_;
   Result.OnlyRead := OnlyRead_;
   if cfg <> nil then
@@ -216,7 +248,7 @@ end;
 procedure TZDB2_Pair_String_Stream_Tool.Extract_String_Pool(ThNum_: Integer);
 begin
   String_Pool.Clear;
-  ZDB2_Marshal.Parallel_Load_M(ThNum_, {$IFDEF FPC}@{$ENDIF FPC}Do_Th_Data_Loaded, nil);
+  ZDB2_Marshal.Parallel_Load_M(ThNum_, Do_Th_Data_Loaded, nil);
 end;
 
 procedure TZDB2_Pair_String_Stream_Tool.Clear(Delete_Data_: Boolean);
@@ -421,6 +453,16 @@ begin
   ZDB2_Marshal.Flush;
 end;
 
+procedure TZDB2_Pair_String_Stream_Tool.Flush(WaitQueue_: Boolean);
+begin
+  ZDB2_Marshal.Flush(WaitQueue_);
+end;
+
+function TZDB2_Pair_String_Stream_Tool.Flush_Is_Busy: Boolean;
+begin
+  Result := ZDB2_Marshal.Flush_Is_Busy;
+end;
+
 function TZDB2_Pair_String_Stream_Tool.Num: NativeInt;
 begin
   Result := ZDB2_Marshal.Data_Marshal.Num;
@@ -512,3 +554,4 @@ begin
 end;
 
 end.
+ 

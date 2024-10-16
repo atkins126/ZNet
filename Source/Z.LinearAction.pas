@@ -1,8 +1,38 @@
+(*
+https://zpascal.net
+https://github.com/PassByYou888/ZNet
+https://github.com/PassByYou888/zRasterization
+https://github.com/PassByYou888/ZSnappy
+https://github.com/PassByYou888/Z-AI1.4
+https://github.com/PassByYou888/InfiniteIoT
+https://github.com/PassByYou888/zMonitor_3rd_Core
+https://github.com/PassByYou888/tcmalloc4p
+https://github.com/PassByYou888/jemalloc4p
+https://github.com/PassByYou888/zCloud
+https://github.com/PassByYou888/ZServer4D
+https://github.com/PassByYou888/zShell
+https://github.com/PassByYou888/ZDB2.0
+https://github.com/PassByYou888/zGameWare
+https://github.com/PassByYou888/CoreCipher
+https://github.com/PassByYou888/zChinese
+https://github.com/PassByYou888/zSound
+https://github.com/PassByYou888/zExpression
+https://github.com/PassByYou888/ZInstaller2.0
+https://github.com/PassByYou888/zAI
+https://github.com/PassByYou888/NetFileService
+https://github.com/PassByYou888/zAnalysis
+https://github.com/PassByYou888/PascalString
+https://github.com/PassByYou888/zInstaller
+https://github.com/PassByYou888/zTranslate
+https://github.com/PassByYou888/zVision
+https://github.com/PassByYou888/FFMPEG-Header
+*)
 { ****************************************************************************** }
 { * liner action                                                               * }
 { ****************************************************************************** }
 unit Z.LinearAction;
 
+{$DEFINE FPC_DELPHI_MODE}
 {$I Z.Define.inc}
 
 interface
@@ -20,7 +50,7 @@ type
   TLActionList = class;
   TLAction_Linear = class;
 
-  TLAction = class
+  TLAction = class(TCore_Object_Intermediate)
   private
     State: TCoreActionStates;
   public
@@ -37,9 +67,9 @@ type
 
   TLActionClass = class of TLAction;
 
-  TLActionList_Decl = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<TLAction>;
+  TLActionList_Decl = TGenericsList<TLAction>;
 
-  TLActionList = class
+  TLActionList = class(TCore_Object_Intermediate)
   protected
     FSequenceList: TLActionList_Decl;
     FIndex: Integer;
@@ -63,9 +93,9 @@ type
     property List: TLActionList_Decl read FSequenceList;
   end;
 
-  TLActionList_Decl_List_Decl = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<TLActionList>;
+  TLActionList_Decl_List_Decl = TGenericsList<TLActionList>;
 
-  TLAction_Linear = class
+  TLAction_Linear = class(TCore_Object_Intermediate)
   protected
     FLinear_List: TLActionList_Decl_List_Decl;
     FIndex: Integer;
@@ -254,7 +284,7 @@ begin
   if FCadender = nil then
     begin
       FCadender := TCadencer.Create;
-      FCadender.OnProgress := {$IFDEF FPC}@{$ENDIF FPC}Do_CadencerProgress;
+      FCadender.OnProgress := Do_CadencerProgress;
     end;
   FCadender.Progress;
 end;
@@ -341,7 +371,7 @@ begin
   if FCadender = nil then
     begin
       FCadender := TCadencer.Create;
-      FCadender.OnProgress := {$IFDEF FPC}@{$ENDIF FPC}Do_CadencerProgress;
+      FCadender.OnProgress := Do_CadencerProgress;
     end;
   FCadender.Progress;
 end;
@@ -366,3 +396,4 @@ begin
 end;
 
 end.
+ 

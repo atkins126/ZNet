@@ -20,24 +20,6 @@ uses
   Z.Net.C4, Z.Net.C4_UserDB,
   Z.Net.C4_Console_APP;
 
-var
-  exit_signal: Boolean;
-
-procedure Do_Check_On_Exit;
-var
-  n: string;
-  cH: TC40_Console_Help;
-begin
-  cH := TC40_Console_Help.Create;
-  repeat
-    TCompute.Sleep(100);
-    Readln(n);
-    cH.Run_HelpCmd(n);
-  until cH.IsExit;
-  disposeObject(cH);
-  exit_signal := True;
-end;
-
 const
   // 调度服务器端口公网地址,可以是ipv4,ipv6,dns
   // 公共地址,不能给127.0.0.1这类
@@ -57,7 +39,7 @@ end;
 type
   TMyVA_Service = class(TC40_Base_VirtualAuth_Service)
   private type
-    TMyVA_RecvIO_Define = class(TPeerClientUserDefineForRecvTunnel_VirtualAuth)
+    TMyVA_RecvIO_Define = class(TService_RecvTunnel_UserDefine_VirtualAuth)
     public
       UserPrimaryIdentifier: U_String;
       MyCustomData: TZJ;
@@ -99,7 +81,7 @@ type
   protected
     procedure DoUserReg_Event(Sender: TDTService_VirtualAuth; RegIO: TVirtualRegIO); override;
     procedure DoUserAuth_Event(Sender: TDTService_VirtualAuth; AuthIO: TVirtualAuthIO); override;
-    procedure DoUserOut_Event(Sender: TDTService_VirtualAuth; UserDefineIO: TPeerClientUserDefineForRecvTunnel_VirtualAuth); override;
+    procedure DoUserOut_Event(Sender: TDTService_VirtualAuth; UserDefineIO: TService_RecvTunnel_UserDefine_VirtualAuth); override;
   private
     procedure cmd_NewLoginName(Sender: TPeerIO; InData, OutData: TDFE);
     procedure cmd_NewAlias(Sender: TPeerIO; InData: TDFE);
@@ -219,7 +201,7 @@ begin
   Get_UserDB_Client.Usr_AuthM(AuthIO.UserID, AuthIO.Passwd, tmp.Do_Usr_Auth);
 end;
 
-procedure TMyVA_Service.DoUserOut_Event(Sender: TDTService_VirtualAuth; UserDefineIO: TPeerClientUserDefineForRecvTunnel_VirtualAuth);
+procedure TMyVA_Service.DoUserOut_Event(Sender: TDTService_VirtualAuth; UserDefineIO: TService_RecvTunnel_UserDefine_VirtualAuth);
 var
   IO_Def: TMyVA_RecvIO_Define;
   L: TMyVA_RecvIO_Define_List;
@@ -593,11 +575,7 @@ begin
 
   // 主循环
   StatusThreadID := False;
-  exit_signal := False;
-  TCompute.RunC_NP(@Do_Check_On_Exit);
-  while not exit_signal do
-      Z.Net.C4.C40Progress;
-
+  C40_Execute_Main_Loop;
   Z.Net.C4.C40Clean;
 
 end.

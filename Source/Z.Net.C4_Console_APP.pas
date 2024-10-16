@@ -1,7 +1,38 @@
+(*
+https://zpascal.net
+https://github.com/PassByYou888/ZNet
+https://github.com/PassByYou888/zRasterization
+https://github.com/PassByYou888/ZSnappy
+https://github.com/PassByYou888/Z-AI1.4
+https://github.com/PassByYou888/InfiniteIoT
+https://github.com/PassByYou888/zMonitor_3rd_Core
+https://github.com/PassByYou888/tcmalloc4p
+https://github.com/PassByYou888/jemalloc4p
+https://github.com/PassByYou888/zCloud
+https://github.com/PassByYou888/ZServer4D
+https://github.com/PassByYou888/zShell
+https://github.com/PassByYou888/ZDB2.0
+https://github.com/PassByYou888/zGameWare
+https://github.com/PassByYou888/CoreCipher
+https://github.com/PassByYou888/zChinese
+https://github.com/PassByYou888/zSound
+https://github.com/PassByYou888/zExpression
+https://github.com/PassByYou888/ZInstaller2.0
+https://github.com/PassByYou888/zAI
+https://github.com/PassByYou888/NetFileService
+https://github.com/PassByYou888/zAnalysis
+https://github.com/PassByYou888/PascalString
+https://github.com/PassByYou888/zInstaller
+https://github.com/PassByYou888/zTranslate
+https://github.com/PassByYou888/zVision
+https://github.com/PassByYou888/FFMPEG-Header
+*)
 { ****************************************************************************** }
 { * cloud 4.0 console application framework                                    * }
 { ****************************************************************************** }
 unit Z.Net.C4_Console_APP;
+
+{$DEFINE FPC_DELPHI_MODE}
 {$I Z.Define.inc}
 
 interface
@@ -35,6 +66,7 @@ procedure C40_Init_AppParamFromSystemCmdLine;
 function C40_Extract_CmdLine(): Boolean; overload;
 function C40_Extract_CmdLine(const Param_: U_StringArray): Boolean; overload;
 function C40_Extract_CmdLine(const TextStyle_: TTextStyle; const Param_: U_StringArray): Boolean; overload;
+procedure C40_Execute_Main_Loop;
 
 implementation
 
@@ -51,11 +83,11 @@ type
     procedure Init;
   end;
 
-  TCmd_Net_Info_List = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<TCmd_Net_Info_>;
+  TCmd_Net_Info_List = TGenericsList<TCmd_Net_Info_>;
 
-  TCommand_Script = class
+  TCommand_Script = class(TCore_Object_Intermediate)
   private
-    function Do_Config(var OP_Param: TOpParam): Variant;
+    function Do_Config(OpRunTime: TOpCustomRunTime; OP_RT_Data: POpRTData; var OP_Param: TOpParam): Variant;
     function Do_KeepAlive_Client(var OP_Param: TOpParam): Variant;
     function Do_AutoClient(var OP_Param: TOpParam): Variant;
     function Do_Client(var OP_Param: TOpParam): Variant;
@@ -70,7 +102,7 @@ type
     constructor Create;
     destructor Destroy; override;
     procedure RegApi;
-    procedure Parsing(Expression: U_String);
+    procedure Execute(Expression: U_String);
   end;
 
 procedure TCmd_Net_Info_.Init;
@@ -84,16 +116,16 @@ begin
   KeepAlive_Connected := False;
 end;
 
-function TCommand_Script.Do_Config(var OP_Param: TOpParam): Variant;
+function TCommand_Script.Do_Config(OpRunTime: TOpCustomRunTime; OP_RT_Data: POpRTData; var OP_Param: TOpParam): Variant;
 begin
   if length(OP_Param) > 0 then
     begin
-      Config.SetDefaultValue(opRT.Trigger^.Name, VarToStr(OP_Param[0]));
+      Config.SetDefaultValue(OP_RT_Data^.Name, VarToStr(OP_Param[0]));
       Result := True;
       ConfigIsUpdate := True;
     end
   else
-      Result := Config[opRT.Trigger^.Name];
+      Result := Config[OP_RT_Data^.Name];
 end;
 
 function TCommand_Script.Do_KeepAlive_Client(var OP_Param: TOpParam): Variant;
@@ -222,46 +254,47 @@ begin
   Config.GetNameList(L);
   for i := 0 to L.Count - 1 do
     begin
-      opRT.RegOpM(L[i], {$IFDEF FPC}@{$ENDIF FPC}Do_Config)^.Category := 'C4 Param variant';
+      opRT.Reg_RT_OpM(L[i], Do_Config)^.Category := 'C4 Param variant';
     end;
   disposeObject(L);
 
-  opRT.RegOpM('KeepAlive', {$IFDEF FPC}@{$ENDIF FPC}Do_KeepAlive_Client)^.Category := 'C4 Param Command';
-  opRT.RegOpM('KeepAliveClient', {$IFDEF FPC}@{$ENDIF FPC}Do_KeepAlive_Client)^.Category := 'C4 Param Command';
-  opRT.RegOpM('KeepAliveCli', {$IFDEF FPC}@{$ENDIF FPC}Do_KeepAlive_Client)^.Category := 'C4 Param Command';
-  opRT.RegOpM('KeepAliveTunnel', {$IFDEF FPC}@{$ENDIF FPC}Do_KeepAlive_Client)^.Category := 'C4 Param Command';
-  opRT.RegOpM('KeepAliveConnect', {$IFDEF FPC}@{$ENDIF FPC}Do_KeepAlive_Client)^.Category := 'C4 Param Command';
-  opRT.RegOpM('KeepAliveConnection', {$IFDEF FPC}@{$ENDIF FPC}Do_KeepAlive_Client)^.Category := 'C4 Param Command';
-  opRT.RegOpM('KeepAliveNet', {$IFDEF FPC}@{$ENDIF FPC}Do_KeepAlive_Client)^.Category := 'C4 Param Command';
-  opRT.RegOpM('KeepAliveBuild', {$IFDEF FPC}@{$ENDIF FPC}Do_KeepAlive_Client)^.Category := 'C4 Param Command';
+  opRT.Reg_Param_OpM('KeepAlive', Do_KeepAlive_Client)^.Category := 'C4 Param Command';
+  opRT.Reg_Param_OpM('KeepAliveClient', Do_KeepAlive_Client)^.Category := 'C4 Param Command';
+  opRT.Reg_Param_OpM('KeepAliveCli', Do_KeepAlive_Client)^.Category := 'C4 Param Command';
+  opRT.Reg_Param_OpM('KeepAliveTunnel', Do_KeepAlive_Client)^.Category := 'C4 Param Command';
+  opRT.Reg_Param_OpM('KeepAliveConnect', Do_KeepAlive_Client)^.Category := 'C4 Param Command';
+  opRT.Reg_Param_OpM('KeepAliveConnection', Do_KeepAlive_Client)^.Category := 'C4 Param Command';
+  opRT.Reg_Param_OpM('KeepAliveNet', Do_KeepAlive_Client)^.Category := 'C4 Param Command';
+  opRT.Reg_Param_OpM('KeepAliveBuild', Do_KeepAlive_Client)^.Category := 'C4 Param Command';
 
-  opRT.RegOpM('Auto', {$IFDEF FPC}@{$ENDIF FPC}Do_AutoClient)^.Category := 'C4 Param Command';
-  opRT.RegOpM('AutoClient', {$IFDEF FPC}@{$ENDIF FPC}Do_AutoClient)^.Category := 'C4 Param Command';
-  opRT.RegOpM('AutoCli', {$IFDEF FPC}@{$ENDIF FPC}Do_AutoClient)^.Category := 'C4 Param Command';
-  opRT.RegOpM('AutoTunnel', {$IFDEF FPC}@{$ENDIF FPC}Do_AutoClient)^.Category := 'C4 Param Command';
-  opRT.RegOpM('AutoConnect', {$IFDEF FPC}@{$ENDIF FPC}Do_AutoClient)^.Category := 'C4 Param Command';
-  opRT.RegOpM('AutoConnection', {$IFDEF FPC}@{$ENDIF FPC}Do_AutoClient)^.Category := 'C4 Param Command';
-  opRT.RegOpM('AutoNet', {$IFDEF FPC}@{$ENDIF FPC}Do_AutoClient)^.Category := 'C4 Param Command';
-  opRT.RegOpM('AutoBuild', {$IFDEF FPC}@{$ENDIF FPC}Do_AutoClient)^.Category := 'C4 Param Command';
+  opRT.Reg_Param_OpM('Auto', Do_AutoClient)^.Category := 'C4 Param Command';
+  opRT.Reg_Param_OpM('AutoClient', Do_AutoClient)^.Category := 'C4 Param Command';
+  opRT.Reg_Param_OpM('AutoCli', Do_AutoClient)^.Category := 'C4 Param Command';
+  opRT.Reg_Param_OpM('AutoTunnel', Do_AutoClient)^.Category := 'C4 Param Command';
+  opRT.Reg_Param_OpM('AutoConnect', Do_AutoClient)^.Category := 'C4 Param Command';
+  opRT.Reg_Param_OpM('AutoConnection', Do_AutoClient)^.Category := 'C4 Param Command';
+  opRT.Reg_Param_OpM('AutoNet', Do_AutoClient)^.Category := 'C4 Param Command';
+  opRT.Reg_Param_OpM('AutoBuild', Do_AutoClient)^.Category := 'C4 Param Command';
 
-  opRT.RegOpM('Client', {$IFDEF FPC}@{$ENDIF FPC}Do_Client)^.Category := 'C4 Param Command';
-  opRT.RegOpM('Cli', {$IFDEF FPC}@{$ENDIF FPC}Do_Client)^.Category := 'C4 Param Command';
-  opRT.RegOpM('Tunnel', {$IFDEF FPC}@{$ENDIF FPC}Do_Client)^.Category := 'C4 Param Command';
-  opRT.RegOpM('Connect', {$IFDEF FPC}@{$ENDIF FPC}Do_Client)^.Category := 'C4 Param Command';
-  opRT.RegOpM('Connection', {$IFDEF FPC}@{$ENDIF FPC}Do_Client)^.Category := 'C4 Param Command';
-  opRT.RegOpM('Net', {$IFDEF FPC}@{$ENDIF FPC}Do_Client)^.Category := 'C4 Param Command';
-  opRT.RegOpM('Build', {$IFDEF FPC}@{$ENDIF FPC}Do_Client)^.Category := 'C4 Param Command';
+  opRT.Reg_Param_OpM('Client', Do_Client)^.Category := 'C4 Param Command';
+  opRT.Reg_Param_OpM('Cli', Do_Client)^.Category := 'C4 Param Command';
+  opRT.Reg_Param_OpM('Tunnel', Do_Client)^.Category := 'C4 Param Command';
+  opRT.Reg_Param_OpM('Connect', Do_Client)^.Category := 'C4 Param Command';
+  opRT.Reg_Param_OpM('Connection', Do_Client)^.Category := 'C4 Param Command';
+  opRT.Reg_Param_OpM('Net', Do_Client)^.Category := 'C4 Param Command';
+  opRT.Reg_Param_OpM('Build', Do_Client)^.Category := 'C4 Param Command';
 
-  opRT.RegOpM('Service', {$IFDEF FPC}@{$ENDIF FPC}Do_Service)^.Category := 'C4 Param Command';
-  opRT.RegOpM('Serv', {$IFDEF FPC}@{$ENDIF FPC}Do_Service)^.Category := 'C4 Param Command';
-  opRT.RegOpM('Listen', {$IFDEF FPC}@{$ENDIF FPC}Do_Service)^.Category := 'C4 Param Command';
-  opRT.RegOpM('Listening', {$IFDEF FPC}@{$ENDIF FPC}Do_Service)^.Category := 'C4 Param Command';
+  opRT.Reg_Param_OpM('Service', Do_Service)^.Category := 'C4 Param Command';
+  opRT.Reg_Param_OpM('Server', Do_Service)^.Category := 'C4 Param Command';
+  opRT.Reg_Param_OpM('Serv', Do_Service)^.Category := 'C4 Param Command';
+  opRT.Reg_Param_OpM('Listen', Do_Service)^.Category := 'C4 Param Command';
+  opRT.Reg_Param_OpM('Listening', Do_Service)^.Category := 'C4 Param Command';
 
-  opRT.RegOpM('Wait', {$IFDEF FPC}@{$ENDIF FPC}Do_Sleep)^.Category := 'C4 Param Command';
-  opRT.RegOpM('Sleep', {$IFDEF FPC}@{$ENDIF FPC}Do_Sleep)^.Category := 'C4 Param Command';
+  opRT.Reg_Param_OpM('Wait', Do_Sleep)^.Category := 'C4 Param Command';
+  opRT.Reg_Param_OpM('Sleep', Do_Sleep)^.Category := 'C4 Param Command';
 end;
 
-procedure TCommand_Script.Parsing(Expression: U_String);
+procedure TCommand_Script.Execute(Expression: U_String);
 begin
   EvaluateExpressionValue(False, C40AppParsingTextStyle, Expression, opRT);
 end;
@@ -299,7 +332,18 @@ begin
     cmd_script_.RegApi;
 
     for i := low(C40AppParam) to high(C40AppParam) do
-        cmd_script_.Parsing(C40AppParam[i]);
+      begin
+        // ignore none c4 param
+        if (not umlMultipleMatch([
+              '-Task:*', '-TaskID:*', // Protected Param
+              '-minimized', 'minimized', '-min', 'min', // Protected Param
+              '-Max_Mem_Protected:*', '-Max_Memory:*', '-Memory:*', '-Mem:*', 'mem:*', 'memory:*', // Protected Param
+              '-NUMA:*', 'NUMA:*', '-NODE:*', 'Node:*', // Protected Param
+              '-D3D', '-D3D', '-D2D', '-GPU', '-SOFT', '-GrayTheme', '-DefaultTheme' // fmx app param
+              ], C40AppParam[i])) and
+          ((Ignore_Command_Line.Count <= 0) or (not umlMultipleMatch(Ignore_Command_Line, C40AppParam[i]))) then
+            cmd_script_.Execute(C40AppParam[i]);
+      end;
 
     if (not error_) and (cmd_script_.Client_NetInfo_List.Count > 0) then
       begin
@@ -400,10 +444,6 @@ begin
   except
   end;
   Result := IsInited_;
-  if not Result then
-    begin
-      C40_Registed.Print;
-    end;
 end;
 
 function C40_Extract_CmdLine(const Param_: U_StringArray): Boolean;
@@ -419,12 +459,68 @@ begin
   Result := C40_Extract_CmdLine();
 end;
 
+type
+  TMain_Loop_Instance__ = class(TCore_Object_Intermediate)
+  private
+    exit_signal: Boolean;
+    procedure Do_Check_On_Exit;
+  public
+    constructor Create;
+    procedure Wait();
+  end;
+
+procedure TMain_Loop_Instance__.Do_Check_On_Exit;
+var
+  n: string;
+  cH: TC40_Console_Help;
+begin
+  TCompute.Set_Thread_Info('C4 Console-help Thread');
+  cH := nil;
+  repeat
+    TCompute.Sleep(100);
+    Readln(n);
+    n := umlTrimSpace(n);
+    if cH = nil then
+        cH := TC40_Console_Help.Create;
+    if n <> '' then
+        cH.Run_HelpCmd(n);
+  until cH.IsExit;
+  DisposeObjectAndNil(cH);
+  exit_signal := True;
+end;
+
+constructor TMain_Loop_Instance__.Create;
+begin
+  inherited Create;
+  exit_signal := False;
+  TCompute.RunM_NP(Do_Check_On_Exit);
+end;
+
+procedure TMain_Loop_Instance__.Wait;
+begin
+  while not exit_signal do
+      Z.Net.C4.C40Progress;
+end;
+
+procedure C40_Execute_Main_Loop;
+begin
+  with TMain_Loop_Instance__.Create do
+    begin
+      Wait;
+      Free;
+    end;
+end;
+
 initialization
 
 SetLength(C40AppParam, 0);
 C40AppParsingTextStyle := TTextStyle.tsPascal;
-On_C40_PhysicsTunnel_Event_Console := nil;
-On_C40_PhysicsService_Event_Console := nil;
+
+try
+  On_C40_PhysicsTunnel_Event_Console := nil;
+  On_C40_PhysicsService_Event_Console := nil;
+except
+end;
 
 finalization
 
@@ -435,3 +531,4 @@ except
 end;
 
 end.
+ 

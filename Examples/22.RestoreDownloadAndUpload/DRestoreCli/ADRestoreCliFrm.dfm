@@ -2,27 +2,27 @@ object AuthDoubleTunnelClientForm: TAuthDoubleTunnelClientForm
   Left = 0
   Top = 0
   Caption = 'Auth Double Tunnel Client'
-  ClientHeight = 384
-  ClientWidth = 634
+  ClientHeight = 383
+  ClientWidth = 630
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
   Font.Height = -11
   Font.Name = 'Tahoma'
   Font.Style = []
-  OldCreateOrder = False
+  OldCreateOrder = True
   OnCreate = FormCreate
   OnDestroy = FormDestroy
   DesignSize = (
-    634
-    384)
+    630
+    383)
   PixelsPerInch = 96
   TextHeight = 13
   object Memo1: TMemo
     Left = 119
     Top = 62
-    Width = 498
-    Height = 307
+    Width = 490
+    Height = 306
     Anchors = [akLeft, akTop, akRight, akBottom]
     Lines.Strings = (
       'ZServer4D'#26159#19968#27454#26381#21153#22120#20013#38388#20214

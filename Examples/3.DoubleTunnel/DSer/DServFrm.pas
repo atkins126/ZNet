@@ -17,13 +17,13 @@ type
   private
     f: TDoubleServerForm;
   protected
-    procedure UserLinkSuccess(UserDefineIO: TPeerClientUserDefineForRecvTunnel_NoAuth); override;
-    procedure UserOut(UserDefineIO: TPeerClientUserDefineForRecvTunnel_NoAuth); override;
+    procedure UserLinkSuccess(UserDefineIO: TService_RecvTunnel_UserDefine_NoAuth); override;
+    procedure UserOut(UserDefineIO: TService_RecvTunnel_UserDefine_NoAuth); override;
   protected
     // reg cmd
     procedure cmd_helloWorld_Console(Sender: TPeerClient; InData: string);
-    procedure cmd_helloWorld_Stream(Sender: TPeerClient; InData: TDataFrameEngine);
-    procedure cmd_helloWorld_Stream_Result(Sender: TPeerClient; InData, OutData: TDataFrameEngine);
+    procedure cmd_helloWorld_Stream(Sender: TPeerClient; InData: TDFE);
+    procedure cmd_helloWorld_Stream_Result(Sender: TPeerClient; InData, OutData: TDFE);
   public
     procedure RegisterCommand; override;
     procedure UnRegisterCommand; override;
@@ -59,13 +59,13 @@ implementation
 {$R *.dfm}
 
 
-procedure TMyService.UserLinkSuccess(UserDefineIO: TPeerClientUserDefineForRecvTunnel_NoAuth);
+procedure TMyService.UserLinkSuccess(UserDefineIO: TService_RecvTunnel_UserDefine_NoAuth);
 begin
   inherited UserLinkSuccess(UserDefineIO);
   DoStatus('user link success!');
 end;
 
-procedure TMyService.UserOut(UserDefineIO: TPeerClientUserDefineForRecvTunnel_NoAuth);
+procedure TMyService.UserOut(UserDefineIO: TService_RecvTunnel_UserDefine_NoAuth);
 begin
   inherited UserOut(UserDefineIO);
   DoStatus('user out!');
@@ -76,12 +76,12 @@ begin
   DoStatus('client: %s', [InData]);
 end;
 
-procedure TMyService.cmd_helloWorld_Stream(Sender: TPeerClient; InData: TDataFrameEngine);
+procedure TMyService.cmd_helloWorld_Stream(Sender: TPeerClient; InData: TDFE);
 begin
   DoStatus('client: %s', [InData.Reader.ReadString]);
 end;
 
-procedure TMyService.cmd_helloWorld_Stream_Result(Sender: TPeerClient; InData, OutData: TDataFrameEngine);
+procedure TMyService.cmd_helloWorld_Stream_Result(Sender: TPeerClient; InData, OutData: TDFE);
 begin
   OutData.WriteString('result 654321');
 end;
@@ -104,9 +104,9 @@ end;
 
 procedure TDoubleServerForm.ChangeCaptionButtonClick(Sender: TObject);
 var
-  de: TDataFrameEngine;
+  de: TDFE;
 begin
-  de := TDataFrameEngine.Create;
+  de := TDFE.Create;
   de.WriteString('change caption as hello World,from server!');
   SendTunnel.BroadcastDirectStreamCmd('ChangeCaption', de);
   disposeObject(de);
@@ -138,13 +138,13 @@ begin
   SendTunnel.ProgressPeerIOP(procedure(PeerClient: TPeerClient)
     var
       c: TPeerClient;
-      de: TDataFrameEngine;
+      de: TDFE;
     begin
       c := PeerClient;
-      de := TDataFrameEngine.Create;
+      de := TDFE.Create;
       de.WriteString('change caption as hello World,from server!');
       c.SendStreamCmdP('GetClientValue', de,
-        procedure(Sender: TPeerClient; ResultData: TDataFrameEngine)
+        procedure(Sender: TPeerClient; ResultData: TDFE)
         begin
           if ResultData.Count > 0 then
               DoStatus('getClientValue [%s] response:%s', [c.GetPeerIP, ResultData.Reader.ReadString]);
@@ -172,6 +172,7 @@ end;
 
 procedure TDoubleServerForm.Timer1Timer(Sender: TObject);
 begin
+  CheckThread;
   Service.Progress;
 end;
 

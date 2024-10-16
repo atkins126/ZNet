@@ -1,8 +1,38 @@
+(*
+https://zpascal.net
+https://github.com/PassByYou888/ZNet
+https://github.com/PassByYou888/zRasterization
+https://github.com/PassByYou888/ZSnappy
+https://github.com/PassByYou888/Z-AI1.4
+https://github.com/PassByYou888/InfiniteIoT
+https://github.com/PassByYou888/zMonitor_3rd_Core
+https://github.com/PassByYou888/tcmalloc4p
+https://github.com/PassByYou888/jemalloc4p
+https://github.com/PassByYou888/zCloud
+https://github.com/PassByYou888/ZServer4D
+https://github.com/PassByYou888/zShell
+https://github.com/PassByYou888/ZDB2.0
+https://github.com/PassByYou888/zGameWare
+https://github.com/PassByYou888/CoreCipher
+https://github.com/PassByYou888/zChinese
+https://github.com/PassByYou888/zSound
+https://github.com/PassByYou888/zExpression
+https://github.com/PassByYou888/ZInstaller2.0
+https://github.com/PassByYou888/zAI
+https://github.com/PassByYou888/NetFileService
+https://github.com/PassByYou888/zAnalysis
+https://github.com/PassByYou888/PascalString
+https://github.com/PassByYou888/zInstaller
+https://github.com/PassByYou888/zTranslate
+https://github.com/PassByYou888/zVision
+https://github.com/PassByYou888/FFMPEG-Header
+*)
 { ****************************************************************************** }
 { * cloud 4.0 framework                                                        * }
 { ****************************************************************************** }
 unit Z.Net.C4;
 
+{$DEFINE FPC_DELPHI_MODE}
 {$I Z.Define.inc}
 
 interface
@@ -24,7 +54,8 @@ uses
   Z.Net.DoubleTunnelIO.VirtualAuth,
   Z.Net.DataStoreService.VirtualAuth,
   Z.Net.DoubleTunnelIO.NoAuth,
-  Z.Net.DataStoreService.NoAuth;
+  Z.Net.DataStoreService.NoAuth,
+  Z.Instance.Tool;
 
 type
   TC40_PhysicsService = class;
@@ -58,7 +89,7 @@ type
   end;
 
   TC40_DependNetworkInfoArray = array of TC40_DependNetworkInfo;
-  TC40_DependNetworkInfoList = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<TC40_DependNetworkInfo>;
+  TC40_DependNetworkInfoList = TGenericsList<TC40_DependNetworkInfo>;
 
   IC40_PhysicsService_Event = interface
     procedure C40_PhysicsService_Build_Network(Sender: TC40_PhysicsService; Custom_Service_: TC40_Custom_Service);
@@ -69,7 +100,7 @@ type
   end;
 
   { automated physics service }
-  TC40_PhysicsService = class(TCore_InterfacedObject)
+  TC40_PhysicsService = class(TCore_InterfacedObject_Intermediate)
   private
     FActivted: Boolean;
     FLastDeadConnectionCheckTime_: TTimeTick;
@@ -98,11 +129,13 @@ type
     procedure DoUserOut(Custom_Service_: TC40_Custom_Service; Trigger_: TCore_Object);
   end;
 
-  TC40_PhysicsServicePool_Decl = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<TC40_PhysicsService>;
+  TC40_PhysicsServicePool_Decl = TGenericsList<TC40_PhysicsService>;
 
   TC40_PhysicsServicePool = class(TC40_PhysicsServicePool_Decl)
   public
     procedure Progress;
+    procedure Enabled_Progress;
+    procedure Disable_Progress;
     function ExistsPhysicsAddr(PhysicsAddr: U_String; PhysicsPort: Word): Boolean;
     procedure GetRS(var recv, send: Int64);
   end;
@@ -117,7 +150,7 @@ type
   TDCT40_OnQueryResultP = reference to procedure(Sender: TC40_PhysicsTunnel; L: TC40_InfoList);
 {$ENDIF FPC}
 
-  TDCT40_QueryResultData = class
+  TDCT40_QueryResultData = class(TCore_Object_Intermediate)
   private
     procedure DoStreamParam(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData, Result_: TDFE);
     procedure DoStreamFailed(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData: TDFE);
@@ -132,7 +165,7 @@ type
     destructor Destroy; override;
   end;
 
-  TDCT40_QueryResultAndDependProcessor = class
+  TDCT40_QueryResultAndDependProcessor = class(TCore_Object_Intermediate)
   private
     procedure DCT40_OnCheckDepend(Sender: TC40_PhysicsTunnel; L: TC40_InfoList);
     procedure DCT40_OnAutoP2PVMConnectionDone(Sender: TZNet; P_IO: TPeerIO);
@@ -155,7 +188,7 @@ type
   end;
 
   { automated tunnel }
-  TC40_PhysicsTunnel = class(TCore_InterfacedObject, IZNet_ClientInterface)
+  TC40_PhysicsTunnel = class(TCore_InterfacedObject_Intermediate, IZNet_ClientInterface)
   private
     FIsConnecting: Boolean;
     FWait_Build_Depend_Network: Boolean;
@@ -167,6 +200,8 @@ type
     procedure DoConnectAndCheckDepend(Param1: Pointer; Param2: TObject; const state: Boolean);
     procedure DoConnectAndBuildDependNetwork(Param1: Pointer; Param2: TObject; const state: Boolean);
   private
+    procedure Do_Connect_Event;
+    procedure Do_Disconnect_Event;
     procedure ClientConnected(Sender: TZNet_Client); virtual;
     procedure ClientDisconnect(Sender: TZNet_Client); virtual;
     procedure Do_Notify_All_Disconnect;
@@ -200,13 +235,13 @@ type
     procedure DoNetworkOnline(Custom_Client_: TC40_Custom_Client);
   end;
 
-  TC40_PhysicsTunnelPool_Decl = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<TC40_PhysicsTunnel>;
+  TC40_PhysicsTunnelPool_Decl = TGenericsList<TC40_PhysicsTunnel>;
 
   TSearchServiceAndBuildConnection_Bridge = class;
 
-  TC40_First_BuildDependNetwork_Fault_Fixed_Bridge = class
+  TC40_First_BuildDependNetwork_Fault_Fixed_Bridge = class(TCore_Object_Intermediate)
   public
-    Time_: TTimeTick;
+    Fault_Fixed_Bridge_Begin_Time: TTimeTick;
     Tunnel: TC40_PhysicsTunnel;
     constructor Create(Tunnel_: TC40_PhysicsTunnel);
     procedure Do_Delay_Next_BuildDependNetwork();
@@ -242,6 +277,8 @@ type
       const Depend_: U_String; const OnEvent_: IC40_PhysicsTunnel_Event): TC40_PhysicsTunnel; overload;
     { progress }
     procedure Progress;
+    procedure Enabled_Progress;
+    procedure Disable_Progress;
     { fast service connection }
     function SearchServiceAndBuildConnection(PhysicsAddr: U_String; PhysicsPort: Word; FullConnection_: Boolean;
       const ServiceTyp: U_String; const OnEvent_: IC40_PhysicsTunnel_Event): TSearchServiceAndBuildConnection_Bridge; overload;
@@ -266,7 +303,7 @@ type
   TOn_C40_Custom_Client_EventP = reference to procedure(States: TC40_Custom_ClientPool_Wait_States);
 {$ENDIF FPC}
 
-  TC40_Custom_ClientPool_Wait = class
+  TC40_Custom_ClientPool_Wait = class(TCore_Object_Intermediate)
   private
     procedure DoRun;
   public
@@ -287,7 +324,7 @@ type
   TOnSearchServiceAndBuildConnection_P = reference to procedure(Done_ClientPool: TC40_Custom_ClientPool);
 {$ENDIF FPC}
 
-  TSearchServiceAndBuildConnection_Bridge = class
+  TSearchServiceAndBuildConnection_Bridge = class(TCore_Object_Intermediate)
   public
     PhysicsPool_: TC40_PhysicsTunnelPool;
     FullConnection_: Boolean;
@@ -307,7 +344,7 @@ type
 {$ENDREGION 'PhysicsTunnel'}
 {$REGION 'infoDefine'}
 
-  TC40_Info = class
+  TC40_Info = class(TCore_Object_Intermediate)
   private
     Ignored: Boolean;
     procedure MakeHash;
@@ -339,18 +376,20 @@ type
     procedure Save(stream: TCore_Stream);
     function Same(Data_: TC40_Info): Boolean;
     function SameServiceTyp(Data_: TC40_Info): Boolean;
+    function SamePhysicsAddr(PhysicsAddr_: U_String): Boolean; overload;
+    function SamePhysicsAddr(Arry_: TArrayPascalString): Boolean; overload;
     function SamePhysicsAddr(PhysicsAddr_: U_String; PhysicsPort_: Word): Boolean; overload;
     function SamePhysicsAddr(Data_: TC40_Info): Boolean; overload;
     function SamePhysicsAddr(Data_: TC40_PhysicsTunnel): Boolean; overload;
     function SamePhysicsAddr(Data_: TC40_PhysicsService): Boolean; overload;
     function SameP2PVMAddr(Data_: TC40_Info): Boolean;
-    function FoundServiceTyp(arry_: TC40_DependNetworkInfoArray): Boolean; overload;
+    function FoundServiceTyp(Arry_: TC40_DependNetworkInfoArray): Boolean; overload;
     function FoundServiceTyp(servTyp_: U_String): Boolean; overload;
     function ReadyC40Client: Boolean;
     function GetOrCreateC40Client(PhysicsTunnel_: TC40_PhysicsTunnel; Param_: U_String): TC40_Custom_Client;
   end;
 
-  TC40_InfoList_Decl = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<TC40_Info>;
+  TC40_InfoList_Decl = TGenericsList<TC40_Info>;
 
   TC40_InfoList = class(TC40_InfoList_Decl)
   public
@@ -391,7 +430,7 @@ type
   TOn_C4_Help_Console_Command_P = reference to procedure(var OP_Param: TOpParam);
 {$ENDIF FPC}
 
-  TC4_Help_Console_Command_Data = class
+  TC4_Help_Console_Command_Data = class(TCore_Object_Intermediate)
   public
     Cmd: SystemString;
     Desc: SystemString;
@@ -403,7 +442,7 @@ type
     procedure DoExecute(var OP_Param: TOpParam);
   end;
 
-  TC4_Help_Console_Command_Decl = {$IFDEF FPC}specialize {$ENDIF FPC} TBigList<TC4_Help_Console_Command_Data>;
+  TC4_Help_Console_Command_Decl = TBigList<TC4_Help_Console_Command_Data>;
 
   TC4_Help_Console_Command = class(TC4_Help_Console_Command_Decl)
   public
@@ -412,7 +451,7 @@ type
 {$ENDREGION 'Help_Console_Command'}
 {$REGION 'p2p_Custom_Service_Templet'}
 
-  TC40_Custom_Service = class(TCore_InterfacedObject)
+  TC40_Custom_Service = class(TCore_InterfacedObject_Intermediate)
   private
     FLastSafeCheckTime: TTimeTick;
   public
@@ -424,6 +463,8 @@ type
     ServiceInfo: TC40_Info;
     C40PhysicsService: TC40_PhysicsService;
     ConsoleCommand: TC4_Help_Console_Command;
+
+    property PhysicsService: TC40_PhysicsService read C40PhysicsService;
     constructor Create(PhysicsService_: TC40_PhysicsService; ServiceTyp, Param_: U_String); virtual;
     destructor Destroy; override;
     procedure SafeCheck; virtual;
@@ -436,8 +477,8 @@ type
     property AliasOrHash: U_String read GetAliasOrHash write Alias_or_Hash___;
     function Get_P2PVM_Service(var recv_, send_: TZNet_WithP2PVM_Server): Boolean;
     function Get_DB_FileName_Config(source_: U_String): U_String;
-    function Find_File(fileName, ServiceTyp: U_String): U_String; overload;
-    function Find_File(fileName: U_String): U_String; overload;
+    function Where_C4_File(fileName, ServiceTyp: U_String): U_String; overload;
+    function Where_C4_File(fileName: U_String): U_String; overload;
     { console command }
     function Register_ConsoleCommand(Cmd, Desc: SystemString): TC4_Help_Console_Command_Data;
     { event }
@@ -447,7 +488,7 @@ type
 
   TC40_Custom_Service_Class = class of TC40_Custom_Service;
 
-  TC40_Custom_ServicePool_Decl = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<TC40_Custom_Service>;
+  TC40_Custom_ServicePool_Decl = TGenericsList<TC40_Custom_Service>;
   TC40_Custom_Service_Array = array of TC40_Custom_Service;
 
   TC40_Custom_ServicePool = class(TC40_Custom_ServicePool_Decl)
@@ -474,7 +515,7 @@ type
 
   TOn_Client_Offline = procedure(Sender: TC40_Custom_Client) of object;
 
-  TC40_Custom_Client = class(TCore_InterfacedObject)
+  TC40_Custom_Client = class(TCore_InterfacedObject_Intermediate)
   private
     FLastSafeCheckTime: TTimeTick;
   public
@@ -487,6 +528,8 @@ type
     C40PhysicsTunnel: TC40_PhysicsTunnel;
     ConsoleCommand: TC4_Help_Console_Command;
     On_Client_Offline: TOn_Client_Offline;
+
+    property PhysicsTunnel: TC40_PhysicsTunnel read C40PhysicsTunnel;
     constructor Create(PhysicsTunnel_: TC40_PhysicsTunnel; source_: TC40_Info; Param_: U_String); virtual;
     destructor Destroy; override;
     procedure SafeCheck; virtual;
@@ -500,7 +543,7 @@ type
     property AliasOrHash: U_String read GetAliasOrHash write Alias_or_Hash___;
     function Get_P2PVM_Tunnel(var recv_, send_: TZNet_WithP2PVM_Client): Boolean;
     function Get_DB_FileName_Config(source_: U_String): U_String;
-    function Find_File(fileName: U_String): U_String;
+    function Where_C4_File(fileName: U_String): U_String;
     { console command }
     function Register_ConsoleCommand(Cmd, Desc: SystemString): TC4_Help_Console_Command_Data;
     { event }
@@ -510,7 +553,7 @@ type
 
   TC40_Custom_Client_Class = class of TC40_Custom_Client;
 
-  TC40_Custom_ClientPool_Decl = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<TC40_Custom_Client>;
+  TC40_Custom_ClientPool_Decl = TGenericsList<TC40_Custom_Client>;
 
   TC40_Custom_Client_Array = array of TC40_Custom_Client;
 
@@ -552,9 +595,50 @@ type
   end;
 
 {$ENDREGION 'p2p_Custom_Client_Templet'}
+{$REGION 'Auto_Deployment'}
+
+  TC40_Auto_Deployment_Client<T_: class> = class(TCore_Object_Intermediate)
+  public type
+    PT_ = ^T_;
+    TOn_Ready_C = procedure(var Sender: T_);
+    TOn_Ready_M = procedure(var Sender: T_) of object;
+{$IFDEF FPC}
+    TOn_Ready_P = procedure(var Sender: T_) is nested;
+{$ELSE FPC}
+    TOn_Ready_P = reference to procedure(var Sender: T_);
+{$ENDIF FPC}
+  private
+    FClient_Second: T_;
+    FClient_Ptr: PT_;
+    FDependNetwork: U_String;
+    FOn_Ready_C: TOn_Ready_C;
+    FOn_Ready_M: TOn_Ready_M;
+    FOn_Ready_P: TOn_Ready_P;
+    procedure Do_Deployment_Ready(States: TC40_Custom_ClientPool_Wait_States);
+  public
+    constructor Create_Ptr(dependNetwork_: U_String; Client_: PT_);
+    constructor Create(dependNetwork_: U_String; var Client: T_); overload;
+    constructor Create(var Client: T_); overload;
+    constructor Create_C(OnReady: TOn_Ready_C);
+    constructor Create_M(OnReady: TOn_Ready_M);
+    constructor Create_P(OnReady: TOn_Ready_P);
+    destructor Destroy; override;
+    property On_Ready: TOn_Ready_M read FOn_Ready_M write FOn_Ready_M;
+    property On_Ready_C: TOn_Ready_C read FOn_Ready_C write FOn_Ready_C;
+    property On_Ready_M: TOn_Ready_M read FOn_Ready_M write FOn_Ready_M;
+    property On_Ready_P: TOn_Ready_P read FOn_Ready_P write FOn_Ready_P;
+  end;
+
+  TC40_Auto_Deploy_Client<T_: class> = class(TC40_Auto_Deployment_Client<T_>)
+  end;
+
+  TC40_Auto_Deploy<T_: class> = class(TC40_Auto_Deployment_Client<T_>)
+  end;
+
+{$ENDREGION 'Auto_Deployment'}
 {$REGION 'DispatchService'}
 
-  TOnRemovePhysicsNetwork = class
+  TOnRemovePhysicsNetwork = class(TCore_Object_Intermediate)
   public
     PhysicsAddr: U_String;
     PhysicsPort: Word;
@@ -579,8 +663,8 @@ type
     procedure Prepare_UpdateServerInfoToAllClient;
     procedure UpdateServerInfoToAllClient;
 
-    procedure DoLinkSuccess_Event(Sender: TDTService_NoAuth; UserDefineIO: TPeerClientUserDefineForRecvTunnel_NoAuth);
-    procedure DoUserOut_Event(Sender: TDTService_NoAuth; UserDefineIO: TPeerClientUserDefineForRecvTunnel_NoAuth);
+    procedure DoLinkSuccess_Event(Sender: TDTService_NoAuth; UserDefineIO: TService_RecvTunnel_UserDefine_NoAuth);
+    procedure DoUserOut_Event(Sender: TDTService_NoAuth; UserDefineIO: TService_RecvTunnel_UserDefine_NoAuth);
     procedure DoDelayCheckLocalServiceInfo;
   public
     Service: TDT_P2PVM_NoAuth_Custom_Service;
@@ -635,7 +719,7 @@ type
 
   PC40_RegistedData = ^TC40_RegistedData;
 
-  TC40_RegistedDataList_Decl = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<PC40_RegistedData>;
+  TC40_RegistedDataList_Decl = TGenericsList<PC40_RegistedData>;
 
   TC40_RegistedDataList = class(TC40_RegistedDataList_Decl)
   public
@@ -648,8 +732,8 @@ type
 
   TC40_Base_NoAuth_Service = class(TC40_Custom_Service)
   protected
-    procedure DoLinkSuccess_Event(Sender: TDTService_NoAuth; UserDefineIO: TPeerClientUserDefineForRecvTunnel_NoAuth); virtual;
-    procedure DoUserOut_Event(Sender: TDTService_NoAuth; UserDefineIO: TPeerClientUserDefineForRecvTunnel_NoAuth); virtual;
+    procedure DoLinkSuccess_Event(Sender: TDTService_NoAuth; UserDefineIO: TService_RecvTunnel_UserDefine_NoAuth); virtual;
+    procedure DoUserOut_Event(Sender: TDTService_NoAuth; UserDefineIO: TService_RecvTunnel_UserDefine_NoAuth); virtual;
   public
     Service: TDT_P2PVM_NoAuth_Custom_Service;
     DTNoAuthService: TDTService_NoAuth;
@@ -676,8 +760,8 @@ type
 
   TC40_Base_DataStoreNoAuth_Service = class(TC40_Custom_Service)
   protected
-    procedure DoLinkSuccess_Event(Sender: TDTService_NoAuth; UserDefineIO: TPeerClientUserDefineForRecvTunnel_NoAuth); virtual;
-    procedure DoUserOut_Event(Sender: TDTService_NoAuth; UserDefineIO: TPeerClientUserDefineForRecvTunnel_NoAuth); virtual;
+    procedure DoLinkSuccess_Event(Sender: TDTService_NoAuth; UserDefineIO: TService_RecvTunnel_UserDefine_NoAuth); virtual;
+    procedure DoUserOut_Event(Sender: TDTService_NoAuth; UserDefineIO: TService_RecvTunnel_UserDefine_NoAuth); virtual;
   public
     Service: TDT_P2PVM_NoAuth_Custom_Service;
     DTNoAuthService: TDataStoreService_NoAuth;
@@ -711,8 +795,8 @@ type
   protected
     procedure DoUserReg_Event(Sender: TDTService_VirtualAuth; RegIO: TVirtualRegIO); virtual;
     procedure DoUserAuth_Event(Sender: TDTService_VirtualAuth; AuthIO: TVirtualAuthIO); virtual;
-    procedure DoLinkSuccess_Event(Sender: TDTService_VirtualAuth; UserDefineIO: TPeerClientUserDefineForRecvTunnel_VirtualAuth); virtual;
-    procedure DoUserOut_Event(Sender: TDTService_VirtualAuth; UserDefineIO: TPeerClientUserDefineForRecvTunnel_VirtualAuth); virtual;
+    procedure DoLinkSuccess_Event(Sender: TDTService_VirtualAuth; UserDefineIO: TService_RecvTunnel_UserDefine_VirtualAuth); virtual;
+    procedure DoUserOut_Event(Sender: TDTService_VirtualAuth; UserDefineIO: TService_RecvTunnel_UserDefine_VirtualAuth); virtual;
   public
     Service: TDT_P2PVM_VirtualAuth_Custom_Service;
     DTVirtualAuthService: TDTService_VirtualAuth;
@@ -744,8 +828,8 @@ type
   protected
     procedure DoUserReg_Event(Sender: TDTService_VirtualAuth; RegIO: TVirtualRegIO); virtual;
     procedure DoUserAuth_Event(Sender: TDTService_VirtualAuth; AuthIO: TVirtualAuthIO); virtual;
-    procedure DoLinkSuccess_Event(Sender: TDTService_VirtualAuth; UserDefineIO: TPeerClientUserDefineForRecvTunnel_VirtualAuth); virtual;
-    procedure DoUserOut_Event(Sender: TDTService_VirtualAuth; UserDefineIO: TPeerClientUserDefineForRecvTunnel_VirtualAuth); virtual;
+    procedure DoLinkSuccess_Event(Sender: TDTService_VirtualAuth; UserDefineIO: TService_RecvTunnel_UserDefine_VirtualAuth); virtual;
+    procedure DoUserOut_Event(Sender: TDTService_VirtualAuth; UserDefineIO: TService_RecvTunnel_UserDefine_VirtualAuth); virtual;
   public
     Service: TDT_P2PVM_VirtualAuth_Custom_Service;
     DTVirtualAuthService: TDataStoreService_VirtualAuth;
@@ -778,8 +862,8 @@ type
 
   TC40_Base_Service = class(TC40_Custom_Service)
   protected
-    procedure DoLinkSuccess_Event(Sender: TDTService; UserDefineIO: TPeerClientUserDefineForRecvTunnel); virtual;
-    procedure DoUserOut_Event(Sender: TDTService; UserDefineIO: TPeerClientUserDefineForRecvTunnel); virtual;
+    procedure DoLinkSuccess_Event(Sender: TDTService; UserDefineIO: TService_RecvTunnel_UserDefine); virtual;
+    procedure DoUserOut_Event(Sender: TDTService; UserDefineIO: TService_RecvTunnel_UserDefine); virtual;
   public
     Service: TDT_P2PVM_Custom_Service;
     DTService: TDTService;
@@ -810,8 +894,8 @@ type
 
   TC40_Base_DataStore_Service = class(TC40_Custom_Service)
   protected
-    procedure DoLinkSuccess_Event(Sender: TDTService; UserDefineIO: TPeerClientUserDefineForRecvTunnel); virtual;
-    procedure DoUserOut_Event(Sender: TDTService; UserDefineIO: TPeerClientUserDefineForRecvTunnel); virtual;
+    procedure DoLinkSuccess_Event(Sender: TDTService; UserDefineIO: TService_RecvTunnel_UserDefine); virtual;
+    procedure DoUserOut_Event(Sender: TDTService; UserDefineIO: TService_RecvTunnel_UserDefine); virtual;
   public
     Service: TDT_P2PVM_Custom_Service;
     DTService: TDataStoreService;
@@ -846,7 +930,7 @@ type
   TC40_Custom_VM_Service = class;
   TC40_Custom_VM_Client = class;
 
-  TC40_Custom_VM_Service = class(TCore_InterfacedObject)
+  TC40_Custom_VM_Service = class(TCore_InterfacedObject_Intermediate)
   private
     FLastSafeCheckTime: TTimeTick;
   public
@@ -868,7 +952,7 @@ type
     procedure DoUserOut(Trigger_: TCore_Object); virtual;
   end;
 
-  TC40_Custom_VM_Service_Pool_Decl = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<TC40_Custom_VM_Service>;
+  TC40_Custom_VM_Service_Pool_Decl = TGenericsList<TC40_Custom_VM_Service>;
 
   TC40_Custom_VM_Service_Pool = class(TC40_Custom_VM_Service_Pool_Decl)
   public
@@ -877,7 +961,7 @@ type
 
   TOn_VM_Client_Event = procedure(Sender: TC40_Custom_VM_Client) of object;
 
-  TC40_Custom_VM_Client = class(TCore_InterfacedObject)
+  TC40_Custom_VM_Client = class(TCore_InterfacedObject_Intermediate)
   private
     FLastSafeCheckTime: TTimeTick;
   public
@@ -901,7 +985,7 @@ type
     procedure DoNetworkOffline; virtual; { trigger: offline }
   end;
 
-  TC40_Custom_VM_Client_Pool_Decl = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<TC40_Custom_VM_Client>;
+  TC40_Custom_VM_Client_Pool_Decl = TGenericsList<TC40_Custom_VM_Client>;
 
   TC40_Custom_VM_Client_Pool = class(TC40_Custom_VM_Client_Pool_Decl)
   public
@@ -910,12 +994,17 @@ type
 {$ENDREGION 'VM_Templet_Define'}
 {$REGION 'C40-Console'}
 
-  TC40_Console_Help = class
+  TC40_Console_Help = class(TCore_Object_Intermediate)
+  private
+    Last_Instance_State: TInstance_State_Tool;
+    function Do_Build_Instance_State(var OP_Param: TOpParam): Variant;
+    function Do_Compare_Instance_State(var OP_Param: TOpParam): Variant;
   private
     procedure UpdateServiceInfo; overload;
     procedure UpdateServiceInfo(phy_serv: TC40_PhysicsService); overload;
     procedure UpdateTunnelInfo; overload;
     procedure UpdateTunnelInfo(phy_tunnel: TC40_PhysicsTunnel); overload;
+  protected
     function Do_Help(var OP_Param: TOpParam): Variant;
     function Do_Exit(var OP_Param: TOpParam): Variant;
     function Do_Service(var OP_Param: TOpParam): Variant;
@@ -923,17 +1012,29 @@ type
     function Do_Reg(var OP_Param: TOpParam): Variant;
     function Do_KillNet(var OP_Param: TOpParam): Variant;
     function Do_SetQuiet(var OP_Param: TOpParam): Variant;
+    function Do_Save_All_C4Service_Config(var OP_Param: TOpParam): Variant;
+    function Do_Save_All_C4Client_Config(var OP_Param: TOpParam): Variant;
+    function Do_Instance_Info(var OP_Param: TOpParam): Variant;
+    function Do_Instance_Info_Sort_Update(var OP_Param: TOpParam): Variant;
+    function Do_Instance_Info_Sort_Time(var OP_Param: TOpParam): Variant;
     function Do_HPC_Thread_Info(var OP_Param: TOpParam): Variant;
     function Do_ZNet_Instance_Info(var OP_Param: TOpParam): Variant;
+    function Do_Enabled_Delay_Free_Info(var OP_Param: TOpParam): Variant;
+    function Do_Enabled_Intermediate_Instance_Info(var OP_Param: TOpParam): Variant;
+    function Do_Service_Cmd_Info(var OP_Param: TOpParam): Variant;
+    function Do_Client_Cmd_Info(var OP_Param: TOpParam): Variant;
+    function Do_Service_Statistics_Info(var OP_Param: TOpParam): Variant;
+    function Do_Client_Statistics_Info(var OP_Param: TOpParam): Variant;
     function Do_ZDB2_Info(var OP_Param: TOpParam): Variant;
-    function Do_Custom_Console_Cmd(Sender: TOpCustomRunTime; var OP_Param: TOpParam): Variant;
+    function Do_ZDB2_Flush(var OP_Param: TOpParam): Variant;
+    function Do_Custom_Console_Cmd(Sender: TOpCustomRunTime; OP_RT_Data: POpRTData; var OP_Param: TOpParam): Variant;
   public
     opRT: TOpCustomRunTime;
     HelpTextStyle: TTextStyle;
     IsExit: Boolean;
     constructor Create; virtual;
     destructor Destroy; override;
-    procedure Update_opRT;
+    procedure Update_opRT; virtual;
     procedure Run_HelpCmd(exp_: U_String);
   end;
 {$ENDREGION 'C40-Console'}
@@ -943,7 +1044,7 @@ type
 var
   { quiet mode, defualt is false }
   C40_QuietMode: Boolean;
-  { physics service safeCheck time, default is 1 minute }
+  { physics service safeCheck time, default is 45 seconds }
   C40_SafeCheckTime: TTimeTick;
   { C4 reconnection delay time, default is 5.0(float) seconds }
   C40_PhysicsReconnectionDelayTime: Double;
@@ -955,7 +1056,7 @@ var
   C40_PhysicsTunnelTimeout: TTimeTick;
   { kill dead physics connection timeout, default is 5 seconds }
   C40_KillDeadPhysicsConnectionTimeout: TTimeTick;
-  { kill IDC fault timeout, default is 5 hour }
+  { kill IDC fault timeout, default is 24 * 7 hour }
   C40_KillIDCFaultTimeout: TTimeTick;
   { root path, default is current Directory }
   C40_RootPath: U_String;
@@ -979,8 +1080,11 @@ var
   C40_VM_Client_Pool: TC40_Custom_VM_Client_Pool;
   { default configure }
   C40_DefaultConfig: THashStringList;
+  { ignore command-line parameter }
+  Ignore_Command_Line: TPascalStringList;
 {$ENDREGION 'Var'}
 {$REGION 'API'}
+
 procedure C40Progress(sleep_: Integer); overload; { C4 main progress }
 procedure C40Progress; overload; { C4 main progress }
 function C40_Online_DP: TC40_Dispatch_Client; { System Online-DP }
@@ -1016,6 +1120,7 @@ procedure C40CheckAndKillDeadPhysicsTunnel();
 { register }
 function RegisterC40(ServiceTyp: U_String; ServiceClass: TC40_Custom_Service_Class; ClientClass: TC40_Custom_Client_Class): Boolean;
 function FindRegistedC40(ServiceTyp: U_String): PC40_RegistedData;
+function GetRegisterClientTypFromClass(ClientClass: TC40_Custom_Client_Class): U_String; overload;
 function GetRegisterServiceTypFromClass(ClientClass: TC40_Custom_Client_Class): U_String; overload;
 function GetRegisterServiceTypFromClass(ServiceClass: TC40_Custom_Service_Class): U_String; overload;
 
@@ -1034,7 +1139,7 @@ implementation
 
 var
   C40Progress_Working: Boolean = False;
-  Hooked_OnCheckThreadSynchronize: TOnCheckThreadSynchronize;
+  Hooked_OnCheckThreadSynchronize: TOn_Check_Thread_Synchronize;
 
 procedure DoCheckThreadSynchronize();
 begin
@@ -1045,7 +1150,7 @@ begin
       except
       end;
     end;
-  C40Progress(0);
+  C40Progress();
 end;
 
 procedure C40Progress(sleep_: Integer);
@@ -1055,21 +1160,24 @@ begin
   if C40Progress_Working then
       exit;
   C40Progress_Working := True;
-  if sleep_ > 0 then
-      TCompute.Sleep(sleep_);
-  CheckThread;
+  Check_Soft_Thread_Synchronize(sleep_, True);
   state_ := Enabled_Check_Thread_Synchronize_System;
   Enabled_Check_Thread_Synchronize_System := False;
   try
     C40_PhysicsServicePool.Progress;
+    C40_PhysicsServicePool.Disable_Progress;
     C40_ServicePool.Progress;
     C40_PhysicsTunnelPool.Progress;
+    C40_PhysicsTunnelPool.Disable_Progress;
     C40_ClientPool.Progress;
     C40_VM_Service_Pool.Progress;
     C40_VM_Client_Pool.Progress;
+    C40_PhysicsServicePool.Enabled_Progress;
+    C40_PhysicsTunnelPool.Enabled_Progress;
     C40CheckAndKillDeadPhysicsTunnel();
   except
   end;
+
   Enabled_Check_Thread_Synchronize_System := state_;
   C40Progress_Working := False;
 end;
@@ -1092,18 +1200,9 @@ begin
 end;
 
 procedure C40SetQuietMode(QuietMode_: Boolean);
-  procedure Do_SetQuietMode(F: TZNet);
-  var
-    p2p_: TZNet_WithP2PVM_Client;
-    i: Integer;
+  procedure Do_SetQuietMode(Inst: TZNet);
   begin
-    F.QuietMode := QuietMode_;
-    if F is TZNet_WithP2PVM_Client then
-      begin
-        p2p_ := TZNet_WithP2PVM_Client(F);
-        for i := 0 to p2p_.ClonePool.Count - 1 do
-            Do_SetQuietMode(p2p_.ClonePool[i]);
-      end;
+    Set_Instance_QuietMode(Inst, QuietMode_);
   end;
 
 var
@@ -1233,65 +1332,86 @@ end;
 
 procedure C40Clean;
 var
+  bak: TOn_Check_Thread_Synchronize;
   i: Integer;
 begin
-  for i := 0 to C40_PhysicsTunnelPool.Count - 1 do
-      C40_PhysicsTunnelPool[i].PhysicsTunnel.Disconnect;
-  for i := 0 to C40_PhysicsServicePool.Count - 1 do
-      C40_PhysicsServicePool[i].StopService;
-  for i := 0 to C40_VM_Client_Pool.Count - 1 do
-      C40_VM_Client_Pool[i].Disconnect;
-  for i := 0 to C40_VM_Service_Pool.Count - 1 do
-      C40_VM_Service_Pool[i].StopService;
+  bak := OnCheckThreadSynchronize;
+  OnCheckThreadSynchronize := nil;
+  try
+    for i := 0 to C40_PhysicsTunnelPool.Count - 1 do
+        C40_PhysicsTunnelPool[i].PhysicsTunnel.Disconnect;
+    for i := 0 to C40_PhysicsServicePool.Count - 1 do
+        C40_PhysicsServicePool[i].StopService;
+    for i := 0 to C40_VM_Client_Pool.Count - 1 do
+        C40_VM_Client_Pool[i].Disconnect;
+    for i := 0 to C40_VM_Service_Pool.Count - 1 do
+        C40_VM_Service_Pool[i].StopService;
 
-  while C40_ClientPool.Count > 0 do
-      DisposeObject_PrintInfo(C40_ClientPool[0]);
-  while C40_ServicePool.Count > 0 do
-      DisposeObject_PrintInfo(C40_ServicePool[0]);
-  C40_ServicePool.FIPV6_Seed := 1;
-  while C40_PhysicsTunnelPool.Count > 0 do
-      DisposeObject_PrintInfo(C40_PhysicsTunnelPool[0]);
-  while C40_PhysicsServicePool.Count > 0 do
-      DisposeObject_PrintInfo(C40_PhysicsServicePool[0]);
-  while C40_VM_Client_Pool.Count > 0 do
-      DisposeObject_PrintInfo(C40_VM_Client_Pool[0]);
-  while C40_VM_Service_Pool.Count > 0 do
-      DisposeObject_PrintInfo(C40_VM_Service_Pool[0]);
+    while C40_ClientPool.Count > 0 do
+        DisposeObject_PrintInfo(C40_ClientPool[0]);
+    while C40_ServicePool.Count > 0 do
+        DisposeObject_PrintInfo(C40_ServicePool[0]);
+    C40_ServicePool.FIPV6_Seed := 1;
+    while C40_PhysicsTunnelPool.Count > 0 do
+        DisposeObject_PrintInfo(C40_PhysicsTunnelPool[0]);
+    while C40_PhysicsServicePool.Count > 0 do
+        DisposeObject_PrintInfo(C40_PhysicsServicePool[0]);
+    while C40_VM_Client_Pool.Count > 0 do
+        DisposeObject_PrintInfo(C40_VM_Client_Pool[0]);
+    while C40_VM_Service_Pool.Count > 0 do
+        DisposeObject_PrintInfo(C40_VM_Service_Pool[0]);
+  finally
+      OnCheckThreadSynchronize := bak;
+  end;
 end;
 
 procedure C40Clean_Service;
 var
+  bak: TOn_Check_Thread_Synchronize;
   i: Integer;
 begin
-  for i := 0 to C40_PhysicsServicePool.Count - 1 do
-      C40_PhysicsServicePool[i].StopService;
-  for i := 0 to C40_VM_Service_Pool.Count - 1 do
-      C40_VM_Service_Pool[i].StopService;
+  bak := OnCheckThreadSynchronize;
+  OnCheckThreadSynchronize := nil;
+  try
+    for i := 0 to C40_PhysicsServicePool.Count - 1 do
+        C40_PhysicsServicePool[i].StopService;
+    for i := 0 to C40_VM_Service_Pool.Count - 1 do
+        C40_VM_Service_Pool[i].StopService;
 
-  while C40_ServicePool.Count > 0 do
-      DisposeObject_PrintInfo(C40_ServicePool[0]);
-  C40_ServicePool.FIPV6_Seed := 1;
-  while C40_PhysicsServicePool.Count > 0 do
-      DisposeObject_PrintInfo(C40_PhysicsServicePool[0]);
-  while C40_VM_Service_Pool.Count > 0 do
-      DisposeObject_PrintInfo(C40_VM_Service_Pool[0]);
+    while C40_ServicePool.Count > 0 do
+        DisposeObject_PrintInfo(C40_ServicePool[0]);
+    C40_ServicePool.FIPV6_Seed := 1;
+    while C40_PhysicsServicePool.Count > 0 do
+        DisposeObject_PrintInfo(C40_PhysicsServicePool[0]);
+    while C40_VM_Service_Pool.Count > 0 do
+        DisposeObject_PrintInfo(C40_VM_Service_Pool[0]);
+  finally
+      OnCheckThreadSynchronize := bak;
+  end;
 end;
 
 procedure C40Clean_Client;
 var
+  bak: TOn_Check_Thread_Synchronize;
   i: Integer;
 begin
-  for i := 0 to C40_PhysicsTunnelPool.Count - 1 do
-      C40_PhysicsTunnelPool[i].PhysicsTunnel.Disconnect;
-  for i := 0 to C40_VM_Client_Pool.Count - 1 do
-      C40_VM_Client_Pool[i].Disconnect;
+  bak := OnCheckThreadSynchronize;
+  OnCheckThreadSynchronize := nil;
+  try
+    for i := 0 to C40_PhysicsTunnelPool.Count - 1 do
+        C40_PhysicsTunnelPool[i].PhysicsTunnel.Disconnect;
+    for i := 0 to C40_VM_Client_Pool.Count - 1 do
+        C40_VM_Client_Pool[i].Disconnect;
 
-  while C40_ClientPool.Count > 0 do
-      DisposeObject_PrintInfo(C40_ClientPool[0]);
-  while C40_PhysicsTunnelPool.Count > 0 do
-      DisposeObject_PrintInfo(C40_PhysicsTunnelPool[0]);
-  while C40_VM_Client_Pool.Count > 0 do
-      DisposeObject_PrintInfo(C40_VM_Client_Pool[0]);
+    while C40_ClientPool.Count > 0 do
+        DisposeObject_PrintInfo(C40_ClientPool[0]);
+    while C40_PhysicsTunnelPool.Count > 0 do
+        DisposeObject_PrintInfo(C40_PhysicsTunnelPool[0]);
+    while C40_VM_Client_Pool.Count > 0 do
+        DisposeObject_PrintInfo(C40_VM_Client_Pool[0]);
+  finally
+      OnCheckThreadSynchronize := bak;
+  end;
 end;
 
 procedure C40PrintRegistation;
@@ -1498,7 +1618,7 @@ begin
       end;
 end;
 
-function GetRegisterServiceTypFromClass(ClientClass: TC40_Custom_Client_Class): U_String;
+function GetRegisterClientTypFromClass(ClientClass: TC40_Custom_Client_Class): U_String;
 var
   i: Integer;
   p: PC40_RegistedData;
@@ -1514,6 +1634,11 @@ begin
           Result.Append(p^.ServiceTyp);
         end;
     end;
+end;
+
+function GetRegisterServiceTypFromClass(ClientClass: TC40_Custom_Client_Class): U_String;
+begin
+  Result := GetRegisterClientTypFromClass(ClientClass);
 end;
 
 function GetRegisterServiceTypFromClass(ServiceClass: TC40_Custom_Service_Class): U_String;
@@ -1634,7 +1759,6 @@ var
   L: TC40_InfoList;
   r_physics_addr: U_String; { remote request physics address }
   r_physics_port: Word; { remote request physcis port }
-  dp_serv_s, dp_cli_s: U_String;
 begin
   if InData.Count >= 2 then
     begin
@@ -1664,29 +1788,17 @@ begin
     if C40_ClientPool[i] is TC40_Dispatch_Client then
         L.MergeAndUpdateWorkload(TC40_Dispatch_Client(C40_ClientPool[i]).Service_Info_Pool);
 
-  { anti dissymmetrical network fixed path }
+  { anti dissymmetrical network patch }
   if not r_physics_addr.Same(PhysicsAddr) then
     begin
       {
         Translating physical addresses in dissymmetrical network environments
         The system processing of c4 is to eliminate non current request server addresses
-        This is a "anti dissymmetrical network" fixed patch
+        This is a "anti dissymmetrical network" patch
       }
-
-      { Remove Dispatch info }
-      dp_serv_s := GetRegisterServiceTypFromClass(TC40_Dispatch_Service);
-      dp_cli_s := GetRegisterServiceTypFromClass(TC40_Dispatch_Client);
       for i := L.Count - 1 downto 0 do
-        if Compare_C40_ServiceTyp(dp_serv_s, L[i].ServiceTyp) or Compare_C40_ServiceTyp(dp_cli_s, L[i].ServiceTyp) then
-            L.Delete(i);
-
-      { Redefine physics info }
-      for i := L.Count - 1 downto 0 do
-        if L[i].SamePhysicsAddr(PhysicsAddr, PhysicsPort) then
-          begin
-            L[i].PhysicsAddr := r_physics_addr; { translate addr }
-            L[i].PhysicsPort := r_physics_port; { translate port }
-          end
+        if L[i].SamePhysicsAddr([PhysicsAddr, '0.0.0.0', 'localhost', '127.0.0.1', '::', '::1', '']) then
+            L[i].PhysicsAddr := r_physics_addr { translate addr }
         else
             L.Delete(i);
     end;
@@ -1707,7 +1819,7 @@ begin
   PhysicsTunnel.AutomatedP2PVMAuthToken := C40_Password;
   PhysicsTunnel.TimeOutKeepAlive := True;
   PhysicsTunnel.IdleTimeOut := C40_PhysicsServiceTimeout;
-  PhysicsTunnel.RegisterStream('QueryInfo').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_QueryInfo;
+  PhysicsTunnel.RegisterStream('QueryInfo').OnExecute := cmd_QueryInfo;
   PhysicsTunnel.PrintParams['QueryInfo'] := False;
   PhysicsTunnel.QuietMode := C40_QuietMode;
   AutoFreePhysicsTunnel := False;
@@ -1812,7 +1924,12 @@ end;
 
 procedure TC40_PhysicsService.StartService;
 begin
-  FActivted := PhysicsTunnel.StartService(ListeningAddr, PhysicsPort);
+  try
+      FActivted := PhysicsTunnel.StartService(ListeningAddr, PhysicsPort);
+  except
+      FActivted := False;
+  end;
+
   if FActivted then
     begin
       PhysicsTunnel.Print('Physics Service Listening successed, internet addr: %s port: %d', [ListeningAddr.Text, PhysicsPort]);
@@ -1827,7 +1944,11 @@ procedure TC40_PhysicsService.StopService;
 begin
   if not FActivted then
       exit;
-  PhysicsTunnel.StopService;
+  try
+      PhysicsTunnel.StopService;
+  except
+  end;
+  FActivted := False;
   PhysicsTunnel.Print('Physics Service Listening Stop.', []);
   if Assigned(OnEvent) then
       OnEvent.C40_PhysicsService_Stop(Self);
@@ -1857,6 +1978,22 @@ begin
       except
       end;
     end;
+end;
+
+procedure TC40_PhysicsServicePool.Enabled_Progress;
+var
+  i: Integer;
+begin
+  for i := Count - 1 downto 0 do
+      Items[i].PhysicsTunnel.Enabled_Progress;
+end;
+
+procedure TC40_PhysicsServicePool.Disable_Progress;
+var
+  i: Integer;
+begin
+  for i := Count - 1 downto 0 do
+      Items[i].PhysicsTunnel.Disable_Progress;
 end;
 
 function TC40_PhysicsServicePool.ExistsPhysicsAddr(PhysicsAddr: U_String; PhysicsPort: Word): Boolean;
@@ -1898,10 +2035,10 @@ procedure TDCT40_QueryResultData.DoRun;
 begin
   try
     if Assigned(OnResultC) then
-        OnResultC(C40_PhysicsTunnel, L);
-    if Assigned(OnResultM) then
-        OnResultM(C40_PhysicsTunnel, L);
-    if Assigned(OnResultP) then
+        OnResultC(C40_PhysicsTunnel, L)
+    else if Assigned(OnResultM) then
+        OnResultM(C40_PhysicsTunnel, L)
+    else if Assigned(OnResultP) then
         OnResultP(C40_PhysicsTunnel, L);
   except
   end;
@@ -2010,7 +2147,7 @@ begin
       end;
   if found_ > 0 then
     begin
-      Sender.PhysicsTunnel.OnAutomatedP2PVMClientConnectionDone_M := {$IFDEF FPC}@{$ENDIF FPC}DCT40_OnAutoP2PVMConnectionDone;
+      Sender.PhysicsTunnel.OnAutomatedP2PVMClientConnectionDone_M := DCT40_OnAutoP2PVMConnectionDone;
       Sender.PhysicsTunnel.AutomatedP2PVM_Open(Sender.PhysicsTunnel.ClientIO);
     end;
 end;
@@ -2018,10 +2155,10 @@ end;
 procedure TDCT40_QueryResultAndDependProcessor.DoRun(const state: Boolean);
 begin
   if Assigned(On_C) then
-      On_C(state);
-  if Assigned(On_M) then
-      On_M(state);
-  if Assigned(On_P) then
+      On_C(state)
+  else if Assigned(On_M) then
+      On_M(state)
+  else if Assigned(On_P) then
       On_P(state);
   DelayFreeObj(1.0, Self);
 end;
@@ -2042,7 +2179,7 @@ end;
 
 procedure TC40_PhysicsTunnel.DoDelayConnect;
 begin
-  PhysicsTunnel.AsyncConnectM(PhysicsAddr, PhysicsPort, {$IFDEF FPC}@{$ENDIF FPC}DoConnectOnResult);
+  PhysicsTunnel.AsyncConnectM(PhysicsAddr, PhysicsPort, DoConnectOnResult);
 end;
 
 procedure TC40_PhysicsTunnel.DoConnectOnResult(const state: Boolean);
@@ -2074,7 +2211,7 @@ begin
       D := TDFE.Create;
       D.WriteString(PhysicsAddr);
       D.WriteWORD(PhysicsPort);
-      PhysicsTunnel.SendStreamCmdM('QueryInfo', D, nil, nil, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamParam, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamFailed);
+      PhysicsTunnel.SendStreamCmdM('QueryInfo', D, nil, nil, tmp.DoStreamParam, tmp.DoStreamFailed);
       DisposeObject(D);
     end
   else
@@ -2094,7 +2231,7 @@ begin
   tmp := TDCT40_QueryResultAndDependProcessor(Param2);
   if state then
     begin
-      QueryInfoM({$IFDEF FPC}@{$ENDIF FPC}tmp.DCT40_OnCheckDepend);
+      QueryInfoM(tmp.DCT40_OnCheckDepend);
     end
   else
     begin
@@ -2113,7 +2250,7 @@ begin
   tmp := TDCT40_QueryResultAndDependProcessor(Param2);
   if state then
     begin
-      QueryInfoM({$IFDEF FPC}@{$ENDIF FPC}tmp.DCT40_OnBuildDependNetwork);
+      QueryInfoM(tmp.DCT40_OnBuildDependNetwork);
     end
   else
     begin
@@ -2124,7 +2261,7 @@ begin
     end;
 end;
 
-procedure TC40_PhysicsTunnel.ClientConnected(Sender: TZNet_Client);
+procedure TC40_PhysicsTunnel.Do_Connect_Event;
 begin
   try
     if Assigned(OnEvent) then
@@ -2133,14 +2270,24 @@ begin
   end;
 end;
 
-procedure TC40_PhysicsTunnel.ClientDisconnect(Sender: TZNet_Client);
+procedure TC40_PhysicsTunnel.Do_Disconnect_Event;
 begin
   try
     if Assigned(OnEvent) then
         OnEvent.C40_PhysicsTunnel_Disconnect(Self);
   except
   end;
-  Sender.PostProgress.PostExecuteM_NP(0, {$IFDEF FPC}@{$ENDIF FPC}Do_Notify_All_Disconnect);
+  Do_Notify_All_Disconnect;
+end;
+
+procedure TC40_PhysicsTunnel.ClientConnected(Sender: TZNet_Client);
+begin
+  TCompute.SyncM(Do_Connect_Event);
+end;
+
+procedure TC40_PhysicsTunnel.ClientDisconnect(Sender: TZNet_Client);
+begin
+  TCompute.SyncM(Do_Disconnect_Event);
 end;
 
 procedure TC40_PhysicsTunnel.Do_Notify_All_Disconnect;
@@ -2187,8 +2334,8 @@ destructor TC40_PhysicsTunnel.Destroy;
 var
   i: Integer;
 begin
-  PhysicsTunnel.OnInterface := nil;
   try
+    PhysicsTunnel.OnInterface := nil;
     if PhysicsTunnel.Connected then
       begin
         PhysicsTunnel.Disconnect;
@@ -2228,8 +2375,10 @@ begin
   if FNetwork_Already_Inited and (not FIsConnecting) and (not PhysicsTunnel.RemoteInited) then
     begin
       FIsConnecting := True;
-      PhysicsTunnel.PostProgress.PostExecuteM_NP(C40_PhysicsReconnectionDelayTime, {$IFDEF FPC}@{$ENDIF FPC}DoDelayConnect);
-    end;
+      PhysicsTunnel.PostProgress.PostExecuteM_NP(C40_PhysicsReconnectionDelayTime, DoDelayConnect);
+    end
+  else if FNetwork_Already_Inited and (not FIsConnecting) and PhysicsTunnel.RemoteInited then { connected is ready }
+      FOfflineTime := GetTimeTick;
 
   { check offline state }
   if (FOfflineTime = 0) and (not PhysicsTunnel.RemoteInited) then
@@ -2291,14 +2440,14 @@ begin
 
   if PhysicsTunnel.RemoteInited then
     begin
-      QueryInfoM({$IFDEF FPC}@{$ENDIF FPC}tmp.DCT40_OnCheckDepend);
+      QueryInfoM(tmp.DCT40_OnCheckDepend);
       exit;
     end;
 
   FIsConnecting := True;
   PhysicsTunnel.AutomatedP2PVMService := False;
   PhysicsTunnel.AutomatedP2PVMClient := False;
-  PhysicsTunnel.AsyncConnectM(PhysicsAddr, PhysicsPort, nil, tmp, {$IFDEF FPC}@{$ENDIF FPC}DoConnectAndCheckDepend);
+  PhysicsTunnel.AsyncConnectM(PhysicsAddr, PhysicsPort, nil, tmp, DoConnectAndCheckDepend);
 end;
 
 function TC40_PhysicsTunnel.CheckDependC(OnResult: TOnState_C): Boolean;
@@ -2326,14 +2475,14 @@ begin
 
   if PhysicsTunnel.RemoteInited then
     begin
-      QueryInfoM({$IFDEF FPC}@{$ENDIF FPC}tmp.DCT40_OnCheckDepend);
+      QueryInfoM(tmp.DCT40_OnCheckDepend);
       exit;
     end;
 
   FIsConnecting := True;
   PhysicsTunnel.AutomatedP2PVMService := False;
   PhysicsTunnel.AutomatedP2PVMClient := False;
-  PhysicsTunnel.AsyncConnectM(PhysicsAddr, PhysicsPort, nil, tmp, {$IFDEF FPC}@{$ENDIF FPC}DoConnectAndCheckDepend);
+  PhysicsTunnel.AsyncConnectM(PhysicsAddr, PhysicsPort, nil, tmp, DoConnectAndCheckDepend);
 end;
 
 function TC40_PhysicsTunnel.CheckDependM(OnResult: TOnState_M): Boolean;
@@ -2361,14 +2510,14 @@ begin
 
   if PhysicsTunnel.RemoteInited then
     begin
-      QueryInfoM({$IFDEF FPC}@{$ENDIF FPC}tmp.DCT40_OnCheckDepend);
+      QueryInfoM(tmp.DCT40_OnCheckDepend);
       exit;
     end;
 
   FIsConnecting := True;
   PhysicsTunnel.AutomatedP2PVMService := False;
   PhysicsTunnel.AutomatedP2PVMClient := False;
-  PhysicsTunnel.AsyncConnectM(PhysicsAddr, PhysicsPort, nil, tmp, {$IFDEF FPC}@{$ENDIF FPC}DoConnectAndCheckDepend);
+  PhysicsTunnel.AsyncConnectM(PhysicsAddr, PhysicsPort, nil, tmp, DoConnectAndCheckDepend);
 end;
 
 function TC40_PhysicsTunnel.CheckDependP(OnResult: TOnState_P): Boolean;
@@ -2396,14 +2545,14 @@ begin
 
   if PhysicsTunnel.RemoteInited then
     begin
-      QueryInfoM({$IFDEF FPC}@{$ENDIF FPC}tmp.DCT40_OnCheckDepend);
+      QueryInfoM(tmp.DCT40_OnCheckDepend);
       exit;
     end;
 
   FIsConnecting := True;
   PhysicsTunnel.AutomatedP2PVMService := False;
   PhysicsTunnel.AutomatedP2PVMClient := False;
-  PhysicsTunnel.AsyncConnectM(PhysicsAddr, PhysicsPort, nil, tmp, {$IFDEF FPC}@{$ENDIF FPC}DoConnectAndCheckDepend);
+  PhysicsTunnel.AsyncConnectM(PhysicsAddr, PhysicsPort, nil, tmp, DoConnectAndCheckDepend);
 end;
 
 function TC40_PhysicsTunnel.BuildDependNetwork: Boolean;
@@ -2433,14 +2582,14 @@ begin
 
   if PhysicsTunnel.RemoteInited then
     begin
-      QueryInfoM({$IFDEF FPC}@{$ENDIF FPC}tmp.DCT40_OnBuildDependNetwork);
+      QueryInfoM(tmp.DCT40_OnBuildDependNetwork);
       exit;
     end;
 
   FIsConnecting := True;
   PhysicsTunnel.AutomatedP2PVMService := False;
   PhysicsTunnel.AutomatedP2PVMClient := False;
-  PhysicsTunnel.AsyncConnectM(PhysicsAddr, PhysicsPort, nil, tmp, {$IFDEF FPC}@{$ENDIF FPC}DoConnectAndBuildDependNetwork);
+  PhysicsTunnel.AsyncConnectM(PhysicsAddr, PhysicsPort, nil, tmp, DoConnectAndBuildDependNetwork);
 end;
 
 function TC40_PhysicsTunnel.BuildDependNetworkC(OnResult: TOnState_C): Boolean;
@@ -2460,7 +2609,7 @@ begin
       tmp := TDCT40_QueryResultAndDependProcessor.Create;
       tmp.C40_PhysicsTunnel := Self;
       tmp.On_C := OnResult;
-      QueryInfoM({$IFDEF FPC}@{$ENDIF FPC}tmp.DCT40_OnBuildDependNetwork);
+      QueryInfoM(tmp.DCT40_OnBuildDependNetwork);
       PhysicsTunnel.AutomatedP2PVM_Open();
       exit;
     end;
@@ -2482,14 +2631,14 @@ begin
 
   if PhysicsTunnel.RemoteInited then
     begin
-      QueryInfoM({$IFDEF FPC}@{$ENDIF FPC}tmp.DCT40_OnBuildDependNetwork);
+      QueryInfoM(tmp.DCT40_OnBuildDependNetwork);
       exit;
     end;
 
   FIsConnecting := True;
   PhysicsTunnel.AutomatedP2PVMService := False;
   PhysicsTunnel.AutomatedP2PVMClient := False;
-  PhysicsTunnel.AsyncConnectM(PhysicsAddr, PhysicsPort, nil, tmp, {$IFDEF FPC}@{$ENDIF FPC}DoConnectAndBuildDependNetwork);
+  PhysicsTunnel.AsyncConnectM(PhysicsAddr, PhysicsPort, nil, tmp, DoConnectAndBuildDependNetwork);
 end;
 
 function TC40_PhysicsTunnel.BuildDependNetworkM(OnResult: TOnState_M): Boolean;
@@ -2509,7 +2658,7 @@ begin
       tmp := TDCT40_QueryResultAndDependProcessor.Create;
       tmp.C40_PhysicsTunnel := Self;
       tmp.On_M := OnResult;
-      QueryInfoM({$IFDEF FPC}@{$ENDIF FPC}tmp.DCT40_OnBuildDependNetwork);
+      QueryInfoM(tmp.DCT40_OnBuildDependNetwork);
       PhysicsTunnel.AutomatedP2PVM_Open();
       exit;
     end;
@@ -2531,14 +2680,14 @@ begin
 
   if PhysicsTunnel.RemoteInited then
     begin
-      QueryInfoM({$IFDEF FPC}@{$ENDIF FPC}tmp.DCT40_OnBuildDependNetwork);
+      QueryInfoM(tmp.DCT40_OnBuildDependNetwork);
       exit;
     end;
 
   FIsConnecting := True;
   PhysicsTunnel.AutomatedP2PVMService := False;
   PhysicsTunnel.AutomatedP2PVMClient := False;
-  PhysicsTunnel.AsyncConnectM(PhysicsAddr, PhysicsPort, nil, tmp, {$IFDEF FPC}@{$ENDIF FPC}DoConnectAndBuildDependNetwork);
+  PhysicsTunnel.AsyncConnectM(PhysicsAddr, PhysicsPort, nil, tmp, DoConnectAndBuildDependNetwork);
 end;
 
 function TC40_PhysicsTunnel.BuildDependNetworkP(OnResult: TOnState_P): Boolean;
@@ -2558,7 +2707,7 @@ begin
       tmp := TDCT40_QueryResultAndDependProcessor.Create;
       tmp.C40_PhysicsTunnel := Self;
       tmp.On_P := OnResult;
-      QueryInfoM({$IFDEF FPC}@{$ENDIF FPC}tmp.DCT40_OnBuildDependNetwork);
+      QueryInfoM(tmp.DCT40_OnBuildDependNetwork);
       PhysicsTunnel.AutomatedP2PVM_Open();
       exit;
     end;
@@ -2580,14 +2729,14 @@ begin
 
   if PhysicsTunnel.RemoteInited then
     begin
-      QueryInfoM({$IFDEF FPC}@{$ENDIF FPC}tmp.DCT40_OnBuildDependNetwork);
+      QueryInfoM(tmp.DCT40_OnBuildDependNetwork);
       exit;
     end;
 
   FIsConnecting := True;
   PhysicsTunnel.AutomatedP2PVMService := False;
   PhysicsTunnel.AutomatedP2PVMClient := False;
-  PhysicsTunnel.AsyncConnectM(PhysicsAddr, PhysicsPort, nil, tmp, {$IFDEF FPC}@{$ENDIF FPC}DoConnectAndBuildDependNetwork);
+  PhysicsTunnel.AsyncConnectM(PhysicsAddr, PhysicsPort, nil, tmp, DoConnectAndBuildDependNetwork);
 end;
 
 procedure TC40_PhysicsTunnel.QueryInfoC(OnResult: TDCT40_OnQueryResultC);
@@ -2604,7 +2753,7 @@ begin
       D := TDFE.Create;
       D.WriteString(PhysicsAddr);
       D.WriteWORD(PhysicsPort);
-      PhysicsTunnel.SendStreamCmdM('QueryInfo', D, nil, nil, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamParam, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamFailed);
+      PhysicsTunnel.SendStreamCmdM('QueryInfo', D, nil, nil, tmp.DoStreamParam, tmp.DoStreamFailed);
       DisposeObject(D);
       exit;
     end;
@@ -2612,7 +2761,7 @@ begin
   FIsConnecting := True;
   PhysicsTunnel.AutomatedP2PVMService := False;
   PhysicsTunnel.AutomatedP2PVMClient := False;
-  PhysicsTunnel.AsyncConnectM(PhysicsAddr, PhysicsPort, nil, tmp, {$IFDEF FPC}@{$ENDIF FPC}DoConnectAndQuery);
+  PhysicsTunnel.AsyncConnectM(PhysicsAddr, PhysicsPort, nil, tmp, DoConnectAndQuery);
 end;
 
 procedure TC40_PhysicsTunnel.QueryInfoM(OnResult: TDCT40_OnQueryResultM);
@@ -2629,7 +2778,7 @@ begin
       D := TDFE.Create;
       D.WriteString(PhysicsAddr);
       D.WriteWORD(PhysicsPort);
-      PhysicsTunnel.SendStreamCmdM('QueryInfo', D, nil, nil, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamParam, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamFailed);
+      PhysicsTunnel.SendStreamCmdM('QueryInfo', D, nil, nil, tmp.DoStreamParam, tmp.DoStreamFailed);
       DisposeObject(D);
       exit;
     end;
@@ -2637,7 +2786,7 @@ begin
   FIsConnecting := True;
   PhysicsTunnel.AutomatedP2PVMService := False;
   PhysicsTunnel.AutomatedP2PVMClient := False;
-  PhysicsTunnel.AsyncConnectM(PhysicsAddr, PhysicsPort, nil, tmp, {$IFDEF FPC}@{$ENDIF FPC}DoConnectAndQuery);
+  PhysicsTunnel.AsyncConnectM(PhysicsAddr, PhysicsPort, nil, tmp, DoConnectAndQuery);
 end;
 
 procedure TC40_PhysicsTunnel.QueryInfoP(OnResult: TDCT40_OnQueryResultP);
@@ -2654,7 +2803,7 @@ begin
       D := TDFE.Create;
       D.WriteString(PhysicsAddr);
       D.WriteWORD(PhysicsPort);
-      PhysicsTunnel.SendStreamCmdM('QueryInfo', D, nil, nil, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamParam, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamFailed);
+      PhysicsTunnel.SendStreamCmdM('QueryInfo', D, nil, nil, tmp.DoStreamParam, tmp.DoStreamFailed);
       DisposeObject(D);
       exit;
     end;
@@ -2662,7 +2811,7 @@ begin
   FIsConnecting := True;
   PhysicsTunnel.AutomatedP2PVMService := False;
   PhysicsTunnel.AutomatedP2PVMClient := False;
-  PhysicsTunnel.AsyncConnectM(PhysicsAddr, PhysicsPort, nil, tmp, {$IFDEF FPC}@{$ENDIF FPC}DoConnectAndQuery);
+  PhysicsTunnel.AsyncConnectM(PhysicsAddr, PhysicsPort, nil, tmp, DoConnectAndQuery);
 end;
 
 function TC40_PhysicsTunnel.DependNetworkIsConnected: Boolean;
@@ -2691,13 +2840,13 @@ end;
 constructor TC40_First_BuildDependNetwork_Fault_Fixed_Bridge.Create(Tunnel_: TC40_PhysicsTunnel);
 begin
   inherited Create;
-  Time_ := GetTimeTick();
+  Fault_Fixed_Bridge_Begin_Time := GetTimeTick();
   Tunnel := Tunnel_;
 end;
 
 procedure TC40_First_BuildDependNetwork_Fault_Fixed_Bridge.Do_Delay_Next_BuildDependNetwork;
 begin
-  if (GetTimeTick - Time_ > C_Tick_Minute * 60 * 4) then
+  if (GetTimeTick - Fault_Fixed_Bridge_Begin_Time > C40_KillIDCFaultTimeout) then
     begin
       DelayFreeObj(1.0, Self);
       exit;
@@ -2712,9 +2861,9 @@ begin
   Tunnel.FOfflineTime := GetTimeTick();
 
   if Tunnel.FIsConnecting then
-      SystemPostProgress.PostExecuteM_NP(5.0, {$IFDEF FPC}@{$ENDIF FPC}Do_Delay_Next_BuildDependNetwork)
+      SystemPostProgress.PostExecuteM_NP(5.0, Do_Delay_Next_BuildDependNetwork)
   else if not Tunnel.FNetwork_Already_Inited then
-      Tunnel.BuildDependNetworkM({$IFDEF FPC}@{$ENDIF FPC}Do_First_BuildDependNetwork)
+      Tunnel.BuildDependNetworkM(Do_First_BuildDependNetwork)
   else
       DelayFreeObj(1.0, Self);
 end;
@@ -2731,8 +2880,14 @@ begin
       DelayFreeObj(1.0, Self);
       exit;
     end;
+  if Tunnel.FNetwork_Already_Inited then
+    begin
+      DelayFreeObj(1.0, Self);
+      exit;
+    end;
+
   Tunnel.FOfflineTime := GetTimeTick();
-  SystemPostProgress.PostExecuteM_NP(5.0, {$IFDEF FPC}@{$ENDIF FPC}Do_Delay_Next_BuildDependNetwork);
+  SystemPostProgress.PostExecuteM_NP(5.0, Do_Delay_Next_BuildDependNetwork);
 end;
 
 constructor TC40_PhysicsTunnelPool.Create;
@@ -2799,7 +2954,7 @@ begin
       Result.OnEvent := OnEvent_;
       Result.ResetDepend(Depend_);
       if Auto_Repair_First_BuildDependNetwork_Fault then
-          Result.BuildDependNetworkM({$IFDEF FPC}@{$ENDIF FPC}TC40_First_BuildDependNetwork_Fault_Fixed_Bridge.Create(Result).Do_First_BuildDependNetwork)
+          Result.BuildDependNetworkM(TC40_First_BuildDependNetwork_Fault_Fixed_Bridge.Create(Result).Do_First_BuildDependNetwork)
       else
           Result.BuildDependNetwork();
     end
@@ -2808,7 +2963,7 @@ begin
       Result.OnEvent := OnEvent_;
       Result.ResetDepend(Depend_);
       if Auto_Repair_First_BuildDependNetwork_Fault then
-          Result.BuildDependNetworkM({$IFDEF FPC}@{$ENDIF FPC}TC40_First_BuildDependNetwork_Fault_Fixed_Bridge.Create(Result).Do_First_BuildDependNetwork)
+          Result.BuildDependNetworkM(TC40_First_BuildDependNetwork_Fault_Fixed_Bridge.Create(Result).Do_First_BuildDependNetwork)
       else
           Result.BuildDependNetwork();
     end;
@@ -2824,7 +2979,7 @@ begin
       Result.OnEvent := OnEvent_;
       Result.ResetDepend(Depend_);
       if Auto_Repair_First_BuildDependNetwork_Fault then
-          Result.BuildDependNetworkM({$IFDEF FPC}@{$ENDIF FPC}TC40_First_BuildDependNetwork_Fault_Fixed_Bridge.Create(Result).Do_First_BuildDependNetwork)
+          Result.BuildDependNetworkM(TC40_First_BuildDependNetwork_Fault_Fixed_Bridge.Create(Result).Do_First_BuildDependNetwork)
       else
           Result.BuildDependNetwork();
     end
@@ -2833,7 +2988,7 @@ begin
       Result.OnEvent := OnEvent_;
       Result.ResetDepend(Depend_);
       if Auto_Repair_First_BuildDependNetwork_Fault then
-          Result.BuildDependNetworkM({$IFDEF FPC}@{$ENDIF FPC}TC40_First_BuildDependNetwork_Fault_Fixed_Bridge.Create(Result).Do_First_BuildDependNetwork)
+          Result.BuildDependNetworkM(TC40_First_BuildDependNetwork_Fault_Fixed_Bridge.Create(Result).Do_First_BuildDependNetwork)
       else
           Result.BuildDependNetwork();
     end;
@@ -2858,7 +3013,7 @@ begin
       Result.OnEvent := OnEvent_;
       Result.ResetDepend(Depend_);
       if Auto_Repair_First_BuildDependNetwork_Fault then
-          Result.BuildDependNetworkM({$IFDEF FPC}@{$ENDIF FPC}TC40_First_BuildDependNetwork_Fault_Fixed_Bridge.Create(Result).Do_First_BuildDependNetwork)
+          Result.BuildDependNetworkM(TC40_First_BuildDependNetwork_Fault_Fixed_Bridge.Create(Result).Do_First_BuildDependNetwork)
       else
           Result.BuildDependNetwork();
     end
@@ -2867,7 +3022,7 @@ begin
       Result.OnEvent := OnEvent_;
       Result.ResetDepend(Depend_);
       if Auto_Repair_First_BuildDependNetwork_Fault then
-          Result.BuildDependNetworkM({$IFDEF FPC}@{$ENDIF FPC}TC40_First_BuildDependNetwork_Fault_Fixed_Bridge.Create(Result).Do_First_BuildDependNetwork)
+          Result.BuildDependNetworkM(TC40_First_BuildDependNetwork_Fault_Fixed_Bridge.Create(Result).Do_First_BuildDependNetwork)
       else
           Result.BuildDependNetwork();
     end;
@@ -2883,7 +3038,7 @@ begin
       Result.OnEvent := OnEvent_;
       Result.ResetDepend(Depend_);
       if Auto_Repair_First_BuildDependNetwork_Fault then
-          Result.BuildDependNetworkM({$IFDEF FPC}@{$ENDIF FPC}TC40_First_BuildDependNetwork_Fault_Fixed_Bridge.Create(Result).Do_First_BuildDependNetwork)
+          Result.BuildDependNetworkM(TC40_First_BuildDependNetwork_Fault_Fixed_Bridge.Create(Result).Do_First_BuildDependNetwork)
       else
           Result.BuildDependNetwork();
     end
@@ -2892,7 +3047,7 @@ begin
       Result.OnEvent := OnEvent_;
       Result.ResetDepend(Depend_);
       if Auto_Repair_First_BuildDependNetwork_Fault then
-          Result.BuildDependNetworkM({$IFDEF FPC}@{$ENDIF FPC}TC40_First_BuildDependNetwork_Fault_Fixed_Bridge.Create(Result).Do_First_BuildDependNetwork)
+          Result.BuildDependNetworkM(TC40_First_BuildDependNetwork_Fault_Fixed_Bridge.Create(Result).Do_First_BuildDependNetwork)
       else
           Result.BuildDependNetwork();
     end;
@@ -2911,6 +3066,22 @@ begin
     end;
 end;
 
+procedure TC40_PhysicsTunnelPool.Enabled_Progress;
+var
+  i: Integer;
+begin
+  for i := Count - 1 downto 0 do
+      Items[i].PhysicsTunnel.Enabled_Progress;
+end;
+
+procedure TC40_PhysicsTunnelPool.Disable_Progress;
+var
+  i: Integer;
+begin
+  for i := Count - 1 downto 0 do
+      Items[i].PhysicsTunnel.Disable_Progress;
+end;
+
 function TC40_PhysicsTunnelPool.SearchServiceAndBuildConnection(PhysicsAddr: U_String; PhysicsPort: Word; FullConnection_: Boolean;
   const ServiceTyp: U_String; const OnEvent_: IC40_PhysicsTunnel_Event): TSearchServiceAndBuildConnection_Bridge;
 var
@@ -2922,7 +3093,7 @@ begin
   Result.ServiceTyp := ServiceTyp;
   Result.OnEvent_ := OnEvent_;
   Tunnel_ := GetOrCreatePhysicsTunnel(PhysicsAddr, PhysicsPort);
-  Tunnel_.QueryInfoM({$IFDEF FPC}@{$ENDIF FPC}Result.Do_SearchService_Event);
+  Tunnel_.QueryInfoM(Result.Do_SearchService_Event);
 end;
 
 function TC40_PhysicsTunnelPool.SearchServiceAndBuildConnection(PhysicsAddr: U_String; PhysicsPort: Word;
@@ -2936,7 +3107,7 @@ begin
   Result.ServiceTyp := ServiceTyp;
   Result.OnEvent_ := OnEvent_;
   Tunnel_ := GetOrCreatePhysicsTunnel(PhysicsAddr, PhysicsPort);
-  Tunnel_.QueryInfoM({$IFDEF FPC}@{$ENDIF FPC}Result.Do_SearchService_Event);
+  Tunnel_.QueryInfoM(Result.Do_SearchService_Event);
 end;
 
 function TC40_PhysicsTunnelPool.SearchServiceAndOptimizeConnection(PhysicsAddr: U_String; PhysicsPort: Word;
@@ -2950,7 +3121,7 @@ begin
   Result.ServiceTyp := ServiceTyp;
   Result.OnEvent_ := OnEvent_;
   Tunnel_ := GetOrCreatePhysicsTunnel(PhysicsAddr, PhysicsPort);
-  Tunnel_.QueryInfoM({$IFDEF FPC}@{$ENDIF FPC}Result.Do_SearchService_Event);
+  Tunnel_.QueryInfoM(Result.Do_SearchService_Event);
 end;
 
 procedure TC40_Custom_ClientPool_Wait.DoRun;
@@ -3022,33 +3193,33 @@ begin
     begin
       try
         if Assigned(On_C) then
-            On_C(States_);
-        if Assigned(On_M) then
-            On_M(States_);
-        if Assigned(On_P) then
+            On_C(States_)
+        else if Assigned(On_M) then
+            On_M(States_)
+        else if Assigned(On_P) then
             On_P(States_);
       except
       end;
       DelayFreeObject(0.5, Self, nil);
     end
   else
-      SystemPostProgress.PostExecuteM_NP(0.1, {$IFDEF FPC}@{$ENDIF FPC}DoRun);
+      SystemPostProgress.PostExecuteM_NP(0.1, DoRun);
 end;
 
 constructor TC40_Custom_ClientPool_Wait.Create(dependNetwork_: U_String);
 var
-  arry_: TC40_DependNetworkInfoArray;
+  Arry_: TC40_DependNetworkInfoArray;
   i: Integer;
 begin
   inherited Create;
-  arry_ := ExtractDependInfo(dependNetwork_);
-  SetLength(States_, length(arry_));
-  for i := 0 to length(arry_) - 1 do
+  Arry_ := ExtractDependInfo(dependNetwork_);
+  SetLength(States_, length(Arry_));
+  for i := 0 to length(Arry_) - 1 do
     begin
-      States_[i].ServiceTyp_ := arry_[i].Typ;
+      States_[i].ServiceTyp_ := Arry_[i].Typ;
       States_[i].Client_ := nil;
     end;
-  ResetDependInfoBuff(arry_);
+  ResetDependInfoBuff(Arry_);
 
   Pool_ := nil;
   On_C := nil;
@@ -3099,7 +3270,7 @@ begin
         if arry[i].FoundServiceTyp(ServiceTyp) then
           begin
             tmp := PhysicsPool_.GetOrCreatePhysicsTunnel(arry[i], ServiceTyp, OnEvent_);
-            tmp.DependNetworkClientPool.WaitConnectedDoneM(arry[i].ServiceTyp, {$IFDEF FPC}@{$ENDIF FPC}Do_Done_Client);
+            tmp.DependNetworkClientPool.WaitConnectedDoneM(arry[i].ServiceTyp, Do_Done_Client);
             inc(TaskNum);
           end;
       SetLength(arry, 0);
@@ -3112,7 +3283,7 @@ begin
         if arry[i].FoundServiceTyp(ServiceTyp) then
           begin
             tmp := PhysicsPool_.GetOrCreatePhysicsTunnel(arry[i], ServiceTyp, OnEvent_);
-            tmp.DependNetworkClientPool.WaitConnectedDoneM(arry[i].ServiceTyp, {$IFDEF FPC}@{$ENDIF FPC}Do_Done_Client);
+            tmp.DependNetworkClientPool.WaitConnectedDoneM(arry[i].ServiceTyp, Do_Done_Client);
             inc(TaskNum);
           end;
       SetLength(arry, 0);
@@ -3122,10 +3293,10 @@ begin
     begin
       try
         if Assigned(OnDone_C) then
-            OnDone_C(Done_ClientPool);
-        if Assigned(OnDone_M) then
-            OnDone_M(Done_ClientPool);
-        if Assigned(OnDone_P) then
+            OnDone_C(Done_ClientPool)
+        else if Assigned(OnDone_M) then
+            OnDone_M(Done_ClientPool)
+        else if Assigned(OnDone_P) then
             OnDone_P(Done_ClientPool);
       except
       end;
@@ -3145,10 +3316,10 @@ begin
     begin
       try
         if Assigned(OnDone_C) then
-            OnDone_C(Done_ClientPool);
-        if Assigned(OnDone_M) then
-            OnDone_M(Done_ClientPool);
-        if Assigned(OnDone_P) then
+            OnDone_C(Done_ClientPool)
+        else if Assigned(OnDone_M) then
+            OnDone_M(Done_ClientPool)
+        else if Assigned(OnDone_P) then
             OnDone_P(Done_ClientPool);
       except
       end;
@@ -3287,6 +3458,21 @@ begin
   Result := ServiceTyp.Same(@Data_.ServiceTyp);
 end;
 
+function TC40_Info.SamePhysicsAddr(PhysicsAddr_: U_String): Boolean;
+begin
+  Result := PhysicsAddr.Same(@PhysicsAddr_);
+end;
+
+function TC40_Info.SamePhysicsAddr(Arry_: TArrayPascalString): Boolean;
+var
+  i: Integer;
+begin
+  Result := False;
+  for i := 0 to length(Arry_) - 1 do
+    if PhysicsAddr.Same(@Arry_[i]) then
+        exit(True);
+end;
+
 function TC40_Info.SamePhysicsAddr(PhysicsAddr_: U_String; PhysicsPort_: Word): Boolean;
 begin
   Result := False;
@@ -3341,13 +3527,13 @@ begin
   Result := True;
 end;
 
-function TC40_Info.FoundServiceTyp(arry_: TC40_DependNetworkInfoArray): Boolean;
+function TC40_Info.FoundServiceTyp(Arry_: TC40_DependNetworkInfoArray): Boolean;
 var
   i: Integer;
 begin
   Result := False;
-  for i := low(arry_) to high(arry_) do
-    if ServiceTyp.Same(@arry_[i].Typ) then
+  for i := low(Arry_) to high(Arry_) do
+    if ServiceTyp.Same(@Arry_[i].Typ) then
       begin
         Result := True;
         exit;
@@ -3356,11 +3542,11 @@ end;
 
 function TC40_Info.FoundServiceTyp(servTyp_: U_String): Boolean;
 var
-  arry_: TC40_DependNetworkInfoArray;
+  Arry_: TC40_DependNetworkInfoArray;
 begin
-  arry_ := ExtractDependInfo(servTyp_);
-  Result := FoundServiceTyp(arry_);
-  ResetDependInfoBuff(arry_);
+  Arry_ := ExtractDependInfo(servTyp_);
+  Result := FoundServiceTyp(Arry_);
+  ResetDependInfoBuff(Arry_);
 end;
 
 function TC40_Info.ReadyC40Client: Boolean;
@@ -3433,7 +3619,7 @@ class procedure TC40_InfoList.SortWorkLoad(L_: TC40_InfoList);
         Result := CompareGeoInt(Right.MaxWorkload, Left.MaxWorkload);
   end;
 
-  procedure fastSort_(arry_: TC40_InfoList; L, R: Integer);
+  procedure fastSort_(Arry_: TC40_InfoList; L, R: Integer);
   var
     i, j: Integer;
     p: TC40_Info;
@@ -3441,22 +3627,22 @@ class procedure TC40_InfoList.SortWorkLoad(L_: TC40_InfoList);
     repeat
       i := L;
       j := R;
-      p := arry_[(L + R) shr 1];
+      p := Arry_[(L + R) shr 1];
       repeat
-        while Compare_(arry_[i], p) < 0 do
+        while Compare_(Arry_[i], p) < 0 do
             inc(i);
-        while Compare_(arry_[j], p) > 0 do
+        while Compare_(Arry_[j], p) > 0 do
             dec(j);
         if i <= j then
           begin
             if i <> j then
-                arry_.Exchange(i, j);
+                Arry_.Exchange(i, j);
             inc(i);
             dec(j);
           end;
       until i > j;
       if L < j then
-          fastSort_(arry_, L, j);
+          fastSort_(Arry_, L, j);
       L := i;
     until i >= R;
   end;
@@ -3775,10 +3961,10 @@ procedure TC4_Help_Console_Command_Data.DoExecute(var OP_Param: TOpParam);
 begin
   try
     if Assigned(OnEvent_C) then
-        OnEvent_C(OP_Param);
-    if Assigned(OnEvent_M) then
-        OnEvent_M(OP_Param);
-    if Assigned(OnEvent_P) then
+        OnEvent_C(OP_Param)
+    else if Assigned(OnEvent_M) then
+        OnEvent_M(OP_Param)
+    else if Assigned(OnEvent_P) then
         OnEvent_P(OP_Param);
   except
   end;
@@ -3811,7 +3997,7 @@ begin
   except
   end;
 
-  Param_File := Find_File(ParamList.GetDefaultValue('Param_File', PFormat('S_%s.conf', [ServiceTyp.Text])), ServiceTyp);
+  Param_File := Where_C4_File(ParamList.GetDefaultValue('Param_File', PFormat('S_%s.conf', [ServiceTyp.Text])), ServiceTyp);
   if umlFileExists(Param_File) then
     begin
       DoStatus('(%s) "%s" found configure file: %s', [ClassName, ServiceTyp.Text, Param_File.Text]);
@@ -3969,7 +4155,7 @@ begin
   Result := ParamList.GetDefaultValue(source_, source_);
 end;
 
-function TC40_Custom_Service.Find_File(fileName, ServiceTyp: U_String): U_String;
+function TC40_Custom_Service.Where_C4_File(fileName, ServiceTyp: U_String): U_String;
 var
   tmp: U_String;
 begin
@@ -3987,9 +4173,9 @@ begin
       exit(tmp);
 end;
 
-function TC40_Custom_Service.Find_File(fileName: U_String): U_String;
+function TC40_Custom_Service.Where_C4_File(fileName: U_String): U_String;
 begin
-  Result := Find_File(fileName, ServiceInfo.ServiceTyp);
+  Result := Where_C4_File(fileName, ServiceInfo.ServiceTyp);
 end;
 
 function TC40_Custom_Service.Register_ConsoleCommand(Cmd, Desc: SystemString): TC4_Help_Console_Command_Data;
@@ -4110,20 +4296,20 @@ end;
 
 function TC40_Custom_ServicePool.ExistsOnlyInstance(ServiceTyp: U_String): Boolean;
 var
-  arry_: TC40_DependNetworkInfoArray;
+  Arry_: TC40_DependNetworkInfoArray;
   i: Integer;
 begin
   Result := False;
-  arry_ := ExtractDependInfo(ServiceTyp);
+  Arry_ := ExtractDependInfo(ServiceTyp);
 
   for i := 0 to Count - 1 do
-    if Items[i].ServiceInfo.OnlyInstance and Items[i].ServiceInfo.FoundServiceTyp(arry_) then
+    if Items[i].ServiceInfo.OnlyInstance and Items[i].ServiceInfo.FoundServiceTyp(Arry_) then
       begin
         Result := True;
         break;
       end;
 
-  ResetDependInfoBuff(arry_);
+  ResetDependInfoBuff(Arry_);
 end;
 
 function TC40_Custom_ServicePool.GetC40Array: TC40_Custom_Service_Array;
@@ -4137,18 +4323,18 @@ end;
 
 function TC40_Custom_ServicePool.GetFromServiceTyp(ServiceTyp: U_String): TC40_Custom_Service_Array;
 var
-  arry_: TC40_DependNetworkInfoArray;
+  Arry_: TC40_DependNetworkInfoArray;
   L: TC40_Custom_ServicePool;
   i: Integer;
 begin
-  arry_ := ExtractDependInfo(ServiceTyp);
+  Arry_ := ExtractDependInfo(ServiceTyp);
   L := TC40_Custom_ServicePool.Create;
   for i := 0 to Count - 1 do
-    if Items[i].ServiceInfo.FoundServiceTyp(arry_) then
+    if Items[i].ServiceInfo.FoundServiceTyp(Arry_) then
         L.Add(Items[i]);
   Result := L.GetC40Array;
   DisposeObject(L);
-  ResetDependInfoBuff(arry_);
+  ResetDependInfoBuff(Arry_);
 end;
 
 function TC40_Custom_ServicePool.GetFromPhysicsAddr(PhysicsAddr: U_String; PhysicsPort: Word): TC40_Custom_Service_Array;
@@ -4196,7 +4382,7 @@ begin
   except
   end;
 
-  Param_File := Find_File(ParamList.GetDefaultValue('Param_File', PFormat('C_%s.conf', [ClientInfo.ServiceTyp.Text])));
+  Param_File := Where_C4_File(ParamList.GetDefaultValue('Param_File', PFormat('C_%s.conf', [ClientInfo.ServiceTyp.Text])));
   if umlFileExists(Param_File) then
     begin
       DoStatus('(%s) "%s" found configure file: %s', [ClassName, ClientInfo.ServiceTyp.Text, Param_File.Text]);
@@ -4326,7 +4512,7 @@ begin
   Result := ParamList.GetDefaultValue(source_, source_);
 end;
 
-function TC40_Custom_Client.Find_File(fileName: U_String): U_String;
+function TC40_Custom_Client.Where_C4_File(fileName: U_String): U_String;
 var
   tmp: U_String;
 begin
@@ -4449,18 +4635,18 @@ end;
 
 function TC40_Custom_ClientPool.ExistsServiceTyp(ServiceTyp: U_String): Boolean;
 var
-  arry_: TC40_DependNetworkInfoArray;
+  Arry_: TC40_DependNetworkInfoArray;
   i: Integer;
 begin
-  arry_ := ExtractDependInfo(ServiceTyp);
+  Arry_ := ExtractDependInfo(ServiceTyp);
   Result := False;
   for i := 0 to Count - 1 do
-    if Items[i].ClientInfo.FoundServiceTyp(arry_) then
+    if Items[i].ClientInfo.FoundServiceTyp(Arry_) then
       begin
         Result := True;
         break;
       end;
-  ResetDependInfoBuff(arry_);
+  ResetDependInfoBuff(Arry_);
 end;
 
 function TC40_Custom_ClientPool.ExistsClass(Class_: TC40_Custom_Client_Class): TC40_Custom_Client;
@@ -4485,34 +4671,34 @@ end;
 
 function TC40_Custom_ClientPool.ExistsConnectedServiceTyp(ServiceTyp: U_String): TC40_Custom_Client;
 var
-  arry_: TC40_DependNetworkInfoArray;
+  Arry_: TC40_DependNetworkInfoArray;
   i: Integer;
 begin
-  arry_ := ExtractDependInfo(ServiceTyp);
+  Arry_ := ExtractDependInfo(ServiceTyp);
   Result := nil;
   for i := 0 to Count - 1 do
-    if Items[i].Connected and Items[i].ClientInfo.FoundServiceTyp(arry_) then
+    if Items[i].Connected and Items[i].ClientInfo.FoundServiceTyp(Arry_) then
       begin
         Result := Items[i];
         break;
       end;
-  ResetDependInfoBuff(arry_);
+  ResetDependInfoBuff(Arry_);
 end;
 
 function TC40_Custom_ClientPool.ExistsConnectedServiceTypAndClass(ServiceTyp: U_String; Class_: TC40_Custom_Client_Class): TC40_Custom_Client;
 var
-  arry_: TC40_DependNetworkInfoArray;
+  Arry_: TC40_DependNetworkInfoArray;
   i: Integer;
 begin
-  arry_ := ExtractDependInfo(ServiceTyp);
+  Arry_ := ExtractDependInfo(ServiceTyp);
   Result := nil;
   for i := 0 to Count - 1 do
-    if Items[i].InheritsFrom(Class_) and Items[i].Connected and Items[i].ClientInfo.FoundServiceTyp(arry_) then
+    if Items[i].InheritsFrom(Class_) and Items[i].Connected and Items[i].ClientInfo.FoundServiceTyp(Arry_) then
       begin
         Result := Items[i];
         break;
       end;
-  ResetDependInfoBuff(arry_);
+  ResetDependInfoBuff(Arry_);
 end;
 
 function TC40_Custom_ClientPool.FindPhysicsAddr(PhysicsAddr: U_String; PhysicsPort: Word): Boolean;
@@ -4539,18 +4725,18 @@ end;
 
 function TC40_Custom_ClientPool.FindServiceTyp(ServiceTyp: U_String): Boolean;
 var
-  arry_: TC40_DependNetworkInfoArray;
+  Arry_: TC40_DependNetworkInfoArray;
   i: Integer;
 begin
-  arry_ := ExtractDependInfo(ServiceTyp);
+  Arry_ := ExtractDependInfo(ServiceTyp);
   Result := False;
   for i := 0 to Count - 1 do
-    if Items[i].ClientInfo.FoundServiceTyp(arry_) then
+    if Items[i].ClientInfo.FoundServiceTyp(Arry_) then
       begin
         Result := True;
         break;
       end;
-  ResetDependInfoBuff(arry_);
+  ResetDependInfoBuff(Arry_);
 end;
 
 function TC40_Custom_ClientPool.FindClass(Class_: TC40_Custom_Client_Class): TC40_Custom_Client;
@@ -4575,34 +4761,34 @@ end;
 
 function TC40_Custom_ClientPool.FindConnectedServiceTyp(ServiceTyp: U_String): TC40_Custom_Client;
 var
-  arry_: TC40_DependNetworkInfoArray;
+  Arry_: TC40_DependNetworkInfoArray;
   i: Integer;
 begin
-  arry_ := ExtractDependInfo(ServiceTyp);
+  Arry_ := ExtractDependInfo(ServiceTyp);
   Result := nil;
   for i := 0 to Count - 1 do
-    if Items[i].Connected and Items[i].ClientInfo.FoundServiceTyp(arry_) then
+    if Items[i].Connected and Items[i].ClientInfo.FoundServiceTyp(Arry_) then
       begin
         Result := Items[i];
         break;
       end;
-  ResetDependInfoBuff(arry_);
+  ResetDependInfoBuff(Arry_);
 end;
 
 function TC40_Custom_ClientPool.FindConnectedServiceTypAndClass(ServiceTyp: U_String; Class_: TC40_Custom_Client_Class): TC40_Custom_Client;
 var
-  arry_: TC40_DependNetworkInfoArray;
+  Arry_: TC40_DependNetworkInfoArray;
   i: Integer;
 begin
-  arry_ := ExtractDependInfo(ServiceTyp);
+  Arry_ := ExtractDependInfo(ServiceTyp);
   Result := nil;
   for i := 0 to Count - 1 do
-    if Items[i].InheritsFrom(Class_) and Items[i].Connected and Items[i].ClientInfo.FoundServiceTyp(arry_) then
+    if Items[i].InheritsFrom(Class_) and Items[i].Connected and Items[i].ClientInfo.FoundServiceTyp(Arry_) then
       begin
         Result := Items[i];
         break;
       end;
-  ResetDependInfoBuff(arry_);
+  ResetDependInfoBuff(Arry_);
 end;
 
 function TC40_Custom_ClientPool.GetClientFromHash(Hash: TMD5): TC40_Custom_Client;
@@ -4623,7 +4809,7 @@ class procedure TC40_Custom_ClientPool.SortWorkLoad(L_: TC40_Custom_ClientPool);
         Result := CompareGeoInt(Right.ClientInfo.MaxWorkload, Left.ClientInfo.MaxWorkload);
   end;
 
-  procedure fastSort_(arry_: TC40_Custom_ClientPool; L, R: Integer);
+  procedure fastSort_(Arry_: TC40_Custom_ClientPool; L, R: Integer);
   var
     i, j: Integer;
     p: TC40_Custom_Client;
@@ -4631,22 +4817,22 @@ class procedure TC40_Custom_ClientPool.SortWorkLoad(L_: TC40_Custom_ClientPool);
     repeat
       i := L;
       j := R;
-      p := arry_[(L + R) shr 1];
+      p := Arry_[(L + R) shr 1];
       repeat
-        while Compare_(arry_[i], p) < 0 do
+        while Compare_(Arry_[i], p) < 0 do
             inc(i);
-        while Compare_(arry_[j], p) > 0 do
+        while Compare_(Arry_[j], p) > 0 do
             dec(j);
         if i <= j then
           begin
             if i <> j then
-                arry_.Exchange(i, j);
+                Arry_.Exchange(i, j);
             inc(i);
             dec(j);
           end;
       until i > j;
       if L < j then
-          fastSort_(arry_, L, j);
+          fastSort_(Arry_, L, j);
       L := i;
     until i >= R;
   end;
@@ -4667,20 +4853,20 @@ end;
 
 function TC40_Custom_ClientPool.SearchServiceTyp(ServiceTyp: U_String; isConnected: Boolean): TC40_Custom_Client_Array;
 var
-  arry_: TC40_DependNetworkInfoArray;
+  Arry_: TC40_DependNetworkInfoArray;
   L: TC40_Custom_ClientPool;
   i: Integer;
 begin
-  arry_ := ExtractDependInfo(ServiceTyp);
+  Arry_ := ExtractDependInfo(ServiceTyp);
   L := TC40_Custom_ClientPool.Create;
   for i := 0 to Count - 1 do
-    if Items[i].ClientInfo.FoundServiceTyp(arry_) then
+    if Items[i].ClientInfo.FoundServiceTyp(Arry_) then
       if (not isConnected) or (isConnected and Items[i].Connected) then
           L.Add(Items[i]);
   SortWorkLoad(L);
   Result := L.GetC40Array;
   DisposeObject(L);
-  ResetDependInfoBuff(arry_);
+  ResetDependInfoBuff(Arry_);
 end;
 
 function TC40_Custom_ClientPool.SearchServiceTyp(ServiceTyp: U_String): TC40_Custom_Client_Array;
@@ -4735,7 +4921,7 @@ begin
   tmp := TC40_Custom_ClientPool_Wait.Create(dependNetwork_);
   tmp.Pool_ := Self;
   tmp.On_C := OnResult;
-  SystemPostProgress.PostExecuteM_NP(0.1, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoRun);
+  SystemPostProgress.PostExecuteM_NP(0.1, tmp.DoRun);
 end;
 
 procedure TC40_Custom_ClientPool.WaitConnectedDoneM(dependNetwork_: U_String; OnResult: TOn_C40_Custom_Client_EventM);
@@ -4745,7 +4931,7 @@ begin
   tmp := TC40_Custom_ClientPool_Wait.Create(dependNetwork_);
   tmp.Pool_ := Self;
   tmp.On_M := OnResult;
-  SystemPostProgress.PostExecuteM_NP(0.1, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoRun);
+  SystemPostProgress.PostExecuteM_NP(0.1, tmp.DoRun);
 end;
 
 procedure TC40_Custom_ClientPool.WaitConnectedDoneP(dependNetwork_: U_String; OnResult: TOn_C40_Custom_Client_EventP);
@@ -4755,7 +4941,110 @@ begin
   tmp := TC40_Custom_ClientPool_Wait.Create(dependNetwork_);
   tmp.Pool_ := Self;
   tmp.On_P := OnResult;
-  SystemPostProgress.PostExecuteM_NP(0.1, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoRun);
+  SystemPostProgress.PostExecuteM_NP(0.1, tmp.DoRun);
+end;
+
+procedure TC40_Auto_Deployment_Client<T_>.Do_Deployment_Ready(States: TC40_Custom_ClientPool_Wait_States);
+var
+  i: Integer;
+  cc: TC40_Custom_Client;
+begin
+  FClient_Ptr^ := nil;
+  for i := 0 to C40_ClientPool.Count - 1 do
+    begin
+      cc := C40_ClientPool[i];
+      if cc is T_ then
+          FClient_Ptr^ := cc as T_;
+    end;
+  if FClient_Ptr^ <> nil then
+    begin
+      if TC40_Custom_Client(FClient_Ptr^).Connected then
+        begin
+          try
+            if Assigned(FOn_Ready_M) then
+                FOn_Ready_M(FClient_Ptr^)
+            else if Assigned(FOn_Ready_C) then
+                FOn_Ready_C(FClient_Ptr^)
+            else if Assigned(FOn_Ready_P) then
+                FOn_Ready_P(FClient_Ptr^);
+          except
+          end;
+          DoStatus('deployment "%s"::%s ready ok.', [TC40_Custom_Client(FClient_Ptr^).ClientInfo.ServiceTyp.Text, TC40_Custom_Client(FClient_Ptr^).ClassName]);
+        end
+      else
+          DoStatus('deployment "%s"::%s error!', [TC40_Custom_Client(FClient_Ptr^).ClientInfo.ServiceTyp.Text, TC40_Custom_Client(FClient_Ptr^).ClassName]);
+      DelayFreeObj(1.0, Self);
+    end;
+end;
+
+constructor TC40_Auto_Deployment_Client<T_>.Create_Ptr(dependNetwork_: U_String; Client_: PT_);
+begin
+  inherited Create;
+  FClient_Second := nil;
+  if Client_ = nil then
+    begin
+      FClient_Ptr := @FClient_Second;
+    end
+  else
+    begin
+      FClient_Ptr := Client_;
+    end;
+  FDependNetwork := dependNetwork_;
+  FOn_Ready_C := nil;
+  FOn_Ready_M := nil;
+  FOn_Ready_P := nil;
+  C40_ClientPool.WaitConnectedDoneM(FDependNetwork, Do_Deployment_Ready);
+end;
+
+constructor TC40_Auto_Deployment_Client<T_>.Create(dependNetwork_: U_String; var Client: T_);
+begin
+  Create_Ptr(dependNetwork_, @Client); // fixed dependNetwork parameter, by.qq600585
+end;
+
+constructor TC40_Auto_Deployment_Client<T_>.Create(var Client: T_);
+var
+  n: U_String;
+begin
+  n := GetRegisterClientTypFromClass(TC40_Custom_Client_Class(T_));
+  Create(n, Client);
+end;
+
+constructor TC40_Auto_Deployment_Client<T_>.Create_C(OnReady: TOn_Ready_C);
+var
+  n: U_String;
+  p: PT_;
+begin
+  n := GetRegisterClientTypFromClass(TC40_Custom_Client_Class(T_));
+  p := nil;
+  Create_Ptr(n, p); // fixed fpc 3.3.1 compiler internal error, by.qq600585
+  On_Ready_C := OnReady;
+end;
+
+constructor TC40_Auto_Deployment_Client<T_>.Create_M(OnReady: TOn_Ready_M);
+var
+  n: U_String;
+  p: PT_;
+begin
+  n := GetRegisterClientTypFromClass(TC40_Custom_Client_Class(T_));
+  p := nil;
+  Create_Ptr(n, p); // fixed fpc 3.3.1 compiler internal error, by.qq600585
+  On_Ready_M := OnReady;
+end;
+
+constructor TC40_Auto_Deployment_Client<T_>.Create_P(OnReady: TOn_Ready_P);
+var
+  n: U_String;
+  p: PT_;
+begin
+  n := GetRegisterClientTypFromClass(TC40_Custom_Client_Class(T_));
+  p := nil;
+  Create_Ptr(n, p); // fixed fpc 3.3.1 compiler internal error, by.qq600585
+  On_Ready_P := OnReady;
+end;
+
+destructor TC40_Auto_Deployment_Client<T_>.Destroy;
+begin
+  inherited Destroy;
 end;
 
 constructor TOnRemovePhysicsNetwork.Create;
@@ -4789,7 +5078,7 @@ var
   info_: TC40_Info;
   i: Integer;
   S_IO: TPeerIO;
-  arry_: TIO_Array;
+  Arry_: TIO_Array;
   ID_: Cardinal;
   IO_: TPeerIO;
 begin
@@ -4824,11 +5113,11 @@ begin
       S_IO := nil;
       if Service.DTService.GetUserDefineRecvTunnel(Sender).LinkOk then
           S_IO := Service.DTService.GetUserDefineRecvTunnel(Sender).SendTunnel.Owner;
-      Service.SendTunnel.GetIO_Array(arry_);
-      for ID_ in arry_ do
+      Service.SendTunnel.GetIO_Array(Arry_);
+      for ID_ in Arry_ do
         begin
           IO_ := Service.SendTunnel[ID_];
-          if (IO_ <> nil) and (IO_ <> S_IO) and TPeerClientUserDefineForSendTunnel_NoAuth(IO_.UserDefine).LinkOk then
+          if (IO_ <> nil) and (IO_ <> S_IO) and TService_SendTunnel_UserDefine_NoAuth(IO_.UserDefine).LinkOk then
               IO_.SendDirectStreamCmd('UpdateServiceState', ND);
         end;
     end;
@@ -4859,25 +5148,25 @@ end;
 procedure TC40_Dispatch_Service.cmd_RemovePhysicsNetwork(Sender: TPeerIO; InData: TDFE);
 var
   tmp: TOnRemovePhysicsNetwork;
-  arry_: TIO_Array;
+  Arry_: TIO_Array;
   ID_: Cardinal;
   IO_: TPeerIO;
-  IODef_: TPeerClientUserDefineForRecvTunnel_NoAuth;
+  IODef_: TService_RecvTunnel_UserDefine_NoAuth;
 begin
   tmp := TOnRemovePhysicsNetwork.Create;
   tmp.PhysicsAddr := InData.R.ReadString;
   tmp.PhysicsPort := InData.R.ReadWord;
-  SysPost.PostExecuteM_NP(2.0, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoRun);
+  SysPost.PostExecuteM_NP(2.0, tmp.DoRun);
 
   if C40ExistsPhysicsNetwork(tmp.PhysicsAddr, tmp.PhysicsPort) then
     begin
-      Service.RecvTunnel.GetIO_Array(arry_);
-      for ID_ in arry_ do
+      Service.RecvTunnel.GetIO_Array(Arry_);
+      for ID_ in Arry_ do
         begin
           IO_ := Service.RecvTunnel[ID_];
-          if (IO_ <> nil) and (IO_ <> Sender) and TPeerClientUserDefineForRecvTunnel_NoAuth(IO_.UserDefine).LinkOk then
+          if (IO_ <> nil) and (IO_ <> Sender) and TService_RecvTunnel_UserDefine_NoAuth(IO_.UserDefine).LinkOk then
             begin
-              IODef_ := TPeerClientUserDefineForRecvTunnel_NoAuth(IO_.UserDefine);
+              IODef_ := TService_RecvTunnel_UserDefine_NoAuth(IO_.UserDefine);
               IODef_.SendTunnel.Owner.SendDirectStreamCmd('RemovePhysicsNetwork', InData);
             end;
         end;
@@ -4893,28 +5182,28 @@ end;
 procedure TC40_Dispatch_Service.UpdateServerInfoToAllClient;
 var
   D: TDFE;
-  arry_: TIO_Array;
+  Arry_: TIO_Array;
   ID_: Cardinal;
   IO_: TPeerIO;
 begin
   D := TDFE.Create;
   Service_Info_Pool.SaveToDF(D);
-  Service.SendTunnel.GetIO_Array(arry_);
-  for ID_ in arry_ do
+  Service.SendTunnel.GetIO_Array(Arry_);
+  for ID_ in Arry_ do
     begin
       IO_ := Service.SendTunnel[ID_];
-      if (IO_ <> nil) and TPeerClientUserDefineForSendTunnel_NoAuth(IO_.UserDefine).LinkOk then
+      if (IO_ <> nil) and TService_SendTunnel_UserDefine_NoAuth(IO_.UserDefine).LinkOk then
           IO_.SendDirectStreamCmd('UpdateServiceInfo', D);
     end;
   DisposeObject(D);
 end;
 
-procedure TC40_Dispatch_Service.DoLinkSuccess_Event(Sender: TDTService_NoAuth; UserDefineIO: TPeerClientUserDefineForRecvTunnel_NoAuth);
+procedure TC40_Dispatch_Service.DoLinkSuccess_Event(Sender: TDTService_NoAuth; UserDefineIO: TService_RecvTunnel_UserDefine_NoAuth);
 begin
   DoLinkSuccess(UserDefineIO);
 end;
 
-procedure TC40_Dispatch_Service.DoUserOut_Event(Sender: TDTService_NoAuth; UserDefineIO: TPeerClientUserDefineForRecvTunnel_NoAuth);
+procedure TC40_Dispatch_Service.DoUserOut_Event(Sender: TDTService_NoAuth; UserDefineIO: TService_RecvTunnel_UserDefine_NoAuth);
 begin
   DoUserOut(UserDefineIO);
 end;
@@ -4964,18 +5253,18 @@ begin
     ServiceInfo.ServiceTyp + 'R', ServiceInfo.p2pVM_RecvTunnel_Addr, umlIntToStr(ServiceInfo.p2pVM_RecvTunnel_Port),
     ServiceInfo.ServiceTyp + 'S', ServiceInfo.p2pVM_SendTunnel_Addr, umlIntToStr(ServiceInfo.p2pVM_SendTunnel_Port)
     );
-  Service.DTService.OnLinkSuccess := {$IFDEF FPC}@{$ENDIF FPC}DoLinkSuccess_Event;
-  Service.DTService.OnUserOut := {$IFDEF FPC}@{$ENDIF FPC}DoUserOut_Event;
+  Service.DTService.OnLinkSuccess := DoLinkSuccess_Event;
+  Service.DTService.OnUserOut := DoUserOut_Event;
   Service.DTService.FileSystem := False;
   Service.DTService.PublicFileDirectory := umlCombinePath(C40_RootPath, ServiceInfo.ServiceTyp.Text);
   if not umlDirectoryExists(Service.DTService.PublicFileDirectory) then
       umlCreateDirectory(Service.DTService.PublicFileDirectory);
 
-  Service.RecvTunnel.RegisterDirectStream('UpdateServiceInfo').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_UpdateServiceInfo;
-  Service.RecvTunnel.RegisterDirectStream('UpdateServiceState').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_UpdateServiceState;
-  Service.RecvTunnel.RegisterDirectStream('IgnoreChange').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_IgnoreChange;
-  Service.RecvTunnel.RegisterDirectStream('RequestUpdate').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_RequestUpdate;
-  Service.RecvTunnel.RegisterDirectStream('RemovePhysicsNetwork').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_RemovePhysicsNetwork;
+  Service.RecvTunnel.RegisterDirectStream('UpdateServiceInfo').OnExecute := cmd_UpdateServiceInfo;
+  Service.RecvTunnel.RegisterDirectStream('UpdateServiceState').OnExecute := cmd_UpdateServiceState;
+  Service.RecvTunnel.RegisterDirectStream('IgnoreChange').OnExecute := cmd_IgnoreChange;
+  Service.RecvTunnel.RegisterDirectStream('RequestUpdate').OnExecute := cmd_RequestUpdate;
+  Service.RecvTunnel.RegisterDirectStream('RemovePhysicsNetwork').OnExecute := cmd_RemovePhysicsNetwork;
 
   Service.RecvTunnel.PrintParams['UpdateServiceInfo'] := False;
   Service.RecvTunnel.PrintParams['UpdateServiceState'] := False;
@@ -5020,25 +5309,25 @@ begin
   if not DelayCheck_Working then
     begin
       DelayCheck_Working := True;
-      C40PhysicsService.PhysicsTunnel.PostProgress.PostExecuteM_NP(2.0, {$IFDEF FPC}@{$ENDIF FPC}DoDelayCheckLocalServiceInfo);
+      C40PhysicsService.PhysicsTunnel.PostProgress.PostExecuteM_NP(2.0, DoDelayCheckLocalServiceInfo);
     end;
 end;
 
 procedure TC40_Dispatch_Service.IgnoreChangeToAllClient(Hash__: TMD5; Ignored: Boolean);
 var
   D: TDFE;
-  arry_: TIO_Array;
+  Arry_: TIO_Array;
   ID_: Cardinal;
   IO_: TPeerIO;
 begin
   D := TDFE.Create;
   D.WriteMD5(Hash__);
   D.WriteBool(Ignored);
-  Service.SendTunnel.GetIO_Array(arry_);
-  for ID_ in arry_ do
+  Service.SendTunnel.GetIO_Array(Arry_);
+  for ID_ in Arry_ do
     begin
       IO_ := Service.SendTunnel[ID_];
-      if (IO_ <> nil) and TPeerClientUserDefineForSendTunnel_NoAuth(IO_.UserDefine).LinkOk then
+      if (IO_ <> nil) and TService_SendTunnel_UserDefine_NoAuth(IO_.UserDefine).LinkOk then
           IO_.SendDirectStreamCmd('IgnoreChange', D);
     end;
   DisposeObject(D);
@@ -5049,7 +5338,7 @@ var
   i: Integer;
   D, tmp: TDFE;
   info_: TC40_Info;
-  arry_: TIO_Array;
+  Arry_: TIO_Array;
   ID_: Cardinal;
   IO_: TPeerIO;
 begin
@@ -5066,11 +5355,11 @@ begin
         DisposeObject(tmp);
       end;
 
-  Service.SendTunnel.GetIO_Array(arry_);
-  for ID_ in arry_ do
+  Service.SendTunnel.GetIO_Array(Arry_);
+  for ID_ in Arry_ do
     begin
       IO_ := Service.SendTunnel[ID_];
-      if (IO_ <> nil) and TPeerClientUserDefineForSendTunnel_NoAuth(IO_.UserDefine).LinkOk then
+      if (IO_ <> nil) and TService_SendTunnel_UserDefine_NoAuth(IO_.UserDefine).LinkOk then
           IO_.SendDirectStreamCmd('UpdateServiceState', D);
     end;
   DisposeObject(D);
@@ -5079,7 +5368,7 @@ end;
 procedure TC40_Dispatch_Client.cmd_UpdateServiceInfo(Sender: TPeerIO; InData: TDFE);
 var
   i: Integer;
-  arry_: TC40_Custom_Client_Array;
+  Arry_: TC40_Custom_Client_Array;
   cc: TC40_Custom_Client;
 begin
   if Service_Info_Pool.MergeFromDF(InData) then
@@ -5088,8 +5377,8 @@ begin
           FOnServiceInfoChange(Self, Service_Info_Pool);
 
       { broadcast to all service }
-      arry_ := C40_ClientPool.SearchClass(TC40_Dispatch_Client, True);
-      for cc in arry_ do
+      Arry_ := C40_ClientPool.SearchClass(TC40_Dispatch_Client, True);
+      for cc in Arry_ do
         if (cc <> Self) then
             TC40_Dispatch_Client(cc).Client.SendTunnel.SendDirectStreamCmd('UpdateServiceInfo', InData);
     end;
@@ -5147,7 +5436,7 @@ var
   Hash__: TMD5;
   Ignored: Boolean;
   info_: TC40_Info;
-  arry_: TC40_Custom_Client_Array;
+  Arry_: TC40_Custom_Client_Array;
   cc: TC40_Custom_Client;
   j: Integer;
 begin
@@ -5164,8 +5453,8 @@ begin
     end;
 
   { broadcast to all service }
-  arry_ := C40_ClientPool.SearchClass(TC40_Dispatch_Client, True);
-  for cc in arry_ do
+  Arry_ := C40_ClientPool.SearchClass(TC40_Dispatch_Client, True);
+  for cc in Arry_ do
     if (cc <> Self) then
         TC40_Dispatch_Client(cc).Client.SendTunnel.SendDirectStreamCmd('IgnoreChange', InData);
 end;
@@ -5173,19 +5462,19 @@ end;
 procedure TC40_Dispatch_Client.cmd_RemovePhysicsNetwork(Sender: TPeerIO; InData: TDFE);
 var
   tmp: TOnRemovePhysicsNetwork;
-  arry_: TC40_Custom_Client_Array;
+  Arry_: TC40_Custom_Client_Array;
   cc: TC40_Custom_Client;
 begin
   tmp := TOnRemovePhysicsNetwork.Create;
   tmp.PhysicsAddr := InData.R.ReadString;
   tmp.PhysicsPort := InData.R.ReadWord;
-  SysPost.PostExecuteM_NP(2.0, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoRun);
+  SysPost.PostExecuteM_NP(2.0, tmp.DoRun);
 
   if C40ExistsPhysicsNetwork(tmp.PhysicsAddr, tmp.PhysicsPort) then
     begin
       { broadcast to all service }
-      arry_ := C40_ClientPool.SearchClass(TC40_Dispatch_Client, True);
-      for cc in arry_ do
+      Arry_ := C40_ClientPool.SearchClass(TC40_Dispatch_Client, True);
+      for cc in Arry_ do
         if (cc <> Self) then
             TC40_Dispatch_Client(cc).Client.SendTunnel.SendDirectStreamCmd('RemovePhysicsNetwork', InData);
     end;
@@ -5226,12 +5515,12 @@ begin
     ClientInfo.ServiceTyp + 'R', ClientInfo.p2pVM_ClientRecvTunnel_Addr, umlIntToStr(ClientInfo.p2pVM_ClientRecvTunnel_Port),
     ClientInfo.ServiceTyp + 'S', ClientInfo.p2pVM_ClientSendTunnel_Addr, umlIntToStr(ClientInfo.p2pVM_ClientSendTunnel_Port)
     );
-  Client.OnTunnelLink := {$IFDEF FPC}@{$ENDIF FPC}Do_DT_P2PVM_NoAuth_Custom_Client_TunnelLink;
+  Client.OnTunnelLink := Do_DT_P2PVM_NoAuth_Custom_Client_TunnelLink;
 
-  Client.RecvTunnel.RegisterDirectStream('UpdateServiceInfo').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_UpdateServiceInfo;
-  Client.RecvTunnel.RegisterDirectStream('UpdateServiceState').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_UpdateServiceState;
-  Client.RecvTunnel.RegisterDirectStream('IgnoreChange').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_IgnoreChange;
-  Client.RecvTunnel.RegisterDirectStream('RemovePhysicsNetwork').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_RemovePhysicsNetwork;
+  Client.RecvTunnel.RegisterDirectStream('UpdateServiceInfo').OnExecute := cmd_UpdateServiceInfo;
+  Client.RecvTunnel.RegisterDirectStream('UpdateServiceState').OnExecute := cmd_UpdateServiceState;
+  Client.RecvTunnel.RegisterDirectStream('IgnoreChange').OnExecute := cmd_IgnoreChange;
+  Client.RecvTunnel.RegisterDirectStream('RemovePhysicsNetwork').OnExecute := cmd_RemovePhysicsNetwork;
 
   Client.RecvTunnel.PrintParams['UpdateServiceInfo'] := False;
   Client.RecvTunnel.PrintParams['UpdateServiceState'] := False;
@@ -5270,7 +5559,7 @@ begin
   if not DelayCheck_Working then
     begin
       DelayCheck_Working := True;
-      C40PhysicsTunnel.PhysicsTunnel.PostProgress.PostExecuteM_NP(2.0, {$IFDEF FPC}@{$ENDIF FPC}DoDelayCheckLocalServiceInfo);
+      C40PhysicsTunnel.PhysicsTunnel.PostProgress.PostExecuteM_NP(2.0, DoDelayCheckLocalServiceInfo);
     end;
 end;
 
@@ -5406,12 +5695,12 @@ begin
     end;
 end;
 
-procedure TC40_Base_NoAuth_Service.DoLinkSuccess_Event(Sender: TDTService_NoAuth; UserDefineIO: TPeerClientUserDefineForRecvTunnel_NoAuth);
+procedure TC40_Base_NoAuth_Service.DoLinkSuccess_Event(Sender: TDTService_NoAuth; UserDefineIO: TService_RecvTunnel_UserDefine_NoAuth);
 begin
   DoLinkSuccess(UserDefineIO);
 end;
 
-procedure TC40_Base_NoAuth_Service.DoUserOut_Event(Sender: TDTService_NoAuth; UserDefineIO: TPeerClientUserDefineForRecvTunnel_NoAuth);
+procedure TC40_Base_NoAuth_Service.DoUserOut_Event(Sender: TDTService_NoAuth; UserDefineIO: TService_RecvTunnel_UserDefine_NoAuth);
 begin
   DoUserOut(UserDefineIO);
 end;
@@ -5424,8 +5713,8 @@ begin
     ServiceInfo.ServiceTyp + 'R', ServiceInfo.p2pVM_RecvTunnel_Addr, umlIntToStr(ServiceInfo.p2pVM_RecvTunnel_Port),
     ServiceInfo.ServiceTyp + 'S', ServiceInfo.p2pVM_SendTunnel_Addr, umlIntToStr(ServiceInfo.p2pVM_SendTunnel_Port)
     );
-  Service.DTService.OnLinkSuccess := {$IFDEF FPC}@{$ENDIF FPC}DoLinkSuccess_Event;
-  Service.DTService.OnUserOut := {$IFDEF FPC}@{$ENDIF FPC}DoUserOut_Event;
+  Service.DTService.OnLinkSuccess := DoLinkSuccess_Event;
+  Service.DTService.OnUserOut := DoUserOut_Event;
   Service.DTService.FileSystem := EStrToBool(ParamList.GetDefaultValue('FileSystem', umlBoolToStr(Service.DTService.FileSystem)), Service.DTService.FileSystem);
   Service.DTService.PublicFileDirectory := umlCombinePath(C40_RootPath, ServiceInfo.ServiceTyp.Text);
   if not umlDirectoryExists(Service.DTService.PublicFileDirectory) then
@@ -5461,7 +5750,7 @@ begin
     ClientInfo.ServiceTyp + 'R', ClientInfo.p2pVM_ClientRecvTunnel_Addr, umlIntToStr(ClientInfo.p2pVM_ClientRecvTunnel_Port),
     ClientInfo.ServiceTyp + 'S', ClientInfo.p2pVM_ClientSendTunnel_Addr, umlIntToStr(ClientInfo.p2pVM_ClientSendTunnel_Port)
     );
-  Client.OnTunnelLink := {$IFDEF FPC}@{$ENDIF FPC}Do_DT_P2PVM_NoAuth_Custom_Client_TunnelLink;
+  Client.OnTunnelLink := Do_DT_P2PVM_NoAuth_Custom_Client_TunnelLink;
   DTNoAuthClient := Client.DTClient;
 end;
 
@@ -5494,12 +5783,12 @@ begin
   Client.Disconnect;
 end;
 
-procedure TC40_Base_DataStoreNoAuth_Service.DoLinkSuccess_Event(Sender: TDTService_NoAuth; UserDefineIO: TPeerClientUserDefineForRecvTunnel_NoAuth);
+procedure TC40_Base_DataStoreNoAuth_Service.DoLinkSuccess_Event(Sender: TDTService_NoAuth; UserDefineIO: TService_RecvTunnel_UserDefine_NoAuth);
 begin
   DoLinkSuccess(UserDefineIO);
 end;
 
-procedure TC40_Base_DataStoreNoAuth_Service.DoUserOut_Event(Sender: TDTService_NoAuth; UserDefineIO: TPeerClientUserDefineForRecvTunnel_NoAuth);
+procedure TC40_Base_DataStoreNoAuth_Service.DoUserOut_Event(Sender: TDTService_NoAuth; UserDefineIO: TService_RecvTunnel_UserDefine_NoAuth);
 begin
   DoUserOut(UserDefineIO);
 end;
@@ -5512,8 +5801,8 @@ begin
     ServiceInfo.ServiceTyp + 'R', ServiceInfo.p2pVM_RecvTunnel_Addr, umlIntToStr(ServiceInfo.p2pVM_RecvTunnel_Port),
     ServiceInfo.ServiceTyp + 'S', ServiceInfo.p2pVM_SendTunnel_Addr, umlIntToStr(ServiceInfo.p2pVM_SendTunnel_Port)
     );
-  Service.DTService.OnLinkSuccess := {$IFDEF FPC}@{$ENDIF FPC}DoLinkSuccess_Event;
-  Service.DTService.OnUserOut := {$IFDEF FPC}@{$ENDIF FPC}DoUserOut_Event;
+  Service.DTService.OnLinkSuccess := DoLinkSuccess_Event;
+  Service.DTService.OnUserOut := DoUserOut_Event;
   Service.DTService.FileSystem := EStrToBool(ParamList.GetDefaultValue('FileSystem', umlBoolToStr(Service.DTService.FileSystem)), Service.DTService.FileSystem);
   Service.DTService.PublicFileDirectory := umlCombinePath(C40_RootPath, ServiceInfo.ServiceTyp.Text);
   if not umlDirectoryExists(Service.DTService.PublicFileDirectory) then
@@ -5549,7 +5838,7 @@ begin
     ClientInfo.ServiceTyp + 'R', ClientInfo.p2pVM_ClientRecvTunnel_Addr, umlIntToStr(ClientInfo.p2pVM_ClientRecvTunnel_Port),
     ClientInfo.ServiceTyp + 'S', ClientInfo.p2pVM_ClientSendTunnel_Addr, umlIntToStr(ClientInfo.p2pVM_ClientSendTunnel_Port)
     );
-  Client.OnTunnelLink := {$IFDEF FPC}@{$ENDIF FPC}Do_DT_P2PVM_DataStoreNoAuth_Custom_Client_TunnelLink;
+  Client.OnTunnelLink := Do_DT_P2PVM_DataStoreNoAuth_Custom_Client_TunnelLink;
   DTNoAuthClient := Client.DTClient as TDataStoreClient_NoAuth;
 end;
 
@@ -5592,12 +5881,12 @@ begin
   AuthIO.Accept;
 end;
 
-procedure TC40_Base_VirtualAuth_Service.DoLinkSuccess_Event(Sender: TDTService_VirtualAuth; UserDefineIO: TPeerClientUserDefineForRecvTunnel_VirtualAuth);
+procedure TC40_Base_VirtualAuth_Service.DoLinkSuccess_Event(Sender: TDTService_VirtualAuth; UserDefineIO: TService_RecvTunnel_UserDefine_VirtualAuth);
 begin
   DoLinkSuccess(UserDefineIO);
 end;
 
-procedure TC40_Base_VirtualAuth_Service.DoUserOut_Event(Sender: TDTService_VirtualAuth; UserDefineIO: TPeerClientUserDefineForRecvTunnel_VirtualAuth);
+procedure TC40_Base_VirtualAuth_Service.DoUserOut_Event(Sender: TDTService_VirtualAuth; UserDefineIO: TService_RecvTunnel_UserDefine_VirtualAuth);
 begin
   DoUserOut(UserDefineIO);
 end;
@@ -5610,10 +5899,10 @@ begin
     ServiceInfo.ServiceTyp + 'R', ServiceInfo.p2pVM_RecvTunnel_Addr, umlIntToStr(ServiceInfo.p2pVM_RecvTunnel_Port),
     ServiceInfo.ServiceTyp + 'S', ServiceInfo.p2pVM_SendTunnel_Addr, umlIntToStr(ServiceInfo.p2pVM_SendTunnel_Port)
     );
-  Service.DTService.OnUserAuth := {$IFDEF FPC}@{$ENDIF FPC}DoUserAuth_Event;
-  Service.DTService.OnUserReg := {$IFDEF FPC}@{$ENDIF FPC}DoUserReg_Event;
-  Service.DTService.OnLinkSuccess := {$IFDEF FPC}@{$ENDIF FPC}DoLinkSuccess_Event;
-  Service.DTService.OnUserOut := {$IFDEF FPC}@{$ENDIF FPC}DoUserOut_Event;
+  Service.DTService.OnUserAuth := DoUserAuth_Event;
+  Service.DTService.OnUserReg := DoUserReg_Event;
+  Service.DTService.OnLinkSuccess := DoLinkSuccess_Event;
+  Service.DTService.OnUserOut := DoUserOut_Event;
   Service.DTService.FileSystem := EStrToBool(ParamList.GetDefaultValue('FileSystem', umlBoolToStr(Service.DTService.FileSystem)), Service.DTService.FileSystem);
   Service.DTService.PublicFileDirectory := umlCombinePath(C40_RootPath, ServiceInfo.ServiceTyp.Text);
   if not umlDirectoryExists(Service.DTService.PublicFileDirectory) then
@@ -5656,7 +5945,7 @@ begin
     ClientInfo.ServiceTyp + 'R', ClientInfo.p2pVM_ClientRecvTunnel_Addr, umlIntToStr(ClientInfo.p2pVM_ClientRecvTunnel_Port),
     ClientInfo.ServiceTyp + 'S', ClientInfo.p2pVM_ClientSendTunnel_Addr, umlIntToStr(ClientInfo.p2pVM_ClientSendTunnel_Port)
     );
-  Client.OnTunnelLink := {$IFDEF FPC}@{$ENDIF FPC}Do_DT_P2PVM_VirtualAuth_Custom_Client_TunnelLink;
+  Client.OnTunnelLink := Do_DT_P2PVM_VirtualAuth_Custom_Client_TunnelLink;
   DTVirtualAuthClient := Client.DTClient;
   UserName := ParamList.GetDefaultValue('UserName', '');
   Password := ParamList.GetDefaultValue('Password', '');
@@ -5712,12 +6001,12 @@ begin
   AuthIO.Accept;
 end;
 
-procedure TC40_Base_DataStoreVirtualAuth_Service.DoLinkSuccess_Event(Sender: TDTService_VirtualAuth; UserDefineIO: TPeerClientUserDefineForRecvTunnel_VirtualAuth);
+procedure TC40_Base_DataStoreVirtualAuth_Service.DoLinkSuccess_Event(Sender: TDTService_VirtualAuth; UserDefineIO: TService_RecvTunnel_UserDefine_VirtualAuth);
 begin
   DoLinkSuccess(UserDefineIO);
 end;
 
-procedure TC40_Base_DataStoreVirtualAuth_Service.DoUserOut_Event(Sender: TDTService_VirtualAuth; UserDefineIO: TPeerClientUserDefineForRecvTunnel_VirtualAuth);
+procedure TC40_Base_DataStoreVirtualAuth_Service.DoUserOut_Event(Sender: TDTService_VirtualAuth; UserDefineIO: TService_RecvTunnel_UserDefine_VirtualAuth);
 begin
   DoUserOut(UserDefineIO);
 end;
@@ -5730,10 +6019,10 @@ begin
     ServiceInfo.ServiceTyp + 'R', ServiceInfo.p2pVM_RecvTunnel_Addr, umlIntToStr(ServiceInfo.p2pVM_RecvTunnel_Port),
     ServiceInfo.ServiceTyp + 'S', ServiceInfo.p2pVM_SendTunnel_Addr, umlIntToStr(ServiceInfo.p2pVM_SendTunnel_Port)
     );
-  Service.DTService.OnUserAuth := {$IFDEF FPC}@{$ENDIF FPC}DoUserAuth_Event;
-  Service.DTService.OnUserReg := {$IFDEF FPC}@{$ENDIF FPC}DoUserReg_Event;
-  Service.DTService.OnLinkSuccess := {$IFDEF FPC}@{$ENDIF FPC}DoLinkSuccess_Event;
-  Service.DTService.OnUserOut := {$IFDEF FPC}@{$ENDIF FPC}DoUserOut_Event;
+  Service.DTService.OnUserAuth := DoUserAuth_Event;
+  Service.DTService.OnUserReg := DoUserReg_Event;
+  Service.DTService.OnLinkSuccess := DoLinkSuccess_Event;
+  Service.DTService.OnUserOut := DoUserOut_Event;
   Service.DTService.FileSystem := EStrToBool(ParamList.GetDefaultValue('FileSystem', umlBoolToStr(Service.DTService.FileSystem)), Service.DTService.FileSystem);
   Service.DTService.PublicFileDirectory := umlCombinePath(C40_RootPath, ServiceInfo.ServiceTyp.Text);
   if not umlDirectoryExists(Service.DTService.PublicFileDirectory) then
@@ -5776,7 +6065,7 @@ begin
     ClientInfo.ServiceTyp + 'R', ClientInfo.p2pVM_ClientRecvTunnel_Addr, umlIntToStr(ClientInfo.p2pVM_ClientRecvTunnel_Port),
     ClientInfo.ServiceTyp + 'S', ClientInfo.p2pVM_ClientSendTunnel_Addr, umlIntToStr(ClientInfo.p2pVM_ClientSendTunnel_Port)
     );
-  Client.OnTunnelLink := {$IFDEF FPC}@{$ENDIF FPC}Do_DT_P2PVM_VirtualAuth_Custom_Client_TunnelLink;
+  Client.OnTunnelLink := Do_DT_P2PVM_VirtualAuth_Custom_Client_TunnelLink;
   DTVirtualAuthClient := Client.DTClient as TDataStoreClient_VirtualAuth;
   UserName := ParamList.GetDefaultValue('UserName', '');
   Password := ParamList.GetDefaultValue('Password', '');
@@ -5822,12 +6111,12 @@ begin
   Result := Client.LoginIsSuccessed;
 end;
 
-procedure TC40_Base_Service.DoLinkSuccess_Event(Sender: TDTService; UserDefineIO: TPeerClientUserDefineForRecvTunnel);
+procedure TC40_Base_Service.DoLinkSuccess_Event(Sender: TDTService; UserDefineIO: TService_RecvTunnel_UserDefine);
 begin
   DoLinkSuccess(UserDefineIO);
 end;
 
-procedure TC40_Base_Service.DoUserOut_Event(Sender: TDTService; UserDefineIO: TPeerClientUserDefineForRecvTunnel);
+procedure TC40_Base_Service.DoUserOut_Event(Sender: TDTService; UserDefineIO: TService_RecvTunnel_UserDefine);
 begin
   DoUserOut(UserDefineIO);
 end;
@@ -5840,8 +6129,8 @@ begin
     ServiceInfo.ServiceTyp + 'R', ServiceInfo.p2pVM_RecvTunnel_Addr, umlIntToStr(ServiceInfo.p2pVM_RecvTunnel_Port),
     ServiceInfo.ServiceTyp + 'S', ServiceInfo.p2pVM_SendTunnel_Addr, umlIntToStr(ServiceInfo.p2pVM_SendTunnel_Port)
     );
-  Service.DTService.OnLinkSuccess := {$IFDEF FPC}@{$ENDIF FPC}DoLinkSuccess_Event;
-  Service.DTService.OnUserOut := {$IFDEF FPC}@{$ENDIF FPC}DoUserOut_Event;
+  Service.DTService.OnLinkSuccess := DoLinkSuccess_Event;
+  Service.DTService.OnUserOut := DoUserOut_Event;
   Service.DTService.AllowRegisterNewUser := True;
   Service.DTService.AllowSaveUserInfo := True;
   Service.DTService.FileSystem := EStrToBool(ParamList.GetDefaultValue('FileSystem', umlBoolToStr(Service.DTService.FileSystem)), Service.DTService.FileSystem);
@@ -5893,7 +6182,7 @@ begin
     ClientInfo.ServiceTyp + 'R', ClientInfo.p2pVM_ClientRecvTunnel_Addr, umlIntToStr(ClientInfo.p2pVM_ClientRecvTunnel_Port),
     ClientInfo.ServiceTyp + 'S', ClientInfo.p2pVM_ClientSendTunnel_Addr, umlIntToStr(ClientInfo.p2pVM_ClientSendTunnel_Port)
     );
-  Client.OnTunnelLink := {$IFDEF FPC}@{$ENDIF FPC}Do_DT_P2PVM_Custom_Client_TunnelLink;
+  Client.OnTunnelLink := Do_DT_P2PVM_Custom_Client_TunnelLink;
   DTClient := Client.DTClient;
   UserName := ParamList.GetDefaultValue('UserName', '');
   Password := ParamList.GetDefaultValue('Password', '');
@@ -5939,12 +6228,12 @@ begin
   Result := Client.LoginIsSuccessed;
 end;
 
-procedure TC40_Base_DataStore_Service.DoLinkSuccess_Event(Sender: TDTService; UserDefineIO: TPeerClientUserDefineForRecvTunnel);
+procedure TC40_Base_DataStore_Service.DoLinkSuccess_Event(Sender: TDTService; UserDefineIO: TService_RecvTunnel_UserDefine);
 begin
   DoLinkSuccess(UserDefineIO);
 end;
 
-procedure TC40_Base_DataStore_Service.DoUserOut_Event(Sender: TDTService; UserDefineIO: TPeerClientUserDefineForRecvTunnel);
+procedure TC40_Base_DataStore_Service.DoUserOut_Event(Sender: TDTService; UserDefineIO: TService_RecvTunnel_UserDefine);
 begin
   DoUserOut(UserDefineIO);
 end;
@@ -5957,8 +6246,8 @@ begin
     ServiceInfo.ServiceTyp + 'R', ServiceInfo.p2pVM_RecvTunnel_Addr, umlIntToStr(ServiceInfo.p2pVM_RecvTunnel_Port),
     ServiceInfo.ServiceTyp + 'S', ServiceInfo.p2pVM_SendTunnel_Addr, umlIntToStr(ServiceInfo.p2pVM_SendTunnel_Port)
     );
-  Service.DTService.OnLinkSuccess := {$IFDEF FPC}@{$ENDIF FPC}DoLinkSuccess_Event;
-  Service.DTService.OnUserOut := {$IFDEF FPC}@{$ENDIF FPC}DoUserOut_Event;
+  Service.DTService.OnLinkSuccess := DoLinkSuccess_Event;
+  Service.DTService.OnUserOut := DoUserOut_Event;
   Service.DTService.AllowRegisterNewUser := True;
   Service.DTService.AllowSaveUserInfo := True;
   Service.DTService.FileSystem := EStrToBool(ParamList.GetDefaultValue('FileSystem', umlBoolToStr(Service.DTService.FileSystem)), Service.DTService.FileSystem);
@@ -6011,7 +6300,7 @@ begin
     ClientInfo.ServiceTyp + 'R', ClientInfo.p2pVM_ClientRecvTunnel_Addr, umlIntToStr(ClientInfo.p2pVM_ClientRecvTunnel_Port),
     ClientInfo.ServiceTyp + 'S', ClientInfo.p2pVM_ClientSendTunnel_Addr, umlIntToStr(ClientInfo.p2pVM_ClientSendTunnel_Port)
     );
-  Client.OnTunnelLink := {$IFDEF FPC}@{$ENDIF FPC}Do_DT_P2PVM_Custom_Client_TunnelLink;
+  Client.OnTunnelLink := Do_DT_P2PVM_Custom_Client_TunnelLink;
   DTClient := Client.DTClient as TDataStoreClient;
   UserName := ParamList.GetDefaultValue('UserName', '');
   Password := ParamList.GetDefaultValue('Password', '');
@@ -6256,6 +6545,38 @@ begin
     end;
 end;
 
+function TC40_Console_Help.Do_Build_Instance_State(var OP_Param: TOpParam): Variant;
+begin
+  DisposeObjectAndNil(Last_Instance_State);
+  Instance_State_Tool.Queue_Pool.Lock;
+  Last_Instance_State := Instance_State_Tool.Clone;
+  Instance_State_Tool.Queue_Pool.UnLock;
+  Result := True;
+end;
+
+function TC40_Console_Help.Do_Compare_Instance_State(var OP_Param: TOpParam): Variant;
+var
+  tmp: TInstance_State_Tool;
+begin
+  if Last_Instance_State <> nil then
+    begin
+      Instance_State_Tool.Queue_Pool.Lock;
+      tmp := Instance_State_Tool.Compare_State(Last_Instance_State);
+      Instance_State_Tool.Queue_Pool.UnLock;
+      DisposeObjectAndNil(Last_Instance_State);
+      tmp.Sort_By_Instance;
+      if tmp.Num > 0 then
+        with tmp.Repeat_ do
+          repeat
+            if (Queue^.Data^.Data.Second.Instance_Num <> 0) then
+                DoStatus('%s : diff %d',
+                [Queue^.Data^.Data.Primary, Queue^.Data^.Data.Second.Instance_Num]);
+          until not Next;
+      DisposeObjectAndNil(tmp);
+    end;
+  Result := True;
+end;
+
 procedure TC40_Console_Help.UpdateServiceInfo;
 var
   i: Integer;
@@ -6373,6 +6694,8 @@ end;
 
 function TC40_Console_Help.Do_Exit(var OP_Param: TOpParam): Variant;
 begin
+  Print_Intermediate_Instance_Status := False;
+  Print_Tracking_Delay_Free := False;
   IsExit := True;
   Result := True;
 end;
@@ -6469,6 +6792,84 @@ begin
   Result := True;
 end;
 
+function TC40_Console_Help.Do_Save_All_C4Service_Config(var OP_Param: TOpParam): Variant;
+var
+  i: Integer;
+  serv: TC40_Custom_Service;
+  ph, fn: U_String;
+begin
+  for i := 0 to C40_ServicePool.Count - 1 do
+    begin
+      serv := C40_ServicePool[i];
+      ph := umlCombinePath(C40_RootPath, serv.ServiceInfo.ServiceTyp);
+      if not umlDirectoryExists(ph) then
+          ph := C40_RootPath;
+      fn := umlCombineFileName(ph, PFormat('S_%s.conf', [serv.ServiceInfo.ServiceTyp.Text]));
+      serv.ParamList.SaveToFile(fn);
+      DoStatus('save class "%s" %s to %s', [serv.ClassName, serv.ServiceInfo.ServiceTyp.Text, fn.Text]);
+    end;
+  Result := True;
+end;
+
+function TC40_Console_Help.Do_Save_All_C4Client_Config(var OP_Param: TOpParam): Variant;
+var
+  i: Integer;
+  cli: TC40_Custom_Client;
+  ph, fn: U_String;
+begin
+  for i := 0 to C40_ClientPool.Count - 1 do
+    begin
+      cli := C40_ClientPool[i];
+      ph := C40_RootPath;
+      fn := umlCombineFileName(ph, PFormat('C_%s.conf', [cli.ClientInfo.ServiceTyp.Text]));
+      cli.ParamList.SaveToFile(fn);
+      DoStatus('save class "%s" %s to %s', [cli.ClassName, cli.ClientInfo.ServiceTyp.Text, fn.Text]);
+    end;
+  Result := True;
+end;
+
+function TC40_Console_Help.Do_Instance_Info(var OP_Param: TOpParam): Variant;
+begin
+  Instance_State_Tool.Queue_Pool.Lock;
+  Instance_State_Tool.Sort_By_Instance;
+  if Instance_State_Tool.Num > 0 then
+    with Instance_State_Tool.Repeat_ do
+      repeat
+        if (Queue^.Data^.Data.Second.Instance_Num > 0) then
+            DoStatus('%s : instance %d update %d time %s',
+            [Queue^.Data^.Data.Primary, Queue^.Data^.Data.Second.Instance_Num, Queue^.Data^.Data.Second.Update_Num, umlTimeTickToStr(GetTimeTick - Queue^.Data^.Data.Second.Update_Time).Text]);
+      until not Next;
+  Instance_State_Tool.Queue_Pool.UnLock;
+end;
+
+function TC40_Console_Help.Do_Instance_Info_Sort_Update(var OP_Param: TOpParam): Variant;
+begin
+  Instance_State_Tool.Queue_Pool.Lock;
+  Instance_State_Tool.Sort_By_Update;
+  if Instance_State_Tool.Num > 0 then
+    with Instance_State_Tool.Repeat_ do
+      repeat
+        if (Queue^.Data^.Data.Second.Instance_Num > 0) then
+            DoStatus('%s : instance %d update %d time %s',
+            [Queue^.Data^.Data.Primary, Queue^.Data^.Data.Second.Instance_Num, Queue^.Data^.Data.Second.Update_Num, umlTimeTickToStr(GetTimeTick - Queue^.Data^.Data.Second.Update_Time).Text]);
+      until not Next;
+  Instance_State_Tool.Queue_Pool.UnLock;
+end;
+
+function TC40_Console_Help.Do_Instance_Info_Sort_Time(var OP_Param: TOpParam): Variant;
+begin
+  Instance_State_Tool.Queue_Pool.Lock;
+  Instance_State_Tool.Sort_By_Time;
+  if Instance_State_Tool.Num > 0 then
+    with Instance_State_Tool.Repeat_ do
+      repeat
+        if (Queue^.Data^.Data.Second.Instance_Num > 0) then
+            DoStatus('%s : instance %d update %d time %s',
+            [Queue^.Data^.Data.Primary, Queue^.Data^.Data.Second.Instance_Num, Queue^.Data^.Data.Second.Update_Num, umlTimeTickToStr(GetTimeTick - Queue^.Data^.Data.Second.Update_Time).Text]);
+      until not Next;
+  Instance_State_Tool.Queue_Pool.UnLock;
+end;
+
 function TC40_Console_Help.Do_HPC_Thread_Info(var OP_Param: TOpParam): Variant;
 var
   hpc_: THPC_Base;
@@ -6482,13 +6883,10 @@ begin
             hpc_ := Queue^.Data;
             if hpc_ is THPC_Stream then
               begin
-                try
-                    DoStatus('cmd:%s framework:%s time:%s ', [
-                      THPC_Stream(hpc_).Cmd,
-                      THPC_Stream(hpc_).Framework.name,
-                      umlTimeTickToStr(GetTimeTick - THPC_Stream(hpc_).TriggerTime).Text]);
-                except
-                end;
+                DoStatus('cmd:%s framework:%s time:%s ', [
+                    THPC_Stream(hpc_).Cmd,
+                    THPC_Stream(hpc_).Framework.name,
+                    umlTimeTickToStr(GetTimeTick - THPC_Stream(hpc_).TriggerTime).Text]);
               end
             else if hpc_ is THPC_DirectStream then
               begin
@@ -6510,6 +6908,13 @@ begin
                     THPC_DirectConsole(hpc_).Cmd,
                     THPC_DirectConsole(hpc_).Framework.name,
                     umlTimeTickToStr(GetTimeTick - THPC_DirectConsole(hpc_).TriggerTime).Text]);
+              end
+            else if hpc_ is THPC_CompleteBuffer then
+              begin
+                DoStatus('cmd:%s framework:%s time:%s ', [
+                    THPC_CompleteBuffer(hpc_).Cmd,
+                    THPC_CompleteBuffer(hpc_).Framework.name,
+                    umlTimeTickToStr(GetTimeTick - THPC_CompleteBuffer(hpc_).TriggerTime).Text]);
               end;
           until not Next;
         DoStatus('');
@@ -6532,6 +6937,8 @@ begin
       TCompute.Get_Core_Thread_Dispatch_Critical.UnLock;
   end;
 
+  DoStatus('RTL Main-Thread synchronize of per second:%f MaxCPU:%dms', [CPS_Check_System_Thread.CPS, CPS_Check_System_Thread.CPU_Time]);
+  DoStatus('Soft Main-Thread synchronize of per second:%f MaxCPU:%d', [CPS_Check_Soft_Thread.CPS, CPS_Check_Soft_Thread.CPU_Time]);
   DoStatus('Compute thread summary ' + TCompute.state);
   DoStatus('');
 
@@ -6541,6 +6948,48 @@ end;
 function TC40_Console_Help.Do_ZNet_Instance_Info(var OP_Param: TOpParam): Variant;
 begin
   ZNet_Instance_Pool.Print_Status;
+  Result := ZNet_Instance_Pool.Num;
+end;
+
+function TC40_Console_Help.Do_Enabled_Delay_Free_Info(var OP_Param: TOpParam): Variant;
+begin
+  if length(OP_Param) > 0 then
+      Print_Tracking_Delay_Free := OP_Param[0]
+  else
+      Print_Tracking_Delay_Free := True;
+  Result := True;
+end;
+
+function TC40_Console_Help.Do_Enabled_Intermediate_Instance_Info(var OP_Param: TOpParam): Variant;
+begin
+  if length(OP_Param) > 0 then
+      Print_Intermediate_Instance_Status := OP_Param[0]
+  else
+      Print_Intermediate_Instance_Status := True;
+  Result := True;
+end;
+
+function TC40_Console_Help.Do_Service_Cmd_Info(var OP_Param: TOpParam): Variant;
+begin
+  ZNet_Instance_Pool.Print_Service_CMD_Info;
+  Result := ZNet_Instance_Pool.Num;
+end;
+
+function TC40_Console_Help.Do_Client_Cmd_Info(var OP_Param: TOpParam): Variant;
+begin
+  ZNet_Instance_Pool.Print_Client_CMD_Info;
+  Result := ZNet_Instance_Pool.Num;
+end;
+
+function TC40_Console_Help.Do_Service_Statistics_Info(var OP_Param: TOpParam): Variant;
+begin
+  ZNet_Instance_Pool.Print_Service_Statistics_Info;
+  Result := ZNet_Instance_Pool.Num;
+end;
+
+function TC40_Console_Help.Do_Client_Statistics_Info(var OP_Param: TOpParam): Variant;
+begin
+  ZNet_Instance_Pool.Print_Client_Statistics_Info;
   Result := ZNet_Instance_Pool.Num;
 end;
 
@@ -6614,7 +7063,7 @@ begin
                 umlSizeToStr(Queue^.Data.CoreSpace_Physics_Size).Text,
                 Queue^.Data.CoreSpace_BlockCount,
                 umlTimeTickToStr(GetTimeTick - Queue^.Data.Last_Modification).Text,
-                if_(Queue^.Data.Is_Memory_Database, '(Memory)', Queue^.Data.Get_Database_FileName.Text)]);
+                if_(Queue^.Data.Is_Memory_Database, '(Memory)', Queue^.Data.Database_FileName.Text)]);
           until not Next;
       finally
           ZDB2_Th_Queue_Instance_Pool__.UnLock;
@@ -6623,7 +7072,25 @@ begin
   Result := ZDB2_Th_Queue_Instance_Pool__.Num;
 end;
 
-function TC40_Console_Help.Do_Custom_Console_Cmd(Sender: TOpCustomRunTime; var OP_Param: TOpParam): Variant;
+function TC40_Console_Help.Do_ZDB2_Flush(var OP_Param: TOpParam): Variant;
+begin
+  if Th_Engine_Marshal_Pool__.Num > 0 then
+    begin
+      DoStatus('');
+      Th_Engine_Marshal_Pool__.Lock;
+      try
+        with Th_Engine_Marshal_Pool__.Repeat_ do
+          repeat
+              Queue^.Data.Flush(False);
+          until not Next;
+      finally
+          Th_Engine_Marshal_Pool__.UnLock;
+      end;
+    end;
+  Result := Th_Engine_Marshal_Pool__.Num;
+end;
+
+function TC40_Console_Help.Do_Custom_Console_Cmd(Sender: TOpCustomRunTime; OP_RT_Data: POpRTData; var OP_Param: TOpParam): Variant;
 var
   tk: TTimeTick;
   LName: U_String;
@@ -6633,7 +7100,7 @@ var
   rData: TC4_Help_Console_Command_Data;
 begin
   tk := GetTimeTick;
-  LName := Sender.Trigger^.name;
+  LName := OP_RT_Data^.name;
   for i := 0 to C40_ServicePool.Count - 1 do
     begin
       cc := C40_ServicePool[i].ConsoleCommand;
@@ -6707,12 +7174,14 @@ begin
   HelpTextStyle := tsPascal;
   IsExit := False;
   opRT := nil;
+  Last_Instance_State := nil;
   Update_opRT;
 end;
 
 destructor TC40_Console_Help.Destroy;
 begin
   DisposeObjectAndNil(opRT);
+  DisposeObjectAndNil(Last_Instance_State);
   inherited Destroy;
 end;
 
@@ -6726,23 +7195,46 @@ begin
   DisposeObjectAndNil(opRT);
   opRT := TOpCustomRunTime.Create;
 
-  opRT.RegOpM('Help', 'help info.', {$IFDEF FPC}@{$ENDIF FPC}Do_Help)^.Category := 'C4 help';
-  opRT.RegOpM('Exit', 'safe close this console.', {$IFDEF FPC}@{$ENDIF FPC}Do_Exit)^.Category := 'C4 help';
-  opRT.RegOpM('Close', 'safe close this console.', {$IFDEF FPC}@{$ENDIF FPC}Do_Exit)^.Category := 'C4 help';
-  opRT.RegOpM('service', 'service(ip, port), local service report.', {$IFDEF FPC}@{$ENDIF FPC}Do_Service, rtmPost)^.Category := 'C4 help';
-  opRT.RegOpM('server', 'server(ip, port), local service report.', {$IFDEF FPC}@{$ENDIF FPC}Do_Service, rtmPost)^.Category := 'C4 help';
-  opRT.RegOpM('serv', 'serv(ip, port), local service report.', {$IFDEF FPC}@{$ENDIF FPC}Do_Service, rtmPost)^.Category := 'C4 help';
-  opRT.RegOpM('tunnel', 'tunnel(ip, port), tunnel report.', {$IFDEF FPC}@{$ENDIF FPC}Do_Tunnel, rtmPost)^.Category := 'C4 help';
-  opRT.RegOpM('client', 'client(ip, port), tunnel report.', {$IFDEF FPC}@{$ENDIF FPC}Do_Tunnel, rtmPost)^.Category := 'C4 help';
-  opRT.RegOpM('cli', 'cli(ip, port), tunnel report.', {$IFDEF FPC}@{$ENDIF FPC}Do_Tunnel, rtmPost)^.Category := 'C4 help';
-  opRT.RegOpM('RegInfo', 'C4 registed info.', {$IFDEF FPC}@{$ENDIF FPC}Do_Reg, rtmPost)^.Category := 'C4 help';
-  opRT.RegOpM('KillNet', 'KillNet(ip,port), kill physics network.', {$IFDEF FPC}@{$ENDIF FPC}Do_KillNet, rtmPost)^.Category := 'C4 help';
-  opRT.RegOpM('HPC_Thread_Info', 'HPC_Thread_Info(), print hpc-thread for C4 network.', {$IFDEF FPC}@{$ENDIF FPC}Do_HPC_Thread_Info, rtmPost)^.Category := 'C4 help';
-  opRT.RegOpM('ZNet_Instance_Info', 'ZNet_Instance_Info(), print Z-Net instance for C4 network.', {$IFDEF FPC}@{$ENDIF FPC}Do_ZNet_Instance_Info, rtmPost)^.Category := 'C4 help';
-  opRT.RegOpM('ZNet_Info', 'ZNet_Info(), print Z-Net instance for C4 network.', {$IFDEF FPC}@{$ENDIF FPC}Do_ZNet_Instance_Info, rtmPost)^.Category := 'C4 help';
-  opRT.RegOpM('ZDB2_Info', 'ZDB2_Info(), print zdb2 thread engine for C4 network.', {$IFDEF FPC}@{$ENDIF FPC}Do_ZDB2_Info, rtmPost)^.Category := 'C4 help';
-  opRT.RegOpM('SetQuiet', 'SetQuiet(bool), set quiet mode.', {$IFDEF FPC}@{$ENDIF FPC}Do_SetQuiet, rtmPost)^.Category := 'C4 help';
-  opRT.RegOpM('Quiet', 'Quiet(bool), set quiet mode.', {$IFDEF FPC}@{$ENDIF FPC}Do_SetQuiet, rtmPost)^.Category := 'C4 help';
+  opRT.Reg_Param_OpM('Help', 'help info.', Do_Help)^.Category := 'C4 help';
+  opRT.Reg_Param_OpM('Exit', 'safe close this console.', Do_Exit)^.Category := 'C4 help';
+  opRT.Reg_Param_OpM('Close', 'safe close this console.', Do_Exit)^.Category := 'C4 help';
+  opRT.Reg_Param_OpM('service', 'service(ip, port), local service report.', Do_Service, rtmPost)^.Category := 'C4 help';
+  opRT.Reg_Param_OpM('server', 'server(ip, port), local service report.', Do_Service, rtmPost)^.Category := 'C4 help';
+  opRT.Reg_Param_OpM('serv', 'serv(ip, port), local service report.', Do_Service, rtmPost)^.Category := 'C4 help';
+  opRT.Reg_Param_OpM('tunnel', 'tunnel(ip, port), tunnel report.', Do_Tunnel, rtmPost)^.Category := 'C4 help';
+  opRT.Reg_Param_OpM('client', 'client(ip, port), tunnel report.', Do_Tunnel, rtmPost)^.Category := 'C4 help';
+  opRT.Reg_Param_OpM('cli', 'cli(ip, port), tunnel report.', Do_Tunnel, rtmPost)^.Category := 'C4 help';
+  opRT.Reg_Param_OpM('RegInfo', 'C4 registed info.', Do_Reg, rtmPost)^.Category := 'C4 help';
+  opRT.Reg_Param_OpM('KillNet', 'KillNet(ip,port), kill physics network.', Do_KillNet, rtmPost)^.Category := 'C4 help';
+  opRT.Reg_Param_OpM('Quiet', 'Quiet(bool), set quiet mode.', Do_SetQuiet, rtmPost)^.Category := 'C4 help';
+  opRT.Reg_Param_OpM('Save_All_C4Service_Config', 'Save_All_C4Service_Config(), save all c4 service config to file', Do_Save_All_C4Service_Config, rtmPost)^.Category := 'C4 help';
+  opRT.Reg_Param_OpM('Save_All_C4Client_Config', 'Save_All_C4Client_Config(), save all c4 client config to file', Do_Save_All_C4Client_Config, rtmPost)^.Category := 'C4 help';
+  opRT.Reg_Param_OpM('Instance_Info', 'Instance_Info(), print all instance state.', Do_Instance_Info, rtmPost)^.Category := 'C4 help';
+  opRT.Reg_Param_OpM('Inst_Info', 'Inst_Info(), print all instance state.', Do_Instance_Info, rtmPost)^.Category := 'C4 help';
+  opRT.Reg_Param_OpM('Instance_Info_Sort_Update', 'Instance_Info_Sort_Update(), print all instance state sort by update.', Do_Instance_Info_Sort_Update, rtmPost)^.Category := 'C4 help';
+  opRT.Reg_Param_OpM('Inst_Info_Sort_Update', 'Inst_Info_Sort_Update(), print all instance state sort by update.', Do_Instance_Info_Sort_Update, rtmPost)^.Category := 'C4 help';
+  opRT.Reg_Param_OpM('Instance_Info_Sort_Time', 'Instance_Info_Sort_Time(), print all instance states sort by time.', Do_Instance_Info_Sort_Time, rtmPost)^.Category := 'C4 help';
+  opRT.Reg_Param_OpM('Inst_Info_Sort_Time', 'Inst_Info_Sort_Time(), print all instance states sort by time.', Do_Instance_Info_Sort_Time, rtmPost)^.Category := 'C4 help';
+  opRT.Reg_Param_OpM('Build_Instance_State', 'Build_Instance_State(), build current instance states.', Do_Build_Instance_State, rtmPost)^.Category := 'C4 help';
+  opRT.Reg_Param_OpM('Compare_Instance_State', 'Compare_Instance_State(), compare current instance states.', Do_Compare_Instance_State, rtmPost)^.Category := 'C4 help';
+  opRT.Reg_Param_OpM('HPC_Thread_Info', 'HPC_Thread_Info(), print hpc-thread for C4 network.', Do_HPC_Thread_Info, rtmPost)^.Category := 'C4 help';
+  opRT.Reg_Param_OpM('ZNet_Instance_Info', 'ZNet_Instance_Info(), print Z-Net instance for C4 network.', Do_ZNet_Instance_Info, rtmPost)^.Category := 'C4 help';
+  opRT.Reg_Param_OpM('ZNet_Info', 'ZNet_Info(), print Z-Net instance for C4 network.', Do_ZNet_Instance_Info, rtmPost)^.Category := 'C4 help';
+  opRT.Reg_Param_OpM('Delay_Free_Info', 'Delay_Free_Info(enabled), print delay free instance info.', Do_Enabled_Delay_Free_Info, rtmPost)^.Category := 'C4 help';
+  opRT.Reg_Param_OpM('Enabled_Delay_Info', 'Enabled_Delay_Info(enabled), print delay free instance info.', Do_Enabled_Delay_Free_Info, rtmPost)^.Category := 'C4 help';
+  opRT.Reg_Param_OpM('Intermediate_Instance_Info', 'Intermediate_Instance_Info(enabled), print Intermediateinstance status.', Do_Enabled_Intermediate_Instance_Info, rtmPost)^.Category := 'C4 help';
+  opRT.Reg_Param_OpM('Enabled_Intermediate_Instance_Info', 'Enabled_Intermediate_Instance_Info(enabled), print Intermediateinstance status.', Do_Enabled_Intermediate_Instance_Info, rtmPost)^.Category := 'C4 help';
+  opRT.Reg_Param_OpM('Service_CMD_Info', 'Service_CMD_Info(), print service cmd info.', Do_Service_Cmd_Info, rtmPost)^.Category := 'C4 help';
+  opRT.Reg_Param_OpM('Server_CMD_Info', 'Server_CMD_Info(), print service cmd info.', Do_Service_Cmd_Info, rtmPost)^.Category := 'C4 help';
+  opRT.Reg_Param_OpM('Client_CMD_Info', 'Client_CMD_Info(), print Client cmd info.', Do_Client_Cmd_Info, rtmPost)^.Category := 'C4 help';
+  opRT.Reg_Param_OpM('Cli_CMD_Info', 'Cli_CMD_Info(), print Client cmd info.', Do_Client_Cmd_Info, rtmPost)^.Category := 'C4 help';
+  opRT.Reg_Param_OpM('Service_Statistics_Info', 'Service_Statistics_Info(), print service Statistics info.', Do_Service_Statistics_Info, rtmPost)^.Category := 'C4 help';
+  opRT.Reg_Param_OpM('Server_Statistics_Info', 'Server_Statistics_Info(), print service Statistics info.', Do_Service_Statistics_Info, rtmPost)^.Category := 'C4 help';
+  opRT.Reg_Param_OpM('Client_Statistics_Info', 'Client_Statistics_Info(), print Client Statistics info.', Do_Client_Statistics_Info, rtmPost)^.Category := 'C4 help';
+  opRT.Reg_Param_OpM('Cli_Statistics_Info', 'Cli_Statistics_Info(), print Client Statistics info.', Do_Client_Statistics_Info, rtmPost)^.Category := 'C4 help';
+  opRT.Reg_Param_OpM('ZDB2_Info', 'ZDB2_Info(), print zdb2 thread engine for C4 network.', Do_ZDB2_Info, rtmPost)^.Category := 'C4 help';
+  opRT.Reg_Param_OpM('ZDB2_Flush', 'ZDB2_Flush(), flush all zdb2 thread engine.', Do_ZDB2_Flush, rtmPost)^.Category := 'C4 help';
+  opRT.Reg_Param_OpM('SetQuiet', 'SetQuiet(bool), set quiet mode.', Do_SetQuiet, rtmPost)^.Category := 'C4 help';
 
   for i := 0 to C40_ServicePool.Count - 1 do
     begin
@@ -6753,7 +7245,7 @@ begin
           repeat
             rData := __repeat__.Queue^.Data;
             if not opRT.ProcList.Exists(rData.Cmd) then
-                opRT.RegObjectOpM(rData.Cmd, rData.Desc, {$IFDEF FPC}@{$ENDIF FPC}Do_Custom_Console_Cmd, rtmPost)^.Category := 'C4 Console';
+                opRT.Reg_RT_OpM(rData.Cmd, rData.Desc, Do_Custom_Console_Cmd, rtmPost)^.Category := 'C4 Console';
           until not __repeat__.Next;
         end;
     end;
@@ -6766,7 +7258,7 @@ begin
           repeat
             rData := __repeat__.Queue^.Data;
             if not opRT.ProcList.Exists(rData.Cmd) then
-                opRT.RegObjectOpM(rData.Cmd, rData.Desc, {$IFDEF FPC}@{$ENDIF FPC}Do_Custom_Console_Cmd, rtmPost)^.Category := 'C4 Console';
+                opRT.Reg_RT_OpM(rData.Cmd, rData.Desc, Do_Custom_Console_Cmd, rtmPost)^.Category := 'C4 Console';
           until not __repeat__.Next;
         end;
     end;
@@ -6779,7 +7271,7 @@ begin
           repeat
             rData := __repeat__.Queue^.Data;
             if not opRT.ProcList.Exists(rData.Cmd) then
-                opRT.RegObjectOpM(rData.Cmd, rData.Desc, {$IFDEF FPC}@{$ENDIF FPC}Do_Custom_Console_Cmd, rtmPost)^.Category := 'C4 Console';
+                opRT.Reg_RT_OpM(rData.Cmd, rData.Desc, Do_Custom_Console_Cmd, rtmPost)^.Category := 'C4 Console';
           until not __repeat__.Next;
         end;
     end;
@@ -6792,7 +7284,7 @@ begin
           repeat
             rData := __repeat__.Queue^.Data;
             if not opRT.ProcList.Exists(rData.Cmd) then
-                opRT.RegObjectOpM(rData.Cmd, rData.Desc, {$IFDEF FPC}@{$ENDIF FPC}Do_Custom_Console_Cmd, rtmPost)^.Category := 'C4 Console';
+                opRT.Reg_RT_OpM(rData.Cmd, rData.Desc, Do_Custom_Console_Cmd, rtmPost)^.Category := 'C4 Console';
           until not __repeat__.Next;
         end;
     end;
@@ -6806,30 +7298,28 @@ begin
   if IsSymbolVectorExpression(exp_, HelpTextStyle) then
     begin
       r_arry := EvaluateExpressionVector(False, False, nil, HelpTextStyle, exp_, opRT, nil);
-      ExpressionValueVectorIsError(r_arry);
-      DoStatus('%s result: %s', [exp_.Text, ExpressionValueVectorToStr(r_arry).Text]);
+      if not ExpressionValueVectorIsError(r_arry) then
+          DoStatus('%s result: %s', [exp_.Text, ExpressionValueVectorToStr(r_arry).Text]);
     end
   else
     begin
       R := EvaluateExpressionValue(False, HelpTextStyle, exp_, opRT);
-      ExpressionValueIsError(R);
-      DoStatus('%s result: %s', [exp_.Text, umlVarToStr(R, False).Text]);
+      if not ExpressionValueIsError(R) then
+          DoStatus('%s result: %s', [exp_.Text, umlVarToStr(R, False).Text]);
     end;
 end;
 
 initialization
 
 { init }
-ProgressBackgroundProc := {$IFDEF FPC}@{$ENDIF FPC}C40Progress;
-
 C40_QuietMode := False;
-C40_SafeCheckTime := C_Tick_Second * 60;
+C40_SafeCheckTime := C_Tick_Second * 45;
 C40_PhysicsReconnectionDelayTime := 5.0;
 C40_UpdateServiceInfoDelayTime := C_Tick_Second * 1;
 C40_PhysicsServiceTimeout := C_Tick_Minute * 15;
 C40_PhysicsTunnelTimeout := C_Tick_Minute * 15;
 C40_KillDeadPhysicsConnectionTimeout := C_Tick_Second * 60;
-C40_KillIDCFaultTimeout := C_Tick_Hour * 5;
+C40_KillIDCFaultTimeout := C_Tick_Hour * 24 * 7;
 
 {$IFDEF FPC}
 C40_RootPath := umlCurrentPath;
@@ -6860,12 +7350,17 @@ RegisterC40('DD', TC40_Base_DataStore_Service, TC40_Base_DataStore_Client);
 C40_DefaultConfig := THashStringList.CustomCreate(8);
 C40WriteConfig(C40_DefaultConfig);
 
+{ ignore command-line parameter }
+Ignore_Command_Line := TPascalStringList.Create;
+
 { hook on check thread }
 Hooked_OnCheckThreadSynchronize := Z.Core.OnCheckThreadSynchronize;
-Z.Core.OnCheckThreadSynchronize := {$IFDEF FPC}@{$ENDIF FPC}DoCheckThreadSynchronize;
+Z.Core.OnCheckThreadSynchronize := DoCheckThreadSynchronize;
 
 finalization
 
+Print_Intermediate_Instance_Status := False;
+Print_Tracking_Delay_Free := False;
 C40Clean;
 
 DisposeObjectAndNil(C40_PhysicsServicePool);
@@ -6876,7 +7371,9 @@ DisposeObjectAndNil(C40_VM_Service_Pool);
 DisposeObjectAndNil(C40_VM_Client_Pool);
 DisposeObjectAndNil(C40_Registed);
 DisposeObjectAndNil(C40_DefaultConfig);
+DisposeObjectAndNil(Ignore_Command_Line);
 
 Z.Core.OnCheckThreadSynchronize := Hooked_OnCheckThreadSynchronize;
 
 end.
+ 

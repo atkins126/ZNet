@@ -1,8 +1,38 @@
+(*
+https://zpascal.net
+https://github.com/PassByYou888/ZNet
+https://github.com/PassByYou888/zRasterization
+https://github.com/PassByYou888/ZSnappy
+https://github.com/PassByYou888/Z-AI1.4
+https://github.com/PassByYou888/InfiniteIoT
+https://github.com/PassByYou888/zMonitor_3rd_Core
+https://github.com/PassByYou888/tcmalloc4p
+https://github.com/PassByYou888/jemalloc4p
+https://github.com/PassByYou888/zCloud
+https://github.com/PassByYou888/ZServer4D
+https://github.com/PassByYou888/zShell
+https://github.com/PassByYou888/ZDB2.0
+https://github.com/PassByYou888/zGameWare
+https://github.com/PassByYou888/CoreCipher
+https://github.com/PassByYou888/zChinese
+https://github.com/PassByYou888/zSound
+https://github.com/PassByYou888/zExpression
+https://github.com/PassByYou888/ZInstaller2.0
+https://github.com/PassByYou888/zAI
+https://github.com/PassByYou888/NetFileService
+https://github.com/PassByYou888/zAnalysis
+https://github.com/PassByYou888/PascalString
+https://github.com/PassByYou888/zInstaller
+https://github.com/PassByYou888/zTranslate
+https://github.com/PassByYou888/zVision
+https://github.com/PassByYou888/FFMPEG-Header
+*)
 { ****************************************************************************** }
 { * cloud 4.0 global network random Seed                                       * }
 { ****************************************************************************** }
 unit Z.Net.C4_RandSeed;
 
+{$DEFINE FPC_DELPHI_MODE}
 {$I Z.Define.inc}
 
 interface
@@ -14,12 +44,13 @@ uses
   Z.Core, Z.PascalStrings, Z.UPascalStrings, Z.Status, Z.UnicodeMixedLib, Z.ListEngine,
   Z.Geometry2D, Z.DFE, Z.Json, Z.Expression,
   Z.Notify, Z.Cipher, Z.MemoryStream,
+  Z.FragmentBuffer, // solve for discontinuous space
   Z.ZDB2, Z.HashList.Templet,
   Z.Net, Z.Net.PhysicsIO, Z.Net.DoubleTunnelIO.NoAuth, Z.Net.C4;
 
 type
   TC40_RandSeed_Client = class;
-  TC40_RandSeed_Seed_Pool = {$IFDEF FPC}specialize {$ENDIF FPC}TGeneric_String_Object_Hash<TUInt32HashPointerList>;
+  TC40_RandSeed_Seed_Pool = TGeneric_String_Object_Hash<TUInt32HashPointerList>;
 
   TC40_RandSeed_Service = class(TC40_Base_NoAuth_Service)
   protected
@@ -42,7 +73,7 @@ type
   TC40_RandSeed_Client_On_MakeSeedP = reference to procedure(sender: TC40_RandSeed_Client; Seed_: UInt32);
 {$ENDIF FPC}
 
-  TC40_RandSeed_Client_On_MakeSeed = class(TOnResultBridge)
+  TC40_RandSeed_Client_On_MakeSeed = class(TOnResult_Bridge)
   public
     Client: TC40_RandSeed_Client;
     OnResultC: TC40_RandSeed_Client_On_MakeSeedC;
@@ -64,7 +95,7 @@ type
     procedure RemoveSeed(Group_: U_String; Seed_: UInt32);
   end;
 
-  TC40_RandSeed_Client_List = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<TC40_RandSeed_Client>;
+  TC40_RandSeed_Client_List = TGenericsList<TC40_RandSeed_Client>;
 
 implementation
 
@@ -108,8 +139,8 @@ end;
 constructor TC40_RandSeed_Service.Create(PhysicsService_: TC40_PhysicsService; ServiceTyp, Param_: U_String);
 begin
   inherited Create(PhysicsService_, ServiceTyp, Param_);
-  DTNoAuthService.RecvTunnel.RegisterStream('MakeSeed').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_MakeSeed;
-  DTNoAuthService.RecvTunnel.RegisterDirectStream('RemoveSeed').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_RemoveSeed;
+  DTNoAuthService.RecvTunnel.RegisterStream('MakeSeed').OnExecute := cmd_MakeSeed;
+  DTNoAuthService.RecvTunnel.RegisterDirectStream('RemoveSeed').OnExecute := cmd_RemoveSeed;
   // is only instance
   ServiceInfo.OnlyInstance := True;
   UpdateToGlobalDispatch;
@@ -160,10 +191,10 @@ begin
 
   try
     if Assigned(OnResultC) then
-        OnResultC(Client, Seed_);
-    if Assigned(OnResultM) then
-        OnResultM(Client, Seed_);
-    if Assigned(OnResultP) then
+        OnResultC(Client, Seed_)
+    else if Assigned(OnResultM) then
+        OnResultM(Client, Seed_)
+    else if Assigned(OnResultP) then
         OnResultP(Client, Seed_);
   except
   end;
@@ -188,7 +219,7 @@ begin
   D.WriteString(Group_);
   D.WriteCardinal(Min_);
   D.WriteCardinal(Max_);
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('MakeSeed', D, {$IFDEF FPC}@{$ENDIF FPC}TStreamEventBridge.Create(Bridge_IO_).DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('MakeSeed', D, TStream_Event_Bridge.Create(Bridge_IO_).DoStreamEvent);
   DisposeObject(D);
 end;
 
@@ -205,7 +236,7 @@ begin
   D.WriteString(Group_);
   D.WriteCardinal(Min_);
   D.WriteCardinal(Max_);
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('MakeSeed', D, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('MakeSeed', D, tmp.DoStreamEvent);
   DisposeObject(D);
 end;
 
@@ -222,7 +253,7 @@ begin
   D.WriteString(Group_);
   D.WriteCardinal(Min_);
   D.WriteCardinal(Max_);
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('MakeSeed', D, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('MakeSeed', D, tmp.DoStreamEvent);
   DisposeObject(D);
 end;
 
@@ -239,7 +270,7 @@ begin
   D.WriteString(Group_);
   D.WriteCardinal(Min_);
   D.WriteCardinal(Max_);
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('MakeSeed', D, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('MakeSeed', D, tmp.DoStreamEvent);
   DisposeObject(D);
 end;
 
@@ -259,3 +290,4 @@ initialization
 RegisterC40('RandSeed', TC40_RandSeed_Service, TC40_RandSeed_Client);
 
 end.
+ 

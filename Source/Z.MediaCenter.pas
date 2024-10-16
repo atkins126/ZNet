@@ -1,8 +1,38 @@
+(*
+https://zpascal.net
+https://github.com/PassByYou888/ZNet
+https://github.com/PassByYou888/zRasterization
+https://github.com/PassByYou888/ZSnappy
+https://github.com/PassByYou888/Z-AI1.4
+https://github.com/PassByYou888/InfiniteIoT
+https://github.com/PassByYou888/zMonitor_3rd_Core
+https://github.com/PassByYou888/tcmalloc4p
+https://github.com/PassByYou888/jemalloc4p
+https://github.com/PassByYou888/zCloud
+https://github.com/PassByYou888/ZServer4D
+https://github.com/PassByYou888/zShell
+https://github.com/PassByYou888/ZDB2.0
+https://github.com/PassByYou888/zGameWare
+https://github.com/PassByYou888/CoreCipher
+https://github.com/PassByYou888/zChinese
+https://github.com/PassByYou888/zSound
+https://github.com/PassByYou888/zExpression
+https://github.com/PassByYou888/ZInstaller2.0
+https://github.com/PassByYou888/zAI
+https://github.com/PassByYou888/NetFileService
+https://github.com/PassByYou888/zAnalysis
+https://github.com/PassByYou888/PascalString
+https://github.com/PassByYou888/zInstaller
+https://github.com/PassByYou888/zTranslate
+https://github.com/PassByYou888/zVision
+https://github.com/PassByYou888/FFMPEG-Header
+*)
 { ****************************************************************************** }
 { * Media Center                                                               * }
 { ****************************************************************************** }
 unit Z.MediaCenter;
 
+{$DEFINE FPC_DELPHI_MODE}
 {$I Z.Define.inc}
 
 interface
@@ -28,9 +58,9 @@ type
     Alias: THashStringList;
   end;
 
-  TSearchConfigInfo_List_Decl = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<PSearchConfigInfo>;
+  TSearchConfigInfo_List_Decl = TGenericsList<PSearchConfigInfo>;
 
-  TFileIO = class
+  TFileIO = class(TCore_Object_Intermediate)
   private
     FCritical: TCritical;
     FList: TSearchConfigInfo_List_Decl;
@@ -295,6 +325,11 @@ begin
   inherited Create;
   FCritical := TCritical.Create;
   FList := TSearchConfigInfo_List_Decl.Create;
+{$IFDEF DELPHI}
+  AddSearchObj(True, nil, TPath.GetLibraryPath);
+{$ELSE DELPHI}
+  AddSearchObj(True, nil, umlGetCurrentPath);
+{$ENDIF DELPHI}
 end;
 
 destructor TFileIO.Destroy;
@@ -325,6 +360,13 @@ begin
       Result := TCore_FileStream.Create(FileName, fmCreate);
       Exit;
     end;
+
+  if umlMultipleMatch('?:\*', FileName) then
+    if umlFileExists(FileName) then
+      begin
+        Result := TCore_FileStream.Create(FileName, fmOpenRead or fmShareDenyNone);
+        Exit;
+      end;
 
   n := umlGetFileName(FileName);
   Result := nil;
@@ -452,6 +494,13 @@ begin
       Exit;
     end;
 
+  if umlMultipleMatch('?:\*', FileName) then
+    if umlFileExists(FileName) then
+      begin
+        Result := True;
+        Exit;
+      end;
+
   n := umlGetFileName(FileName);
   Result := False;
   try
@@ -463,28 +512,28 @@ begin
             if p^.Intf is TObjectDataManager then
               begin
                 Result := ((p^.Alias <> nil) and (p^.Alias.Exists(n)) and
-                  (ExistsObjData(p^.Info, p^.Alias[n], p^.Recursion, p^.Intf as TObjectDataManager))) or
+                    (ExistsObjData(p^.Info, p^.Alias[n], p^.Recursion, p^.Intf as TObjectDataManager))) or
                   (ExistsObjData(p^.Info, n, p^.Recursion, p^.Intf as TObjectDataManager));
               end
             else if p^.Intf is TObjectDataHashField then
               begin
                 Result := ((p^.Alias <> nil) and (p^.Alias.Exists(n)) and
-                  (ExistsLib(p^.Info, p^.Alias[n], p^.Intf as TObjectDataHashField))) or (ExistsLib(p^.Info, n, p^.Intf as TObjectDataHashField));
+                    (ExistsLib(p^.Info, p^.Alias[n], p^.Intf as TObjectDataHashField))) or (ExistsLib(p^.Info, n, p^.Intf as TObjectDataHashField));
               end
             else if p^.Intf is TObjectDataHashItem then
               begin
                 Result := ((p^.Alias <> nil) and (p^.Alias.Exists(n)) and
-                  (ExistsStreamList(p^.Alias[n], p^.Intf as TObjectDataHashItem))) or (ExistsStreamList(n, p^.Intf as TObjectDataHashItem));
+                    (ExistsStreamList(p^.Alias[n], p^.Intf as TObjectDataHashItem))) or (ExistsStreamList(n, p^.Intf as TObjectDataHashItem));
               end
             else if p^.Intf is TZDB2_File_Decoder then
               begin
                 Result := ((p^.Alias <> nil) and (p^.Alias.Exists(n)) and
-                  (Exists_ZDB2_File_Decoder(p^.Alias[n], p^.Intf as TZDB2_File_Decoder))) or (Exists_ZDB2_File_Decoder(n, p^.Intf as TZDB2_File_Decoder));
+                    (Exists_ZDB2_File_Decoder(p^.Alias[n], p^.Intf as TZDB2_File_Decoder))) or (Exists_ZDB2_File_Decoder(n, p^.Intf as TZDB2_File_Decoder));
               end
             else if p^.Intf = nil then
               begin
                 Result := ((p^.Alias <> nil) and (p^.Alias.Exists(n)) and
-                  (umlFileExists(umlCombineFileName(p^.Info, p^.Alias[n])))) or (umlFileExists(umlCombineFileName(p^.Info, n)));
+                    (umlFileExists(umlCombineFileName(p^.Info, p^.Alias[n])))) or (umlFileExists(umlCombineFileName(p^.Info, n)));
               end;
             if Result then
                 Exit;
@@ -696,16 +745,14 @@ begin
   Result := nil;
 
   if TPascalString(FileName).Exists('.') then
-      n := umlDeleteLastStr(FileName, '.');
+      n := umlDeleteLastStr(FileName, '.')
+  else
+      n := FileName;
 
-{$IFDEF FPC}
-  if FindResource(HInstance, n, RT_RCDATA) = 0 then
-{$ELSE}
-  if FindResource(HInstance, PChar(n), RT_RCDATA) = 0 then
-{$ENDIF}
+  if FindResource(HInstance, PChar(n), PChar(10)) = 0 then
     begin
 {$IFDEF FPC}
-{$ELSE}
+{$ELSE FPC}
       n := umlGetFileName(FileName);
       n := umlCombineFileName(TPath.GetLibraryPath, n);
       if umlFileExists(n) then
@@ -737,7 +784,7 @@ begin
           Result := TCore_FileStream.Create(n, fmOpenRead or fmShareDenyNone);
           Exit;
         end;
-{$ENDIF}
+{$ENDIF FPC}
       n := umlGetFileName(FileName);
       if FileIOExists(n) then
         begin
@@ -749,7 +796,7 @@ begin
     end
   else
     begin
-      Result := TResourceStream.Create(HInstance, n, RT_RCDATA);
+      Result := TResourceStream.Create(HInstance, n, PChar(10));
     end;
 end;
 
@@ -956,3 +1003,4 @@ if FileIO <> nil then
   end;
 
 end.
+ 

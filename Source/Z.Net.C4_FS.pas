@@ -1,8 +1,38 @@
+(*
+https://zpascal.net
+https://github.com/PassByYou888/ZNet
+https://github.com/PassByYou888/zRasterization
+https://github.com/PassByYou888/ZSnappy
+https://github.com/PassByYou888/Z-AI1.4
+https://github.com/PassByYou888/InfiniteIoT
+https://github.com/PassByYou888/zMonitor_3rd_Core
+https://github.com/PassByYou888/tcmalloc4p
+https://github.com/PassByYou888/jemalloc4p
+https://github.com/PassByYou888/zCloud
+https://github.com/PassByYou888/ZServer4D
+https://github.com/PassByYou888/zShell
+https://github.com/PassByYou888/ZDB2.0
+https://github.com/PassByYou888/zGameWare
+https://github.com/PassByYou888/CoreCipher
+https://github.com/PassByYou888/zChinese
+https://github.com/PassByYou888/zSound
+https://github.com/PassByYou888/zExpression
+https://github.com/PassByYou888/ZInstaller2.0
+https://github.com/PassByYou888/zAI
+https://github.com/PassByYou888/NetFileService
+https://github.com/PassByYou888/zAnalysis
+https://github.com/PassByYou888/PascalString
+https://github.com/PassByYou888/zInstaller
+https://github.com/PassByYou888/zTranslate
+https://github.com/PassByYou888/zVision
+https://github.com/PassByYou888/FFMPEG-Header
+*)
 { ****************************************************************************** }
 { * cloud 4.0 File System 1.0                                                  * }
 { ****************************************************************************** }
 unit Z.Net.C4_FS;
 
+{$DEFINE FPC_DELPHI_MODE}
 {$I Z.Define.inc}
 
 interface
@@ -16,13 +46,14 @@ uses
   Z.Core, Z.PascalStrings, Z.UPascalStrings, Z.Status, Z.UnicodeMixedLib, Z.ListEngine,
   Z.Geometry2D, Z.DFE, Z.Json, Z.Expression, Z.OpCode,
   Z.Notify, Z.Cipher, Z.MemoryStream,
+  Z.FragmentBuffer, // solve for discontinuous space
   Z.ZDB2, Z.ZDB2.MS64, Z.HashList.Templet,
   Z.Net, Z.Net.PhysicsIO, Z.Net.DoubleTunnelIO.NoAuth, Z.Net.C4;
 
 type
   TC40_FS_Service = class;
 
-  TFS_Service_File_Data = class
+  TFS_Service_File_Data = class(TCore_Object_Intermediate)
   public
     Owner: TC40_FS_Service;
     Stream: TZDB2_MS64;
@@ -34,7 +65,7 @@ type
     destructor Destroy; override;
   end;
 
-  TFS_Service_File_Data_Pool = {$IFDEF FPC}specialize {$ENDIF FPC}TGeneric_String_Object_Hash<TFS_Service_File_Data>;
+  TFS_Service_File_Data_Pool = TGeneric_String_Object_Hash<TFS_Service_File_Data>;
 
   TC40_FS_Service = class(TC40_Base_NoAuth_Service)
   protected
@@ -74,7 +105,7 @@ type
 
 {$REGION 'bridge_define'}
 
-  TFS_Client_CacheData = class
+  TFS_Client_CacheData = class(TCore_Object_Intermediate)
     Owner: TC40_FS_Client;
     Stream: TZDB2_MS64;
     LastAccess: TTimeTick;
@@ -82,7 +113,7 @@ type
     destructor Destroy; override;
   end;
 
-  TFS_Client_CacheHashPool = {$IFDEF FPC}specialize {$ENDIF FPC}TGeneric_String_Object_Hash<TFS_Client_CacheData>;
+  TFS_Client_CacheHashPool = TGeneric_String_Object_Hash<TFS_Client_CacheData>;
 
   TON_FS_PostFile_DoneC = procedure(Sender: TC40_FS_Client; info_: U_String);
   TON_FS_PostFile_DoneM = procedure(Sender: TC40_FS_Client; info_: U_String) of object;
@@ -92,7 +123,7 @@ type
   TON_FS_PostFile_DoneP = reference to procedure(Sender: TC40_FS_Client; info_: U_String);
 {$ENDIF FPC}
 
-  TFS_Temp_Post_File_Tunnel = class
+  TFS_Temp_Post_File_Tunnel = class(TCore_Object_Intermediate)
   public
     p2pClient: TZNet_WithP2PVM_Client;
     Client: TC40_FS_Client;
@@ -116,7 +147,7 @@ type
   TON_FS_GetFile_DoneP = reference to procedure(Sender: TC40_FS_Client; Stream: TMS64; info_: U_String; Successed: Boolean);
 {$ENDIF FPC}
 
-  TFS_Temp_Get_File_Tunnel = class
+  TFS_Temp_Get_File_Tunnel = class(TCore_Object_Intermediate)
   public
     p2pClient: TZNet_WithP2PVM_Client;
     Client: TC40_FS_Client;
@@ -140,7 +171,7 @@ type
   TFS_Temp_GetFileMD5P = reference to procedure(Sender: TC40_FS_Client; State_: Boolean; info_: SystemString; MD5_: TMD5);
 {$ENDIF FPC}
 
-  TFS_Temp_GetFileMD5 = class(TOnResultBridge)
+  TFS_Temp_GetFileMD5 = class(TOnResult_Bridge)
   public
     Client: TC40_FS_Client;
     OnResultC: TFS_Temp_GetFileMD5C;
@@ -151,7 +182,7 @@ type
     procedure DoStreamFailedEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData: TDFE); override;
   end;
 
-  TFS_Temp_GetFileMD5_Cache = class
+  TFS_Temp_GetFileMD5_Cache = class(TCore_Object_Intermediate)
   public
     Client: TC40_FS_Client;
     File_Name: U_String;
@@ -179,7 +210,7 @@ type
   TFS_Temp_SizeP = reference to procedure(Sender: TC40_FS_Client; arry: TFS_FileSizeInfo_Array);
 {$ENDIF FPC}
 
-  TFS_Temp_Size = class(TOnResultBridge)
+  TFS_Temp_Size = class(TOnResult_Bridge)
   public
     Client: TC40_FS_Client;
     OnResultC: TFS_Temp_SizeC;
@@ -207,7 +238,7 @@ type
   TFS_Temp_SearchP = reference to procedure(Sender: TC40_FS_Client; arry: TFS_FileInfo_Array);
 {$ENDIF FPC}
 
-  TFS_Temp_Search = class(TOnResultBridge)
+  TFS_Temp_Search = class(TOnResult_Bridge)
   public
     Client: TC40_FS_Client;
     OnResultC: TFS_Temp_SearchC;
@@ -271,7 +302,7 @@ type
     procedure FS_SearchP(filter: U_String; MaxNum: Integer; OnResult: TFS_Temp_SearchP);
   end;
 
-  TC40_FS_Client_List = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<TC40_FS_Client>;
+  TC40_FS_Client_List = TGenericsList<TC40_FS_Client>;
 
 implementation
 
@@ -410,7 +441,7 @@ begin
   MaxNum := InData.R.ReadInteger;
 
 {$IFDEF FPC}
-  FileHashPool.ProgressP(@fpc_progress_);
+  FileHashPool.ProgressP(fpc_progress_);
 {$ELSE FPC}
   FileHashPool.ProgressP(procedure(const Name_: PSystemString; Obj_: TFS_Service_File_Data)
     begin
@@ -448,12 +479,12 @@ begin
   // max complete buffer 2M
   DTNoAuthService.RecvTunnel.MaxCompleteBufferSize := EStrToInt64(ParamList.GetDefaultValue('MaxBuffer', '2*1024*1024'), 2 * 1024 * 1024);
   DTNoAuthService.RecvTunnel.CompleteBufferCompressed := False;
-  DTNoAuthService.RecvTunnel.RegisterCompleteBuffer('FS_PostFile').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_FS_PostFile;
-  DTNoAuthService.RecvTunnel.RegisterDirectStream('FS_GetFile').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_FS_GetFile;
-  DTNoAuthService.RecvTunnel.RegisterStream('FS_GetFileMD5').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_FS_GetFileMD5;
-  DTNoAuthService.RecvTunnel.RegisterDirectStream('FS_RemoveFile').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_FS_RemoveFile;
-  DTNoAuthService.RecvTunnel.RegisterStream('FS_Size').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_FS_Size;
-  DTNoAuthService.RecvTunnel.RegisterStream('FS_Search').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_FS_Search;
+  DTNoAuthService.RecvTunnel.RegisterCompleteBuffer('FS_PostFile').OnExecute := cmd_FS_PostFile;
+  DTNoAuthService.RecvTunnel.RegisterDirectStream('FS_GetFile').OnExecute := cmd_FS_GetFile;
+  DTNoAuthService.RecvTunnel.RegisterStream('FS_GetFileMD5').OnExecute := cmd_FS_GetFileMD5;
+  DTNoAuthService.RecvTunnel.RegisterDirectStream('FS_RemoveFile').OnExecute := cmd_FS_RemoveFile;
+  DTNoAuthService.RecvTunnel.RegisterStream('FS_Size').OnExecute := cmd_FS_Size;
+  DTNoAuthService.RecvTunnel.RegisterStream('FS_Search').OnExecute := cmd_FS_Search;
   // instance
   ServiceInfo.OnlyInstance := True;
   UpdateToGlobalDispatch;
@@ -479,9 +510,21 @@ begin
   FileHashPool.IgnoreCase := True;
 
   if EStrToBool(ParamList.GetDefaultValue('ForeverSave', 'True'), True) and umlFileExists(C40_FS_FileName) then
-      FS := TCore_FileStream.Create(C40_FS_FileName, fmOpenReadWrite)
+    begin
+{$IFDEF C4_Safe_Flush}
+      FS := TSafe_Flush_Stream.Create(C40_FS_FileName, False, True);
+{$ELSE C4_Safe_Flush}
+      FS := TCore_FileStream.Create(C40_FS_FileName, fmOpenReadWrite);
+{$ENDIF C4_Safe_Flush}
+    end
   else
+    begin
+{$IFDEF C4_Safe_Flush}
+      FS := TSafe_Flush_Stream.Create(C40_FS_FileName, True, True);
+{$ELSE C4_Safe_Flush}
       FS := TCore_FileStream.Create(C40_FS_FileName, fmCreate);
+{$ENDIF C4_Safe_Flush}
+    end;
 
   FileDatabase := TZDB2_List_MS64.Create(
   TZDB2_MS64,
@@ -507,7 +550,7 @@ begin
         FileHashPool.Add(fd.FileName, fd);
       until not Next;
 
-  Register_ConsoleCommand('Compress_And_Reload', 'Compress file system and reload.').OnEvent_M := {$IFDEF FPC}@{$ENDIF FPC}CC_Compress_And_Reload;
+  Register_ConsoleCommand('Compress_And_Reload', 'Compress file system and reload.').OnEvent_M := CC_Compress_And_Reload;
 end;
 
 destructor TC40_FS_Service.Destroy;
@@ -521,7 +564,7 @@ destructor TC40_FS_Service.Destroy;
 
 begin
 {$IFDEF FPC}
-  FileHashPool.ProgressP(@fpc_progress_);
+  FileHashPool.ProgressP(fpc_progress_);
 {$ELSE FPC}
   FileHashPool.ProgressP(procedure(const Name_: PSystemString; Obj_: TFS_Service_File_Data)
     begin
@@ -596,7 +639,7 @@ begin
   Sender.Print('update cache "%s"', [File_Name.Text]);
 
   p2pClient := Sender;
-  p2pClient.RegisterDirectConsole('PostDone').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_PostDone;
+  p2pClient.RegisterDirectConsole('PostDone').OnExecute := cmd_PostDone;
   Sender.SendCompleteBuffer('FS_PostFile', Stream.Memory, Stream.Size, True);
   Stream.DiscardMemory;
 end;
@@ -605,10 +648,10 @@ procedure TFS_Temp_Post_File_Tunnel.cmd_PostDone(Sender: TPeerIO; InData: System
 begin
   try
     if Assigned(OnResultC) then
-        OnResultC(Client, InData);
-    if Assigned(OnResultM) then
-        OnResultM(Client, InData);
-    if Assigned(OnResultP) then
+        OnResultC(Client, InData)
+    else if Assigned(OnResultM) then
+        OnResultM(Client, InData)
+    else if Assigned(OnResultP) then
         OnResultP(Client, InData);
   except
   end;
@@ -655,10 +698,10 @@ begin
 
   try
     if Assigned(OnResultC) then
-        OnResultC(Client, tmp2, tmp_File_Name_, True);
-    if Assigned(OnResultM) then
-        OnResultM(Client, tmp2, tmp_File_Name_, True);
-    if Assigned(OnResultP) then
+        OnResultC(Client, tmp2, tmp_File_Name_, True)
+    else if Assigned(OnResultM) then
+        OnResultM(Client, tmp2, tmp_File_Name_, True)
+    else if Assigned(OnResultP) then
         OnResultP(Client, tmp2, tmp_File_Name_, True);
   except
   end;
@@ -673,10 +716,10 @@ procedure TFS_Temp_Get_File_Tunnel.cmd_Error(Sender: TPeerIO; InData: SystemStri
 begin
   try
     if Assigned(OnResultC) then
-        OnResultC(Client, nil, InData, False);
-    if Assigned(OnResultM) then
-        OnResultM(Client, nil, InData, False);
-    if Assigned(OnResultP) then
+        OnResultC(Client, nil, InData, False)
+    else if Assigned(OnResultM) then
+        OnResultM(Client, nil, InData, False)
+    else if Assigned(OnResultP) then
         OnResultP(Client, nil, InData, False);
   except
   end;
@@ -689,8 +732,8 @@ var
   d: TDFE;
 begin
   p2pClient := Sender;
-  Sender.RegisterCompleteBuffer('Save').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_Save;
-  Sender.RegisterDirectConsole('Error').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_Error;
+  Sender.RegisterCompleteBuffer('Save').OnExecute := cmd_Save;
+  Sender.RegisterDirectConsole('Error').OnExecute := cmd_Error;
   d := TDFE.Create;
   d.WriteString(File_Name);
   d.WriteCardinal(Sender.ClientIO.id);
@@ -725,10 +768,10 @@ begin
 
   try
     if Assigned(OnResultC) then
-        OnResultC(Client, State_, info_, MD5);
-    if Assigned(OnResultM) then
-        OnResultM(Client, State_, info_, MD5);
-    if Assigned(OnResultP) then
+        OnResultC(Client, State_, info_, MD5)
+    else if Assigned(OnResultM) then
+        OnResultM(Client, State_, info_, MD5)
+    else if Assigned(OnResultP) then
         OnResultP(Client, State_, info_, MD5);
   except
   end;
@@ -747,10 +790,10 @@ begin
 
   try
     if Assigned(OnResultC) then
-        OnResultC(Client, State_, info_, MD5);
-    if Assigned(OnResultM) then
-        OnResultM(Client, State_, info_, MD5);
-    if Assigned(OnResultP) then
+        OnResultC(Client, State_, info_, MD5)
+    else if Assigned(OnResultM) then
+        OnResultM(Client, State_, info_, MD5)
+    else if Assigned(OnResultP) then
         OnResultP(Client, State_, info_, MD5);
   except
   end;
@@ -782,10 +825,10 @@ begin
     begin
       try
         if Assigned(OnResultC) then
-            OnResultC(Client, nil, File_Name, False);
-        if Assigned(OnResultM) then
-            OnResultM(Client, nil, File_Name, False);
-        if Assigned(OnResultP) then
+            OnResultC(Client, nil, File_Name, False)
+        else if Assigned(OnResultM) then
+            OnResultM(Client, nil, File_Name, False)
+        else if Assigned(OnResultP) then
             OnResultP(Client, nil, File_Name, False);
       except
       end;
@@ -803,10 +846,10 @@ begin
           try
             Cache.Stream.Data.Position := 0;
             if Assigned(OnResultC) then
-                OnResultC(Client, Cache.Stream.Data, File_Name, True);
-            if Assigned(OnResultM) then
-                OnResultM(Client, Cache.Stream.Data, File_Name, True);
-            if Assigned(OnResultP) then
+                OnResultC(Client, Cache.Stream.Data, File_Name, True)
+            else if Assigned(OnResultM) then
+                OnResultM(Client, Cache.Stream.Data, File_Name, True)
+            else if Assigned(OnResultP) then
                 OnResultP(Client, Cache.Stream.Data, File_Name, True);
           except
           end;
@@ -821,7 +864,7 @@ begin
   tmp.OnResultC := OnResultC;
   tmp.OnResultM := OnResultM;
   tmp.OnResultP := OnResultP;
-  Client.Client.SendTunnel.CloneConnectM({$IFDEF FPC}@{$ENDIF FPC}tmp.DoP2PVM_CloneConnectAndGetFile);
+  Client.Client.SendTunnel.CloneConnectM(tmp.DoP2PVM_CloneConnectAndGetFile);
   Client.DTNoAuth.ProgressEngine.PostDelayFreeObject(1.0, self, nil);
 end;
 
@@ -851,10 +894,10 @@ begin
 
   try
     if Assigned(OnResultC) then
-        OnResultC(Client, arry);
-    if Assigned(OnResultM) then
-        OnResultM(Client, arry);
-    if Assigned(OnResultP) then
+        OnResultC(Client, arry)
+    else if Assigned(OnResultM) then
+        OnResultM(Client, arry)
+    else if Assigned(OnResultP) then
         OnResultP(Client, arry);
   except
   end;
@@ -869,10 +912,10 @@ begin
 
   try
     if Assigned(OnResultC) then
-        OnResultC(Client, arry);
-    if Assigned(OnResultM) then
-        OnResultM(Client, arry);
-    if Assigned(OnResultP) then
+        OnResultC(Client, arry)
+    else if Assigned(OnResultM) then
+        OnResultM(Client, arry)
+    else if Assigned(OnResultP) then
         OnResultP(Client, arry);
   except
   end;
@@ -906,10 +949,10 @@ begin
 
   try
     if Assigned(OnResultC) then
-        OnResultC(Client, arry);
-    if Assigned(OnResultM) then
-        OnResultM(Client, arry);
-    if Assigned(OnResultP) then
+        OnResultC(Client, arry)
+    else if Assigned(OnResultM) then
+        OnResultM(Client, arry)
+    else if Assigned(OnResultP) then
         OnResultP(Client, arry);
   except
   end;
@@ -924,10 +967,10 @@ begin
 
   try
     if Assigned(OnResultC) then
-        OnResultC(Client, arry);
-    if Assigned(OnResultM) then
-        OnResultM(Client, arry);
-    if Assigned(OnResultP) then
+        OnResultC(Client, arry)
+    else if Assigned(OnResultM) then
+        OnResultM(Client, arry)
+    else if Assigned(OnResultP) then
         OnResultP(Client, arry);
   except
   end;
@@ -1010,7 +1053,7 @@ var
 begin
   inherited SafeCheck;
   FRemoveCacheList.Clear;
-  FileCacheHashPool.ProgressM({$IFDEF FPC}@{$ENDIF FPC}Do_Progress_FileCachePool);
+  FileCacheHashPool.ProgressM(Do_Progress_FileCachePool);
   if FRemoveCacheList.Count > 0 then
     begin
       for i := 0 to FRemoveCacheList.Count - 1 do
@@ -1056,7 +1099,7 @@ begin
   tmp.Stream.WriteDouble(umlNow);
   Stream.Position := 0;
   tmp.Stream.CopyFrom(Stream, Stream.Size);
-  Client.SendTunnel.CloneConnectM({$IFDEF FPC}@{$ENDIF FPC}tmp.DoP2PVM_CloneConnectAndPostFile);
+  Client.SendTunnel.CloneConnectM(tmp.DoP2PVM_CloneConnectAndPostFile);
   if doneFree then
       DisposeObject(Stream);
 end;
@@ -1079,7 +1122,7 @@ begin
   tmp.Stream.WriteDouble(umlNow);
   Stream.Position := 0;
   tmp.Stream.CopyFrom(Stream, Stream.Size);
-  Client.SendTunnel.CloneConnectM({$IFDEF FPC}@{$ENDIF FPC}tmp.DoP2PVM_CloneConnectAndPostFile);
+  Client.SendTunnel.CloneConnectM(tmp.DoP2PVM_CloneConnectAndPostFile);
   if doneFree then
       DisposeObject(Stream);
 end;
@@ -1102,7 +1145,7 @@ begin
   tmp.Stream.WriteDouble(umlNow);
   Stream.Position := 0;
   tmp.Stream.CopyFrom(Stream, Stream.Size);
-  Client.SendTunnel.CloneConnectM({$IFDEF FPC}@{$ENDIF FPC}tmp.DoP2PVM_CloneConnectAndPostFile);
+  Client.SendTunnel.CloneConnectM(tmp.DoP2PVM_CloneConnectAndPostFile);
   if doneFree then
       DisposeObject(Stream);
 end;
@@ -1125,7 +1168,7 @@ begin
   tmp.Stream.WriteDouble(umlNow);
   Stream.Position := 0;
   tmp.Stream.CopyFrom(Stream, Stream.Size);
-  Client.SendTunnel.CloneConnectM({$IFDEF FPC}@{$ENDIF FPC}tmp.DoP2PVM_CloneConnectAndPostFile);
+  Client.SendTunnel.CloneConnectM(tmp.DoP2PVM_CloneConnectAndPostFile);
   if doneFree then
       DisposeObject(Stream);
 end;
@@ -1141,7 +1184,7 @@ begin
       tmp_cache_.Client := self;
       tmp_cache_.File_Name := File_Name;
       tmp_cache_.OnResultC := OnResult;
-      FS_GetFileMD5M(File_Name, {$IFDEF FPC}@{$ENDIF FPC}tmp_cache_.Do_FS_GetFileMD5);
+      FS_GetFileMD5M(File_Name, tmp_cache_.Do_FS_GetFileMD5);
     end
   else
     begin
@@ -1149,7 +1192,7 @@ begin
       tmp.Client := self;
       tmp.File_Name := File_Name;
       tmp.OnResultC := OnResult;
-      Client.SendTunnel.CloneConnectM({$IFDEF FPC}@{$ENDIF FPC}tmp.DoP2PVM_CloneConnectAndGetFile);
+      Client.SendTunnel.CloneConnectM(tmp.DoP2PVM_CloneConnectAndGetFile);
     end;
 end;
 
@@ -1164,7 +1207,7 @@ begin
       tmp_cache_.Client := self;
       tmp_cache_.File_Name := File_Name;
       tmp_cache_.OnResultM := OnResult;
-      FS_GetFileMD5M(File_Name, {$IFDEF FPC}@{$ENDIF FPC}tmp_cache_.Do_FS_GetFileMD5);
+      FS_GetFileMD5M(File_Name, tmp_cache_.Do_FS_GetFileMD5);
     end
   else
     begin
@@ -1172,7 +1215,7 @@ begin
       tmp.Client := self;
       tmp.File_Name := File_Name;
       tmp.OnResultM := OnResult;
-      Client.SendTunnel.CloneConnectM({$IFDEF FPC}@{$ENDIF FPC}tmp.DoP2PVM_CloneConnectAndGetFile);
+      Client.SendTunnel.CloneConnectM(tmp.DoP2PVM_CloneConnectAndGetFile);
     end;
 end;
 
@@ -1187,7 +1230,7 @@ begin
       tmp_cache_.Client := self;
       tmp_cache_.File_Name := File_Name;
       tmp_cache_.OnResultP := OnResult;
-      FS_GetFileMD5M(File_Name, {$IFDEF FPC}@{$ENDIF FPC}tmp_cache_.Do_FS_GetFileMD5);
+      FS_GetFileMD5M(File_Name, tmp_cache_.Do_FS_GetFileMD5);
     end
   else
     begin
@@ -1195,7 +1238,7 @@ begin
       tmp.Client := self;
       tmp.File_Name := File_Name;
       tmp.OnResultP := OnResult;
-      Client.SendTunnel.CloneConnectM({$IFDEF FPC}@{$ENDIF FPC}tmp.DoP2PVM_CloneConnectAndGetFile);
+      Client.SendTunnel.CloneConnectM(tmp.DoP2PVM_CloneConnectAndGetFile);
     end;
 end;
 
@@ -1210,7 +1253,7 @@ begin
   d := TDFE.Create;
   d.WriteString(File_Name);
   DTNoAuthClient.SendTunnel.SendStreamCmdM('FS_GetFileMD5', d, nil, nil,
-{$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamParamEvent, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamFailedEvent);
+    tmp.DoStreamParamEvent, tmp.DoStreamFailedEvent);
   DisposeObject(d);
 end;
 
@@ -1225,7 +1268,7 @@ begin
   d := TDFE.Create;
   d.WriteString(File_Name);
   DTNoAuthClient.SendTunnel.SendStreamCmdM('FS_GetFileMD5', d, nil, nil,
-{$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamParamEvent, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamFailedEvent);
+    tmp.DoStreamParamEvent, tmp.DoStreamFailedEvent);
   DisposeObject(d);
 end;
 
@@ -1240,7 +1283,7 @@ begin
   d := TDFE.Create;
   d.WriteString(File_Name);
   DTNoAuthClient.SendTunnel.SendStreamCmdM('FS_GetFileMD5', d, nil, nil,
-{$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamParamEvent, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamFailedEvent);
+    tmp.DoStreamParamEvent, tmp.DoStreamFailedEvent);
   DisposeObject(d);
 end;
 
@@ -1283,7 +1326,7 @@ begin
   for i := 0 to length(FileNames) - 1 do
       d.WriteString(FileNames[i]);
   DTNoAuthClient.SendTunnel.SendStreamCmdM('FS_Size', d, nil, nil,
-{$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamParamEvent, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamFailedEvent);
+    tmp.DoStreamParamEvent, tmp.DoStreamFailedEvent);
   DisposeObject(d);
 end;
 
@@ -1300,7 +1343,7 @@ begin
   for i := 0 to length(FileNames) - 1 do
       d.WriteString(FileNames[i]);
   DTNoAuthClient.SendTunnel.SendStreamCmdM('FS_Size', d, nil, nil,
-{$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamParamEvent, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamFailedEvent);
+    tmp.DoStreamParamEvent, tmp.DoStreamFailedEvent);
   DisposeObject(d);
 end;
 
@@ -1317,7 +1360,7 @@ begin
   for i := 0 to length(FileNames) - 1 do
       d.WriteString(FileNames[i]);
   DTNoAuthClient.SendTunnel.SendStreamCmdM('FS_Size', d, nil, nil,
-{$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamParamEvent, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamFailedEvent);
+    tmp.DoStreamParamEvent, tmp.DoStreamFailedEvent);
   DisposeObject(d);
 end;
 
@@ -1334,7 +1377,7 @@ begin
   d.WriteString(filter);
   d.WriteInteger(MaxNum);
   DTNoAuthClient.SendTunnel.SendStreamCmdM('FS_Search', d, nil, nil,
-{$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamParamEvent, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamFailedEvent);
+    tmp.DoStreamParamEvent, tmp.DoStreamFailedEvent);
   DisposeObject(d);
 end;
 
@@ -1351,7 +1394,7 @@ begin
   d.WriteString(filter);
   d.WriteInteger(MaxNum);
   DTNoAuthClient.SendTunnel.SendStreamCmdM('FS_Search', d, nil, nil,
-{$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamParamEvent, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamFailedEvent);
+    tmp.DoStreamParamEvent, tmp.DoStreamFailedEvent);
   DisposeObject(d);
 end;
 
@@ -1368,7 +1411,7 @@ begin
   d.WriteString(filter);
   d.WriteInteger(MaxNum);
   DTNoAuthClient.SendTunnel.SendStreamCmdM('FS_Search', d, nil, nil,
-{$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamParamEvent, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamFailedEvent);
+    tmp.DoStreamParamEvent, tmp.DoStreamFailedEvent);
   DisposeObject(d);
 end;
 
@@ -1377,3 +1420,4 @@ initialization
 RegisterC40('FS', TC40_FS_Service, TC40_FS_Client);
 
 end.
+ 

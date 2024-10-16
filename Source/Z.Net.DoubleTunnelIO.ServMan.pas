@@ -1,8 +1,38 @@
+(*
+https://zpascal.net
+https://github.com/PassByYou888/ZNet
+https://github.com/PassByYou888/zRasterization
+https://github.com/PassByYou888/ZSnappy
+https://github.com/PassByYou888/Z-AI1.4
+https://github.com/PassByYou888/InfiniteIoT
+https://github.com/PassByYou888/zMonitor_3rd_Core
+https://github.com/PassByYou888/tcmalloc4p
+https://github.com/PassByYou888/jemalloc4p
+https://github.com/PassByYou888/zCloud
+https://github.com/PassByYou888/ZServer4D
+https://github.com/PassByYou888/zShell
+https://github.com/PassByYou888/ZDB2.0
+https://github.com/PassByYou888/zGameWare
+https://github.com/PassByYou888/CoreCipher
+https://github.com/PassByYou888/zChinese
+https://github.com/PassByYou888/zSound
+https://github.com/PassByYou888/zExpression
+https://github.com/PassByYou888/ZInstaller2.0
+https://github.com/PassByYou888/zAI
+https://github.com/PassByYou888/NetFileService
+https://github.com/PassByYou888/zAnalysis
+https://github.com/PassByYou888/PascalString
+https://github.com/PassByYou888/zInstaller
+https://github.com/PassByYou888/zTranslate
+https://github.com/PassByYou888/zVision
+https://github.com/PassByYou888/FFMPEG-Header
+*)
 { ****************************************************************************** }
 { * service Manager                                                            * }
 { ****************************************************************************** }
 unit Z.Net.DoubleTunnelIO.ServMan;
 
+{$DEFINE FPC_DELPHI_MODE}
 {$I Z.Define.inc}
 
 interface
@@ -64,7 +94,7 @@ type
     function EnabledServer(const Regname, ManServAddr, RegAddr: SystemString; const RegRecvPort, RegSendPort: Word; ServerType: TServerType): Boolean;
   end;
 
-  TServerManager_ClientPool = class(TCore_Persistent)
+  TServerManager_ClientPool = class(TCore_Persistent_Intermediate)
   protected
     FClientList: TCore_ListForObj;
     AntiIdleIsRun: Boolean;
@@ -96,13 +126,13 @@ type
       const ManCliRecvPort, ManCliSendPort, RegRecvPort, RegSendPort: Word; ServerType: TServerType): Boolean;
   end;
 
-  TServerManager_SendTunnelData = class(TPeerClientUserDefineForSendTunnel_NoAuth)
+  TServerManager_SendTunnelData = class(TService_SendTunnel_UserDefine_NoAuth)
   public
     constructor Create(Owner_: TPeerIO); override;
     destructor Destroy; override;
   end;
 
-  TServerManager_RecvTunnelData = class(TPeerClientUserDefineForRecvTunnel_NoAuth)
+  TServerManager_RecvTunnelData = class(TService_RecvTunnel_UserDefine_NoAuth)
   public
     ManServAddr, Regname, RegAddr: SystemString;
     RegRecvPort, RegSendPort: Word;
@@ -120,8 +150,8 @@ type
 
   TServerManager = class(TZNet_DoubleTunnelService_NoAuth, IServerManager_ClientPoolNotify)
   protected
-    procedure UserLinkSuccess(UserDefineIO: TPeerClientUserDefineForRecvTunnel_NoAuth); override;
-    procedure UserOut(UserDefineIO: TPeerClientUserDefineForRecvTunnel_NoAuth); override;
+    procedure UserLinkSuccess(UserDefineIO: TService_RecvTunnel_UserDefine_NoAuth); override;
+    procedure UserOut(UserDefineIO: TService_RecvTunnel_UserDefine_NoAuth); override;
     procedure PostExecute_ServerOffline(Sender: TN_Post_Execute);
     procedure PostExecute_RegServer(Sender: TN_Post_Execute);
   protected
@@ -183,7 +213,7 @@ begin
     begin
       Data1 := Sender;
       Data2 := te;
-      OnExecute_M := {$IFDEF FPC}@{$ENDIF FPC}PostExecute_RegServer;
+      OnExecute_M := PostExecute_RegServer;
       Ready();
     end;
 end;
@@ -221,7 +251,7 @@ end;
 
 procedure TServerManager_Client.Command_Offline(Sender: TPeerIO; InData: TDFE);
 begin
-  ProgressEngine.PostExecuteM(InData, {$IFDEF FPC}@{$ENDIF FPC}PostExecute_Offline);
+  ProgressEngine.PostExecuteM(InData, PostExecute_Offline);
 end;
 
 constructor TServerManager_Client.Create(Owner_: TServerManager_ClientPool);
@@ -256,8 +286,8 @@ end;
 procedure TServerManager_Client.RegisterCommand;
 begin
   inherited RegisterCommand;
-  NetRecvTunnelIntf.RegisterDirectStream(C_RegServer).OnExecute := {$IFDEF FPC}@{$ENDIF FPC}Command_RegServer;
-  NetRecvTunnelIntf.RegisterDirectStream(C_Offline).OnExecute := {$IFDEF FPC}@{$ENDIF FPC}Command_Offline;
+  NetRecvTunnelIntf.RegisterDirectStream(C_RegServer).OnExecute := Command_RegServer;
+  NetRecvTunnelIntf.RegisterDirectStream(C_Offline).OnExecute := Command_Offline;
 end;
 
 procedure TServerManager_Client.UnRegisterCommand;
@@ -547,13 +577,13 @@ begin
   Result := Format('%s_%s_%d_%d', [serverType2Str(ServerType), RegAddr, RegRecvPort, RegSendPort]);
 end;
 
-procedure TServerManager.UserLinkSuccess(UserDefineIO: TPeerClientUserDefineForRecvTunnel_NoAuth);
+procedure TServerManager.UserLinkSuccess(UserDefineIO: TService_RecvTunnel_UserDefine_NoAuth);
 begin
   UserDefineIO.Owner.Print('channel link success[r%d]<->[s%d]', [UserDefineIO.Owner.ID, UserDefineIO.SendTunnelID]);
   inherited UserLinkSuccess(UserDefineIO);
 end;
 
-procedure TServerManager.UserOut(UserDefineIO: TPeerClientUserDefineForRecvTunnel_NoAuth);
+procedure TServerManager.UserOut(UserDefineIO: TService_RecvTunnel_UserDefine_NoAuth);
 var
   cli: TServerManager_RecvTunnelData;
   i: Integer;
@@ -573,7 +603,7 @@ begin
     begin
       DataEng.WriteString(cli.RegAddr);
       DataEng.WriteByte(Byte(cli.ServerType));
-      OnExecute_M := {$IFDEF FPC}@{$ENDIF FPC}PostExecute_ServerOffline;
+      OnExecute_M := PostExecute_ServerOffline;
       Ready();
     end;
 
@@ -592,7 +622,7 @@ begin
       DisposeObject(ns);
 
       { sync all client }
-      ProgressEngine.PostExecuteM(nil, {$IFDEF FPC}@{$ENDIF FPC}PostExecute_RegServer);
+      ProgressEngine.PostExecuteM(nil, PostExecute_RegServer);
     end;
 
   inherited UserOut(UserDefineIO);
@@ -689,7 +719,7 @@ begin
     begin
       OutData.WriteBool(False);
       OutData.WriteString(Format('exists %s same server configure!!', [cli.MakeRegName]));
-      with ProgressEngine.PostExecuteM(False, InData, {$IFDEF FPC}@{$ENDIF FPC}PostExecute_Disconnect) do
+      with ProgressEngine.PostExecuteM(False, InData, PostExecute_Disconnect) do
         begin
           Data1 := Sender;
           Data2 := cli;
@@ -835,8 +865,8 @@ end;
 procedure TServerManager.RegisterCommand;
 begin
   inherited RegisterCommand;
-  FRecvTunnel.RegisterStream(C_EnabledServer).OnExecute := {$IFDEF FPC}@{$ENDIF FPC}Command_EnabledServer;
-  FRecvTunnel.RegisterDirectStream(C_AntiIdle).OnExecute := {$IFDEF FPC}@{$ENDIF FPC}Command_AntiIdle;
+  FRecvTunnel.RegisterStream(C_EnabledServer).OnExecute := Command_EnabledServer;
+  FRecvTunnel.RegisterDirectStream(C_AntiIdle).OnExecute := Command_AntiIdle;
 end;
 
 procedure TServerManager.UnRegisterCommand;
@@ -882,3 +912,4 @@ begin
 end;
 
 end.
+ 

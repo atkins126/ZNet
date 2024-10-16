@@ -1,8 +1,38 @@
+(*
+https://zpascal.net
+https://github.com/PassByYou888/ZNet
+https://github.com/PassByYou888/zRasterization
+https://github.com/PassByYou888/ZSnappy
+https://github.com/PassByYou888/Z-AI1.4
+https://github.com/PassByYou888/InfiniteIoT
+https://github.com/PassByYou888/zMonitor_3rd_Core
+https://github.com/PassByYou888/tcmalloc4p
+https://github.com/PassByYou888/jemalloc4p
+https://github.com/PassByYou888/zCloud
+https://github.com/PassByYou888/ZServer4D
+https://github.com/PassByYou888/zShell
+https://github.com/PassByYou888/ZDB2.0
+https://github.com/PassByYou888/zGameWare
+https://github.com/PassByYou888/CoreCipher
+https://github.com/PassByYou888/zChinese
+https://github.com/PassByYou888/zSound
+https://github.com/PassByYou888/zExpression
+https://github.com/PassByYou888/ZInstaller2.0
+https://github.com/PassByYou888/zAI
+https://github.com/PassByYou888/NetFileService
+https://github.com/PassByYou888/zAnalysis
+https://github.com/PassByYou888/PascalString
+https://github.com/PassByYou888/zInstaller
+https://github.com/PassByYou888/zTranslate
+https://github.com/PassByYou888/zVision
+https://github.com/PassByYou888/FFMPEG-Header
+*)
 { ****************************************************************************** }
 { * matched algorithm                                                          * }
 { ****************************************************************************** }
 unit Z.Matched.Templet;
 
+{$DEFINE FPC_DELPHI_MODE}
 {$I Z.Define.inc}
 
 interface
@@ -10,41 +40,39 @@ interface
 uses Z.Core;
 
 type
-  {$IFDEF FPC}generic{$ENDIF FPC}
-  TBidirectional_Matched<T1_> = class(TCore_Object)
+  TBidirectional_Matched<T_> = class(TCore_Object_Intermediate)
   public type
-    TData_Pool___ = {$IFDEF FPC}specialize {$ENDIF FPC} TBigList<T1_>;
-    TPair_Pool___ = {$IFDEF FPC}specialize {$ENDIF FPC} TPair_Pool<T1_, T1_>;
+    TData_Pool___ = TBigList<T_>;
+    TPair_Pool___ = TPair2_Tool<T_, T_>;
   public
     Primary_Pool, Second_Pool: TData_Pool___;
     Pair_Pool: TPair_Pool___;
     reject: Single;
     constructor Create(const reject_: Single);
     destructor Destroy; override;
-    function Diff(const Primary_, Second_: T1_): Single; virtual; abstract;
-    procedure Do_Matched(const Primary_, Second_: T1_); virtual;
+    function Diff(const Primary_, Second_: T_): Single; virtual; abstract;
+    procedure Do_Matched(const Primary_, Second_: T_); virtual;
     function Compute_Matched(): NativeInt; virtual;
   end;
 
-  {$IFDEF FPC}generic{$ENDIF FPC}
-  TBidirectional_Matched_D<T1_> = class(TCore_Object)
+  TBidirectional_Matched_D<T_> = class(TCore_Object_Intermediate)
   public type
-    TData_Pool___ = {$IFDEF FPC}specialize {$ENDIF FPC} TBigList<T1_>;
-    TPair_Pool___ = {$IFDEF FPC}specialize {$ENDIF FPC} TPair_Pool<T1_, T1_>;
+    TData_Pool___ = TBigList<T_>;
+    TPair_Pool___ = TPair2_Tool<T_, T_>;
   public
     Primary_Pool, Second_Pool: TData_Pool___;
     Pair_Pool: TPair_Pool___;
     reject: Double;
     constructor Create(const reject_: Double);
     destructor Destroy; override;
-    function Diff(const Primary_, Second_: T1_): Double; virtual; abstract;
-    procedure Do_Matched(const Primary_, Second_: T1_); virtual;
+    function Diff(const Primary_, Second_: T_): Double; virtual; abstract;
+    procedure Do_Matched(const Primary_, Second_: T_); virtual;
     function Compute_Matched(): NativeInt; virtual;
   end;
 
 implementation
 
-constructor TBidirectional_Matched{$IFNDEF FPC}<T1_>{$ENDIF FPC}.Create(const reject_: Single);
+constructor TBidirectional_Matched<T_>.Create(const reject_: Single);
 begin
   inherited Create;
   Primary_Pool := TData_Pool___.Create;
@@ -53,7 +81,7 @@ begin
   reject := reject_;
 end;
 
-destructor TBidirectional_Matched{$IFNDEF FPC}<T1_>{$ENDIF FPC}.Destroy;
+destructor TBidirectional_Matched<T_>.Destroy;
 begin
   DisposeObject(Primary_Pool);
   DisposeObject(Second_Pool);
@@ -61,12 +89,12 @@ begin
   inherited Destroy;
 end;
 
-procedure TBidirectional_Matched{$IFNDEF FPC}<T1_>{$ENDIF FPC}.Do_Matched(const Primary_, Second_: T1_);
+procedure TBidirectional_Matched<T_>.Do_Matched(const Primary_, Second_: T_);
 begin
   Pair_Pool.Add_Pair(Primary_, Second_);
 end;
 
-function TBidirectional_Matched{$IFNDEF FPC}<T1_>{$ENDIF FPC}.Compute_Matched: NativeInt;
+function TBidirectional_Matched<T_>.Compute_Matched: NativeInt;
 var
   tmp_ptr: TData_Pool___.PQueueStruct;
   p_rep, p_rep_2, s_rep: TData_Pool___.TRepeat___;
@@ -120,7 +148,7 @@ begin
     end;
 end;
 
-constructor TBidirectional_Matched_D{$IFNDEF FPC}<T1_>{$ENDIF FPC}.Create(const reject_: Double);
+constructor TBidirectional_Matched_D<T_>.Create(const reject_: Double);
 begin
   inherited Create;
   Primary_Pool := TData_Pool___.Create;
@@ -129,7 +157,7 @@ begin
   reject := reject_;
 end;
 
-destructor TBidirectional_Matched_D{$IFNDEF FPC}<T1_>{$ENDIF FPC}.Destroy;
+destructor TBidirectional_Matched_D<T_>.Destroy;
 begin
   DisposeObject(Primary_Pool);
   DisposeObject(Second_Pool);
@@ -137,12 +165,12 @@ begin
   inherited Destroy;
 end;
 
-procedure TBidirectional_Matched_D{$IFNDEF FPC}<T1_>{$ENDIF FPC}.Do_Matched(const Primary_, Second_: T1_);
+procedure TBidirectional_Matched_D<T_>.Do_Matched(const Primary_, Second_: T_);
 begin
   Pair_Pool.Add_Pair(Primary_, Second_);
 end;
 
-function TBidirectional_Matched_D{$IFNDEF FPC}<T1_>{$ENDIF FPC}.Compute_Matched: NativeInt;
+function TBidirectional_Matched_D<T_>.Compute_Matched: NativeInt;
 var
   tmp_ptr: TData_Pool___.PQueueStruct;
   p_rep, p_rep_2, s_rep: TData_Pool___.TRepeat___;
@@ -197,3 +225,4 @@ begin
 end;
 
 end.
+ 

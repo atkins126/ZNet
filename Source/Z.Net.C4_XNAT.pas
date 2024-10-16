@@ -1,8 +1,38 @@
+(*
+https://zpascal.net
+https://github.com/PassByYou888/ZNet
+https://github.com/PassByYou888/zRasterization
+https://github.com/PassByYou888/ZSnappy
+https://github.com/PassByYou888/Z-AI1.4
+https://github.com/PassByYou888/InfiniteIoT
+https://github.com/PassByYou888/zMonitor_3rd_Core
+https://github.com/PassByYou888/tcmalloc4p
+https://github.com/PassByYou888/jemalloc4p
+https://github.com/PassByYou888/zCloud
+https://github.com/PassByYou888/ZServer4D
+https://github.com/PassByYou888/zShell
+https://github.com/PassByYou888/ZDB2.0
+https://github.com/PassByYou888/zGameWare
+https://github.com/PassByYou888/CoreCipher
+https://github.com/PassByYou888/zChinese
+https://github.com/PassByYou888/zSound
+https://github.com/PassByYou888/zExpression
+https://github.com/PassByYou888/ZInstaller2.0
+https://github.com/PassByYou888/zAI
+https://github.com/PassByYou888/NetFileService
+https://github.com/PassByYou888/zAnalysis
+https://github.com/PassByYou888/PascalString
+https://github.com/PassByYou888/zInstaller
+https://github.com/PassByYou888/zTranslate
+https://github.com/PassByYou888/zVision
+https://github.com/PassByYou888/FFMPEG-Header
+*)
 { ****************************************************************************** }
 { * cloud 4.0 XNAT Tool                                                        * }
 { ****************************************************************************** }
 unit Z.Net.C4_XNAT;
 
+{$DEFINE FPC_DELPHI_MODE}
 {$I Z.Define.inc}
 
 interface
@@ -19,7 +49,7 @@ uses Variants,
   Z.Net.XNAT.Client, Z.Net.XNAT.MappingOnVirutalService, Z.Net.XNAT.Service, Z.Net.XNAT.Physics;
 
 type
-  TC40_XNAT_Mapping_Info = class
+  TC40_XNAT_Mapping_Info = class(TCore_Object_Intermediate)
   public
     NoDistributed: Boolean;
     ListenPort: Word;
@@ -32,7 +62,7 @@ type
     procedure Decode(d: TDFE);
   end;
 
-  TC40_XNAT_Mapping_Info_List_Decl = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<TC40_XNAT_Mapping_Info>;
+  TC40_XNAT_Mapping_Info_List_Decl = TGenericsList<TC40_XNAT_Mapping_Info>;
 
   TC40_XNAT_Mapping_Info_List = class(TC40_XNAT_Mapping_Info_List_Decl)
   public
@@ -64,7 +94,7 @@ type
   TON_Get_XNAT_MappingP = reference to procedure(Sender: TC40_XNAT_Client_Tool; L: TC40_XNAT_Mapping_Info_List);
 {$ENDIF FPC}
 
-  TON_Get_XNAT_Mapping = class(TOnResultBridge)
+  TON_Get_XNAT_Mapping = class(TOnResult_Bridge)
   public
     Client: TC40_XNAT_Client_Tool;
     OnResultC: TON_Get_XNAT_MappingC;
@@ -90,7 +120,7 @@ type
   TON_Build_Physics_ServiceP = reference to procedure(Sender: TC40_XNAT_Client_Tool; Service: TXNAT_MappingOnVirutalService);
 {$ENDIF FPC}
 
-  TBuild_Physics_Service_Bridge = class
+  TBuild_Physics_Service_Bridge = class(TCore_Object_Intermediate)
   public
     Client: TC40_XNAT_Client_Tool;
     Mapping: U_String;
@@ -124,7 +154,7 @@ type
     procedure Build_Physics_ServiceP(Mapping: U_String; MaxWorkload: Cardinal; OnResult: TON_Build_Physics_ServiceP);
   end;
 
-  TC40_XNAT_Client_Tool_List = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<TC40_XNAT_Client_Tool>;
+  TC40_XNAT_Client_Tool_List = TGenericsList<TC40_XNAT_Client_Tool>;
 
 implementation
 
@@ -246,10 +276,10 @@ constructor TC40_XNAT_Service_Tool.Create(PhysicsService_: TC40_PhysicsService; 
 begin
   inherited Create(PhysicsService_, ServiceTyp, Param_);
   // cmd
-  DTNoAuthService.RecvTunnel.RegisterStream('Get_XNAT_Service').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_Get_XNAT_Service;
-  DTNoAuthService.RecvTunnel.RegisterStream('Get_XNAT_Mapping').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_Get_XNAT_Mapping;
-  DTNoAuthService.RecvTunnel.RegisterDirectStream('Add_XNAT_Mapping').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_Add_XNAT_Mapping;
-  DTNoAuthService.RecvTunnel.RegisterDirectStream('Open_XNAT_Tunnel').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_Open_XNAT_Tunnel;
+  DTNoAuthService.RecvTunnel.RegisterStream('Get_XNAT_Service').OnExecute := cmd_Get_XNAT_Service;
+  DTNoAuthService.RecvTunnel.RegisterStream('Get_XNAT_Mapping').OnExecute := cmd_Get_XNAT_Mapping;
+  DTNoAuthService.RecvTunnel.RegisterDirectStream('Add_XNAT_Mapping').OnExecute := cmd_Add_XNAT_Mapping;
+  DTNoAuthService.RecvTunnel.RegisterDirectStream('Open_XNAT_Tunnel').OnExecute := cmd_Open_XNAT_Tunnel;
   // init XNAT
   XNAT_Physics_Service := TXNATService.Create;
   XNAT_Physics_Service.Host := ParamList.GetDefaultValue('XNAT_Host', XNAT_Physics_Service.Host);
@@ -311,10 +341,10 @@ begin
     end;
   try
     if Assigned(OnResultC) then
-        OnResultC(Client, L);
-    if Assigned(OnResultM) then
-        OnResultM(Client, L);
-    if Assigned(OnResultP) then
+        OnResultC(Client, L)
+    else if Assigned(OnResultM) then
+        OnResultM(Client, L)
+    else if Assigned(OnResultP) then
         OnResultP(Client, L);
   except
   end;
@@ -329,10 +359,10 @@ begin
   L := TC40_XNAT_Mapping_Info_List.Create;
   try
     if Assigned(OnResultC) then
-        OnResultC(Client, L);
-    if Assigned(OnResultM) then
-        OnResultM(Client, L);
-    if Assigned(OnResultP) then
+        OnResultC(Client, L)
+    else if Assigned(OnResultM) then
+        OnResultM(Client, L)
+    else if Assigned(OnResultP) then
         OnResultP(Client, L);
   except
   end;
@@ -406,10 +436,10 @@ begin
 
   try
     if Assigned(OnResultC) then
-        OnResultC(Client, Service);
-    if Assigned(OnResultM) then
-        OnResultM(Client, Service);
-    if Assigned(OnResultP) then
+        OnResultC(Client, Service)
+    else if Assigned(OnResultM) then
+        OnResultM(Client, Service)
+    else if Assigned(OnResultP) then
         OnResultP(Client, Service);
   except
   end;
@@ -427,7 +457,7 @@ end;
 procedure TC40_XNAT_Client_Tool.Do_DT_P2PVM_NoAuth_Custom_Client_TunnelLink(Sender: TDT_P2PVM_NoAuth_Custom_Client);
 begin
   inherited Do_DT_P2PVM_NoAuth_Custom_Client_TunnelLink(Sender);
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('Get_XNAT_Service', nil, {$IFDEF FPC}@{$ENDIF FPC}Do_Get_XNAT_Service);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('Get_XNAT_Service', nil, Do_Get_XNAT_Service);
 end;
 
 constructor TC40_XNAT_Client_Tool.Create(PhysicsTunnel_: TC40_PhysicsTunnel; source_: TC40_Info; Param_: U_String);
@@ -466,7 +496,7 @@ begin
   tmp.Client := Self;
   tmp.OnResultC := OnResult;
   DTNoAuthClient.SendTunnel.SendStreamCmdM('Get_XNAT_Mapping', d, nil, nil,
-{$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamParamEvent, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamFailedEvent);
+    tmp.DoStreamParamEvent, tmp.DoStreamFailedEvent);
   DisposeObject(d);
 end;
 
@@ -480,7 +510,7 @@ begin
   tmp.Client := Self;
   tmp.OnResultM := OnResult;
   DTNoAuthClient.SendTunnel.SendStreamCmdM('Get_XNAT_Mapping', d, nil, nil,
-{$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamParamEvent, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamFailedEvent);
+    tmp.DoStreamParamEvent, tmp.DoStreamFailedEvent);
   DisposeObject(d);
 end;
 
@@ -494,7 +524,7 @@ begin
   tmp.Client := Self;
   tmp.OnResultP := OnResult;
   DTNoAuthClient.SendTunnel.SendStreamCmdM('Get_XNAT_Mapping', d, nil, nil,
-{$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamParamEvent, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamFailedEvent);
+    tmp.DoStreamParamEvent, tmp.DoStreamFailedEvent);
   DisposeObject(d);
 end;
 
@@ -525,7 +555,7 @@ begin
   tmp.Mapping := Mapping;
   tmp.MaxWorkload := MaxWorkload;
   tmp.OnResultC := OnResult;
-  Get_XNAT_MappingM({$IFDEF FPC}@{$ENDIF FPC}tmp.Do_Get_XNAT_Mapping);
+  Get_XNAT_MappingM(tmp.Do_Get_XNAT_Mapping);
 end;
 
 procedure TC40_XNAT_Client_Tool.Build_Physics_ServiceM(Mapping: U_String; MaxWorkload: Cardinal; OnResult: TON_Build_Physics_ServiceM);
@@ -537,7 +567,7 @@ begin
   tmp.Mapping := Mapping;
   tmp.MaxWorkload := MaxWorkload;
   tmp.OnResultM := OnResult;
-  Get_XNAT_MappingM({$IFDEF FPC}@{$ENDIF FPC}tmp.Do_Get_XNAT_Mapping);
+  Get_XNAT_MappingM(tmp.Do_Get_XNAT_Mapping);
 end;
 
 procedure TC40_XNAT_Client_Tool.Build_Physics_ServiceP(Mapping: U_String; MaxWorkload: Cardinal; OnResult: TON_Build_Physics_ServiceP);
@@ -549,7 +579,7 @@ begin
   tmp.Mapping := Mapping;
   tmp.MaxWorkload := MaxWorkload;
   tmp.OnResultP := OnResult;
-  Get_XNAT_MappingM({$IFDEF FPC}@{$ENDIF FPC}tmp.Do_Get_XNAT_Mapping);
+  Get_XNAT_MappingM(tmp.Do_Get_XNAT_Mapping);
 end;
 
 initialization
@@ -557,3 +587,4 @@ initialization
 RegisterC40('XNAT', TC40_XNAT_Service_Tool, TC40_XNAT_Client_Tool);
 
 end.
+ 

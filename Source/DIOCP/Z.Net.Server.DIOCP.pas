@@ -1,3 +1,32 @@
+(*
+https://zpascal.net
+https://github.com/PassByYou888/ZNet
+https://github.com/PassByYou888/zRasterization
+https://github.com/PassByYou888/ZSnappy
+https://github.com/PassByYou888/Z-AI1.4
+https://github.com/PassByYou888/InfiniteIoT
+https://github.com/PassByYou888/zMonitor_3rd_Core
+https://github.com/PassByYou888/tcmalloc4p
+https://github.com/PassByYou888/jemalloc4p
+https://github.com/PassByYou888/zCloud
+https://github.com/PassByYou888/ZServer4D
+https://github.com/PassByYou888/zShell
+https://github.com/PassByYou888/ZDB2.0
+https://github.com/PassByYou888/zGameWare
+https://github.com/PassByYou888/CoreCipher
+https://github.com/PassByYou888/zChinese
+https://github.com/PassByYou888/zSound
+https://github.com/PassByYou888/zExpression
+https://github.com/PassByYou888/ZInstaller2.0
+https://github.com/PassByYou888/zAI
+https://github.com/PassByYou888/NetFileService
+https://github.com/PassByYou888/zAnalysis
+https://github.com/PassByYou888/PascalString
+https://github.com/PassByYou888/zInstaller
+https://github.com/PassByYou888/zTranslate
+https://github.com/PassByYou888/zVision
+https://github.com/PassByYou888/FFMPEG-Header
+*)
 { ****************************************************************************** }
 { * DIOCP Support                                                              * }
 { ****************************************************************************** }
@@ -14,7 +43,8 @@ interface
 uses SysUtils, Classes,
   Z.PascalStrings,
   Z.Net, Z.Core, Z.UnicodeMixedLib, Z.MemoryStream, Z.DFE,
-  Z.diocp_tcp_server;
+  Z.diocp_tcp_server,
+  Z.diocp_core_engine;
 
 type
   TDIOCPServer_PeerIO = class;
@@ -195,7 +225,7 @@ end;
 
 procedure TZNet_Server_DIOCP.DIOCP_IOConnected(pvClientContext: TIocpClientContext);
 begin
-  TCore_Thread.Synchronize(TCore_Thread.CurrentThread, procedure
+  TCompute.Sync(TCore_Thread.CurrentThread, procedure
     begin
       TIocpClientContextIntf_WithDServ(pvClientContext).Link := TDIOCPServer_PeerIO.Create(Self, pvClientContext);
       TIocpClientContextIntf_WithDServ(pvClientContext).Link.Link := TIocpClientContextIntf_WithDServ(pvClientContext);
@@ -207,7 +237,7 @@ begin
   if TIocpClientContextIntf_WithDServ(pvClientContext).Link = nil then
       Exit;
 
-  TCore_Thread.Synchronize(TCore_Thread.CurrentThread, procedure
+  TCompute.Sync(TCore_Thread.CurrentThread, procedure
     begin
       DisposeObject(TIocpClientContextIntf_WithDServ(pvClientContext).Link);
     end);
@@ -232,10 +262,6 @@ procedure TZNet_Server_DIOCP.DIOCP_IOReceive(pvClientContext: TIocpClientContext
 begin
   if TIocpClientContextIntf_WithDServ(pvClientContext).Link = nil then
       Exit;
-
-  // zs内核在新版本已经完全支持100%的异步解析
-  // 经过简单分析，这个事件被上锁保护了，似乎调度有点延迟
-  // 这里的性能热点不太好找，diocp的瓶颈主要是卡在这一步
   TIocpClientContextIntf_WithDServ(pvClientContext).Link.Write_Physics_Fragment(Buf, Len);
 end;
 
@@ -267,6 +293,7 @@ destructor TZNet_Server_DIOCP.Destroy;
 begin
   StopService;
   DisposeObject(FDIOCPServer);
+  Check_Soft_Thread_Synchronize(1, False);
   inherited Destroy;
 end;
 
@@ -286,12 +313,13 @@ end;
 procedure TZNet_Server_DIOCP.StopService;
 begin
   FDIOCPServer.Active := False;
+  Check_Soft_Thread_Synchronize(1, False);
 end;
 
 procedure TZNet_Server_DIOCP.Progress;
 begin
   inherited Progress;
-  Z.Core.CheckThreadSynchronize;
+  Check_Soft_Thread_Synchronize(1, False);
 end;
 
 function TZNet_Server_DIOCP.WaitSendConsoleCmd(p_io: TPeerIO; const Cmd, ConsoleData: SystemString; TimeOut_: TTimeTick): SystemString;
@@ -310,3 +338,4 @@ initialization
 finalization
 
 end.
+ 

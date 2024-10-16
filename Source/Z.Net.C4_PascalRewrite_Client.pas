@@ -1,8 +1,38 @@
+(*
+https://zpascal.net
+https://github.com/PassByYou888/ZNet
+https://github.com/PassByYou888/zRasterization
+https://github.com/PassByYou888/ZSnappy
+https://github.com/PassByYou888/Z-AI1.4
+https://github.com/PassByYou888/InfiniteIoT
+https://github.com/PassByYou888/zMonitor_3rd_Core
+https://github.com/PassByYou888/tcmalloc4p
+https://github.com/PassByYou888/jemalloc4p
+https://github.com/PassByYou888/zCloud
+https://github.com/PassByYou888/ZServer4D
+https://github.com/PassByYou888/zShell
+https://github.com/PassByYou888/ZDB2.0
+https://github.com/PassByYou888/zGameWare
+https://github.com/PassByYou888/CoreCipher
+https://github.com/PassByYou888/zChinese
+https://github.com/PassByYou888/zSound
+https://github.com/PassByYou888/zExpression
+https://github.com/PassByYou888/ZInstaller2.0
+https://github.com/PassByYou888/zAI
+https://github.com/PassByYou888/NetFileService
+https://github.com/PassByYou888/zAnalysis
+https://github.com/PassByYou888/PascalString
+https://github.com/PassByYou888/zInstaller
+https://github.com/PassByYou888/zTranslate
+https://github.com/PassByYou888/zVision
+https://github.com/PassByYou888/FFMPEG-Header
+*)
 { ****************************************************************************** }
 { * cloud 4.0 Unit Rewrite Tool                                                * }
 { ****************************************************************************** }
 unit Z.Net.C4_PascalRewrite_Client;
 
+{$DEFINE FPC_DELPHI_MODE}
 {$I Z.Define.inc}
 
 interface
@@ -21,7 +51,7 @@ uses Variants, SysUtils,
 type
   TC40_Pascal_Rewrite_Tool = class;
 
-  TPascal_Source_ = class
+  TPascal_Source_ = class(TCore_Object_Intermediate)
   public
     FileName: U_String;
     Status: TPascalStringList;
@@ -32,7 +62,7 @@ type
     destructor Destroy; override;
   end;
 
-  TPascal_Code_Table_Decl = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<TPascal_Source_>;
+  TPascal_Code_Table_Decl = TGenericsList<TPascal_Source_>;
   TPascal_Rewrite_Tool_CodePool = class;
 
   TON_Pascal_Rewrite_DoneC = procedure(Sender: TPascal_Rewrite_Tool_CodePool);
@@ -43,7 +73,7 @@ type
   TON_Pascal_Rewrite_DoneP = reference to procedure(Sender: TPascal_Rewrite_Tool_CodePool);
 {$ENDIF FPC}
 
-  TPascal_Rewrite_Tool_CodePool = class
+  TPascal_Rewrite_Tool_CodePool = class(TCore_Object_Intermediate)
   private
     procedure Do_Done;
     procedure DoStreamParamEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData, Result_: TDFE);
@@ -74,7 +104,7 @@ type
     function Build_CodePool: TPascal_Rewrite_Tool_CodePool;
   end;
 
-  TC40_Pascal_Rewrite_Tool_List = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<TC40_Pascal_Rewrite_Tool>;
+  TC40_Pascal_Rewrite_Tool_List = TGenericsList<TC40_Pascal_Rewrite_Tool>;
 
 implementation
 
@@ -101,10 +131,10 @@ procedure TPascal_Rewrite_Tool_CodePool.Do_Done;
 begin
   try
     if Assigned(OnResultC) then
-        OnResultC(Self);
-    if Assigned(OnResultM) then
-        OnResultM(Self);
-    if Assigned(OnResultP) then
+        OnResultC(Self)
+    else if Assigned(OnResultM) then
+        OnResultM(Self)
+    else if Assigned(OnResultP) then
         OnResultP(Self);
   except
   end;
@@ -125,7 +155,7 @@ begin
           inc(i);
         end;
     end;
-  Owner.DTNoAuth.PostProgress.PostExecuteM_NP(0, {$IFDEF FPC}@{$ENDIF FPC}Do_Done);
+  Owner.DTNoAuth.PostProgress.PostExecuteM_NP(0, Do_Done);
 end;
 
 procedure TPascal_Rewrite_Tool_CodePool.DoStreamFailedEvent(Sender: TPeerIO; Param1: Pointer; Param2: TObject; SendData: TDFE);
@@ -134,7 +164,7 @@ var
 begin
   for i := 0 to CodeTable.Count - 1 do
       CodeTable[i].NewCode.Clear;
-  Owner.DTNoAuth.PostProgress.PostExecuteM_NP(0, {$IFDEF FPC}@{$ENDIF FPC}Do_Done);
+  Owner.DTNoAuth.PostProgress.PostExecuteM_NP(0, Do_Done);
 end;
 
 constructor TPascal_Rewrite_Tool_CodePool.Create(Owner_: TC40_Pascal_Rewrite_Tool);
@@ -214,7 +244,7 @@ begin
       CodeTable[i].Status.Clear;
     end;
   Owner.DTNoAuthClient.SendTunnel.SendStreamCmdM('RewritePascal', d, nil, nil,
-{$IFDEF FPC}@{$ENDIF FPC}DoStreamParamEvent, {$IFDEF FPC}@{$ENDIF FPC}DoStreamFailedEvent);
+    DoStreamParamEvent, DoStreamFailedEvent);
   DisposeObject(d);
 end;
 
@@ -227,7 +257,7 @@ end;
 constructor TC40_Pascal_Rewrite_Tool.Create(PhysicsTunnel_: TC40_PhysicsTunnel; source_: TC40_Info; Param_: U_String);
 begin
   inherited Create(PhysicsTunnel_, source_, Param_);
-  DTNoAuthClient.RecvTunnel.RegisterDirectConsole('Rewrite_Status').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_Rewrite_Status;
+  DTNoAuthClient.RecvTunnel.RegisterDirectConsole('Rewrite_Status').OnExecute := cmd_Rewrite_Status;
   DTNoAuth.SendTunnel.SendDataCompressed := True;
 end;
 
@@ -314,3 +344,4 @@ initialization
 RegisterC40('Pascal_Rewrite', nil, TC40_Pascal_Rewrite_Tool);
 
 end.
+ 

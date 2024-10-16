@@ -1,8 +1,38 @@
+(*
+https://zpascal.net
+https://github.com/PassByYou888/ZNet
+https://github.com/PassByYou888/zRasterization
+https://github.com/PassByYou888/ZSnappy
+https://github.com/PassByYou888/Z-AI1.4
+https://github.com/PassByYou888/InfiniteIoT
+https://github.com/PassByYou888/zMonitor_3rd_Core
+https://github.com/PassByYou888/tcmalloc4p
+https://github.com/PassByYou888/jemalloc4p
+https://github.com/PassByYou888/zCloud
+https://github.com/PassByYou888/ZServer4D
+https://github.com/PassByYou888/zShell
+https://github.com/PassByYou888/ZDB2.0
+https://github.com/PassByYou888/zGameWare
+https://github.com/PassByYou888/CoreCipher
+https://github.com/PassByYou888/zChinese
+https://github.com/PassByYou888/zSound
+https://github.com/PassByYou888/zExpression
+https://github.com/PassByYou888/ZInstaller2.0
+https://github.com/PassByYou888/zAI
+https://github.com/PassByYou888/NetFileService
+https://github.com/PassByYou888/zAnalysis
+https://github.com/PassByYou888/PascalString
+https://github.com/PassByYou888/zInstaller
+https://github.com/PassByYou888/zTranslate
+https://github.com/PassByYou888/zVision
+https://github.com/PassByYou888/FFMPEG-Header
+*)
 { ****************************************************************************** }
 { * ZDB 2.0 automated fragment for Number Module support                       * }
 { ****************************************************************************** }
 unit Z.ZDB2.NM;
 
+{$DEFINE FPC_DELPHI_MODE}
 {$I Z.Define.inc}
 
 interface
@@ -17,9 +47,9 @@ uses Z.Core,
 type
   TZDB2_List_NM = class;
   TZDB2_NM = class;
-  TZDB2_Big_List_NM_Decl__ = {$IFDEF FPC}specialize {$ENDIF FPC} TBigList<TZDB2_NM>;
+  TZDB2_Big_List_NM_Decl__ = TBigList<TZDB2_NM>;
 
-  TZDB2_NM = class
+  TZDB2_NM = class(TCore_Object_Intermediate)
   private
     FPool_Ptr: TZDB2_Big_List_NM_Decl__.PQueueStruct;
     FTimeOut: TTimeTick;
@@ -46,7 +76,7 @@ type
 
   TOnCreate_ZDB2_NM = procedure(Sender: TZDB2_List_NM; Obj: TZDB2_NM) of object;
 
-  TZDB2_List_NM = class
+  TZDB2_List_NM = class(TCore_Object_Intermediate)
   private
     procedure DoNoSpace(Trigger: TZDB2_Core_Space; Siz_: Int64; var retry: Boolean);
     function GetAutoFreeStream: Boolean;
@@ -75,9 +105,9 @@ type
     procedure ExtractTo(Stream_: TCore_Stream);
     procedure Progress;
     procedure Push_To_Recycle_Pool(obj_: TZDB2_NM; RemoveData_: Boolean); // remove from repeat
-    procedure Free_Recycle_Pool;                                          // remove from repeat
+    procedure Free_Recycle_Pool; // remove from repeat
     function Count: NativeInt;
-    function Repeat_: TZDB2_Big_List_NM_Decl__.TRepeat___;               // flow simulate
+    function Repeat_: TZDB2_Big_List_NM_Decl__.TRepeat___; // flow simulate
     function Invert_Repeat_: TZDB2_Big_List_NM_Decl__.TInvert_Repeat___; // flow simulate
 
     class procedure Test;
@@ -196,7 +226,7 @@ end;
 
 procedure TZDB2_List_NM.DoNoSpace(Trigger: TZDB2_Core_Space; Siz_: Int64; var retry: Boolean);
 begin
-  retry := Trigger.AppendSpace(DeltaSpace, BlockSize);
+  retry := Trigger.Fast_AppendSpace(DeltaSpace, BlockSize);
 end;
 
 function TZDB2_List_NM.GetAutoFreeStream: Boolean;
@@ -223,7 +253,7 @@ var
 begin
   inherited Create;
   List := TZDB2_Big_List_NM_Decl__.Create;
-  List.OnFree := {$IFDEF FPC}@{$ENDIF FPC}Do_Free;
+  List.OnFree := Do_Free;
 
   NM_Class := NM_Class_;
   TimeOut := TimeOut_;
@@ -235,7 +265,7 @@ begin
   CoreSpace.Cipher := Cipher_;
   CoreSpace.Mode := smNormal;
   CoreSpace.AutoCloseIOHnd := True;
-  CoreSpace.OnNoSpace := {$IFDEF FPC}@{$ENDIF FPC}DoNoSpace;
+  CoreSpace.OnNoSpace := DoNoSpace;
   if umlFileSize(IOHnd) > 0 then
     begin
       if not CoreSpace.Open then
@@ -262,7 +292,7 @@ begin
 
   for ID_ in buff do
     if CoreSpace.Check(ID_) then
-      NewDataFrom(ID_);
+        NewDataFrom(ID_);
   SetLength(buff, 0);
 end;
 
@@ -384,7 +414,7 @@ begin
   TmpSpace := TZDB2_Core_Space.Create(@TmpIOHnd);
   TmpSpace.Cipher := CoreSpace.Cipher;
   TmpSpace.Mode := smBigData;
-  TmpSpace.OnNoSpace := {$IFDEF FPC}@{$ENDIF FPC}DoNoSpace;
+  TmpSpace.OnNoSpace := DoNoSpace;
 
   if List.num > 0 then
     begin
@@ -514,3 +544,4 @@ begin
 end;
 
 end.
+ 

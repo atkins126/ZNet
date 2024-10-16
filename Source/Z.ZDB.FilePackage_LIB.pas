@@ -1,8 +1,38 @@
+(*
+https://zpascal.net
+https://github.com/PassByYou888/ZNet
+https://github.com/PassByYou888/zRasterization
+https://github.com/PassByYou888/ZSnappy
+https://github.com/PassByYou888/Z-AI1.4
+https://github.com/PassByYou888/InfiniteIoT
+https://github.com/PassByYou888/zMonitor_3rd_Core
+https://github.com/PassByYou888/tcmalloc4p
+https://github.com/PassByYou888/jemalloc4p
+https://github.com/PassByYou888/zCloud
+https://github.com/PassByYou888/ZServer4D
+https://github.com/PassByYou888/zShell
+https://github.com/PassByYou888/ZDB2.0
+https://github.com/PassByYou888/zGameWare
+https://github.com/PassByYou888/CoreCipher
+https://github.com/PassByYou888/zChinese
+https://github.com/PassByYou888/zSound
+https://github.com/PassByYou888/zExpression
+https://github.com/PassByYou888/ZInstaller2.0
+https://github.com/PassByYou888/zAI
+https://github.com/PassByYou888/NetFileService
+https://github.com/PassByYou888/zAnalysis
+https://github.com/PassByYou888/PascalString
+https://github.com/PassByYou888/zInstaller
+https://github.com/PassByYou888/zTranslate
+https://github.com/PassByYou888/zVision
+https://github.com/PassByYou888/FFMPEG-Header
+*)
 { ****************************************************************************** }
 { * file Package                                                               * }
 { ****************************************************************************** }
 unit Z.ZDB.FilePackage_LIB;
 
+{$DEFINE FPC_DELPHI_MODE}
 {$I Z.Define.inc}
 
 interface
@@ -181,7 +211,7 @@ procedure BatchImportPathToDB(InitDir, Filter: SystemString; dbEng: TObjectDataM
         dbEng.FastDelete(aFieldPos, srHnd.HeaderPOS);
       end;
 
-    fAry := umlGetFileListWithFullPath(APath);
+    fAry := umlGet_File_Full_Array(APath);
     for n in fAry do
       begin
         suffixn := umlGetFileName(n).Text;
@@ -228,7 +258,7 @@ procedure BatchImportPathToDB(InitDir, Filter: SystemString; dbEng: TObjectDataM
     DisposeObject(hashTextStream);
     DisposeObject(md5List);
 
-    fAry := umlGetDirListWithFullPath(APath);
+    fAry := umlGet_Path_Full_Array(APath);
     for n in fAry do
       begin
         suffixn := umlGetLastStr(n, '/\').Text;
@@ -572,7 +602,8 @@ end;
 initialization
 
 C_MD5_File := '____md5.txt';
-FP_EncryptStream := {$IFDEF FPC}@{$ENDIF FPC}DoEncryptStream_;
-FP_DecryptStream := {$IFDEF FPC}@{$ENDIF FPC}DoDecryptStream_;
+FP_EncryptStream := DoEncryptStream_;
+FP_DecryptStream := DoDecryptStream_;
 
 end.
+ 

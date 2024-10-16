@@ -1,8 +1,38 @@
+(*
+https://zpascal.net
+https://github.com/PassByYou888/ZNet
+https://github.com/PassByYou888/zRasterization
+https://github.com/PassByYou888/ZSnappy
+https://github.com/PassByYou888/Z-AI1.4
+https://github.com/PassByYou888/InfiniteIoT
+https://github.com/PassByYou888/zMonitor_3rd_Core
+https://github.com/PassByYou888/tcmalloc4p
+https://github.com/PassByYou888/jemalloc4p
+https://github.com/PassByYou888/zCloud
+https://github.com/PassByYou888/ZServer4D
+https://github.com/PassByYou888/zShell
+https://github.com/PassByYou888/ZDB2.0
+https://github.com/PassByYou888/zGameWare
+https://github.com/PassByYou888/CoreCipher
+https://github.com/PassByYou888/zChinese
+https://github.com/PassByYou888/zSound
+https://github.com/PassByYou888/zExpression
+https://github.com/PassByYou888/ZInstaller2.0
+https://github.com/PassByYou888/zAI
+https://github.com/PassByYou888/NetFileService
+https://github.com/PassByYou888/zAnalysis
+https://github.com/PassByYou888/PascalString
+https://github.com/PassByYou888/zInstaller
+https://github.com/PassByYou888/zTranslate
+https://github.com/PassByYou888/zVision
+https://github.com/PassByYou888/FFMPEG-Header
+*)
 { ****************************************************************************** }
 { * GBK Big data                                                               * }
 { ****************************************************************************** }
 unit Z.GBKBig;
 
+{$DEFINE FPC_DELPHI_MODE}
 {$I Z.Define.inc}
 
 interface
@@ -22,7 +52,7 @@ implementation
 uses Z.GBKMediaCenter, Z.GBK, Z.GBKVec;
 
 type
-  TBigKeyAnalysis = class
+  TBigKeyAnalysis = class(TCore_Object_Intermediate)
     output: THashVariantList;
     procedure doProgress(Sender: THashStringList; Name: PSystemString; const v: SystemString);
   end;
@@ -38,7 +68,7 @@ var
 begin
   tmp := TBigKeyAnalysis.Create;
   tmp.output := Analysis;
-  bigKeyDict.ProgressM({$IFDEF FPC}@{$ENDIF FPC}tmp.doProgress);
+  bigKeyDict.ProgressM(tmp.doProgress);
   DisposeObject(tmp);
 end;
 
@@ -193,3 +223,4 @@ end;
 initialization
 
 end.
+ 

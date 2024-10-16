@@ -1,9 +1,39 @@
+(*
+https://zpascal.net
+https://github.com/PassByYou888/ZNet
+https://github.com/PassByYou888/zRasterization
+https://github.com/PassByYou888/ZSnappy
+https://github.com/PassByYou888/Z-AI1.4
+https://github.com/PassByYou888/InfiniteIoT
+https://github.com/PassByYou888/zMonitor_3rd_Core
+https://github.com/PassByYou888/tcmalloc4p
+https://github.com/PassByYou888/jemalloc4p
+https://github.com/PassByYou888/zCloud
+https://github.com/PassByYou888/ZServer4D
+https://github.com/PassByYou888/zShell
+https://github.com/PassByYou888/ZDB2.0
+https://github.com/PassByYou888/zGameWare
+https://github.com/PassByYou888/CoreCipher
+https://github.com/PassByYou888/zChinese
+https://github.com/PassByYou888/zSound
+https://github.com/PassByYou888/zExpression
+https://github.com/PassByYou888/ZInstaller2.0
+https://github.com/PassByYou888/zAI
+https://github.com/PassByYou888/NetFileService
+https://github.com/PassByYou888/zAnalysis
+https://github.com/PassByYou888/PascalString
+https://github.com/PassByYou888/zInstaller
+https://github.com/PassByYou888/zTranslate
+https://github.com/PassByYou888/zVision
+https://github.com/PassByYou888/FFMPEG-Header
+*)
 { ****************************************************************************** }
 { * json object library for delphi/objfpc                                      * }
 { ****************************************************************************** }
 
 unit Z.Json;
 
+{$DEFINE FPC_DELPHI_MODE}
 {$I Z.Define.inc}
 
 interface
@@ -17,7 +47,8 @@ uses SysUtils,
 {$ENDIF DELPHI}
   Z.Core, Z.PascalStrings, Z.UPascalStrings, Z.Status,
   Z.UnicodeMixedLib,
-  Z.MemoryStream;
+  Z.MemoryStream,
+  Z.Int128;
 
 type
   TZ_JsonObject = class;
@@ -30,7 +61,7 @@ type
   TZ_Instance_JsonObject = TJsonObject;
 {$ENDIF DELPHI}
 
-  TZ_JsonBase = class
+  TZ_JsonBase = class(TCore_Object_Intermediate)
   protected
     FParent: TZ_JsonBase;
     FList: TCore_ObjectList;
@@ -56,6 +87,8 @@ type
     procedure Add(const v_: Integer); overload;
     procedure Add(const v_: Int64); overload;
     procedure Add(const v_: UInt64); overload;
+    procedure Add(const v_: Int128); overload;
+    procedure Add(const v_: UInt128); overload;
     procedure AddF(const v_: Double); overload;
     procedure Add(const v_: TDateTime); overload;
     procedure Add(const v_: Boolean); overload;
@@ -66,6 +99,8 @@ type
     procedure Insert(Index: Integer; const v_: Integer); overload;
     procedure Insert(Index: Integer; const v_: Int64); overload;
     procedure Insert(Index: Integer; const v_: UInt64); overload;
+    procedure Insert(Index: Integer; const v_: Int128); overload;
+    procedure Insert(Index: Integer; const v_: UInt128); overload;
     procedure Insert(Index: Integer; const v_: Double); overload;
     procedure Insert(Index: Integer; const v_: TDateTime); overload;
     procedure Insert(Index: Integer; const v_: Boolean); overload;
@@ -80,6 +115,12 @@ type
     procedure SetLong(Index: Integer; const Value: Int64);
     function GetULong(Index: Integer): UInt64;
     procedure SetULong(Index: Integer; const Value: UInt64);
+
+    function GetInt128(Index: Integer): Int128;
+    procedure SetInt128(Index: Integer; const Value: Int128);
+    function GetUInt128(Index: Integer): UInt128;
+    procedure SetUInt128(Index: Integer; const Value: UInt128);
+
     function GetFloat(Index: Integer): Double;
     procedure SetFloat(Index: Integer; const Value: Double);
     function GetDateTime(Index: Integer): TDateTime;
@@ -94,8 +135,10 @@ type
     property I32[Index: Integer]: Integer read GetInt write SetInt;
     property L[Index: Integer]: Int64 read GetLong write SetLong;
     property I64[Index: Integer]: Int64 read GetLong write SetLong;
+    property I128[Index: Integer]: Int128 read GetInt128 write SetInt128;
     property U[Index: Integer]: UInt64 read GetULong write SetULong;
     property U64[Index: Integer]: UInt64 read GetULong write SetULong;
+    property U128[Index: Integer]: UInt128 read GetUInt128 write SetUInt128;
     property F[Index: Integer]: Double read GetFloat write SetFloat;
     property D[Index: Integer]: TDateTime read GetDateTime write SetDateTime;
     property B[Index: Integer]: Boolean read GetBool write SetBool;
@@ -126,6 +169,10 @@ type
     function IndexOf(const Name: string): Integer;
     function Exists(const Name: string): Boolean;
 
+    function GetInt128(const Name: string): Int128;
+    procedure SetInt128(const Name: string; const Value: Int128);
+    function GetUInt128(const Name: string): UInt128;
+    procedure SetUInt128(const Name: string; const Value: UInt128);
     function GetString(const Name: string): string;
     procedure SetString(const Name, Value: string);
     function GetInt(const Name: string): Integer;
@@ -148,8 +195,10 @@ type
     property I32[const Name: string]: Integer read GetInt write SetInt;
     property L[const Name: string]: Int64 read GetLong write SetLong;
     property I64[const Name: string]: Int64 read GetLong write SetLong;
+    property I128[const Name: string]: Int128 read GetInt128 write SetInt128;
     property U[const Name: string]: UInt64 read GetULong write SetULong;
     property U64[const Name: string]: UInt64 read GetULong write SetULong;
+    property U128[const Name: string]: UInt128 read GetUInt128 write SetUInt128;
     property F[const Name: string]: Double read GetFloat write SetFloat;
     property D[const Name: string]: TDateTime read GetDateTime write SetDateTime;
     property B[const Name: string]: Boolean read GetBool write SetBool;
@@ -175,6 +224,7 @@ type
     procedure LoadFromLines(L_: TCore_Strings);
     procedure SaveToFile(FileName: SystemString);
     procedure LoadFromFile(FileName: SystemString);
+    procedure LoadFromText(Text_: TPascalString);
 
     function GetMD5: TMD5;
     property MD5: TMD5 read GetMD5;
@@ -187,7 +237,7 @@ type
     class procedure Test;
   end;
 
-  TZ_JsonObject_List_Decl = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<TZ_JsonObject>;
+  TZ_JsonObject_List_Decl = TGenericsList<TZ_JsonObject>;
 
   TZ_JsonObject_List = class(TZ_JsonObject_List_Decl)
   public
@@ -242,6 +292,46 @@ end;
 destructor TZ_JsonArray.Destroy;
 begin
   inherited Destroy;
+end;
+
+procedure TZ_JsonArray.Add(const v_: Int128);
+begin
+  Add(v_.ToLString);
+end;
+
+procedure TZ_JsonArray.Add(const v_: UInt128);
+begin
+  Add(v_.ToLString);
+end;
+
+procedure TZ_JsonArray.Insert(Index: Integer; const v_: Int128);
+begin
+  Insert(Index, v_.ToLString.Text);
+end;
+
+procedure TZ_JsonArray.Insert(Index: Integer; const v_: UInt128);
+begin
+  Insert(Index, v_.ToLString.Text);
+end;
+
+function TZ_JsonArray.GetInt128(Index: Integer): Int128;
+begin
+  Result := Int128(TPascalString(GetString(index)));
+end;
+
+procedure TZ_JsonArray.SetInt128(Index: Integer; const Value: Int128);
+begin
+  SetString(Index, Value.ToLString.Text);
+end;
+
+function TZ_JsonArray.GetUInt128(Index: Integer): UInt128;
+begin
+  Result := UInt128(TPascalString(GetString(index)));
+end;
+
+procedure TZ_JsonArray.SetUInt128(Index: Integer; const Value: UInt128);
+begin
+  SetString(Index, Value.ToLString.Text);
 end;
 
 constructor TZ_JsonObject.Create;
@@ -309,6 +399,26 @@ end;
 function TZ_JsonObject.Exists(const Name: string): Boolean;
 begin
   Result := IndexOf(Name) >= 0;
+end;
+
+function TZ_JsonObject.GetInt128(const Name: string): Int128;
+begin
+  Result := Int128(TPascalString(GetString(Name)));
+end;
+
+procedure TZ_JsonObject.SetInt128(const Name: string; const Value: Int128);
+begin
+  SetString(Name, Value.ToLString);
+end;
+
+function TZ_JsonObject.GetUInt128(const Name: string): UInt128;
+begin
+  Result := UInt128(TPascalString(GetString(Name)));
+end;
+
+procedure TZ_JsonObject.SetUInt128(const Name: string; const Value: UInt128);
+begin
+  SetString(Name, Value.ToLString);
 end;
 
 function TZ_JsonObject.Get_Default_S(const Name, Value: string): string;
@@ -406,6 +516,19 @@ begin
   finally
       disposeObject(m64);
   end;
+end;
+
+procedure TZ_JsonObject.LoadFromText(Text_: TPascalString);
+var
+  buff: TBytes;
+  m64: TMS64;
+begin
+  buff := Text_.Bytes;
+  m64 := TMS64.Create;
+  m64.Mapping(buff, length(buff));
+  LoadFromStream(m64);
+  disposeObject(m64);
+  SetLength(buff, 0);
 end;
 
 function TZ_JsonObject.GetMD5: TMD5;
@@ -558,3 +681,4 @@ end;
 initialization
 
 end.
+ 

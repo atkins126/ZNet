@@ -32,8 +32,8 @@ type
     { Private declarations }
     procedure DoStatusNear(AText: string; const ID: Integer);
 
-    procedure cmd_ChangeCaption(Sender: TPeerClient; InData: TDataFrameEngine);
-    procedure cmd_GetClientValue(Sender: TPeerClient; InData, OutData: TDataFrameEngine);
+    procedure cmd_ChangeCaption(Sender: TPeerClient; InData: TDFE);
+    procedure cmd_GetClientValue(Sender: TPeerClient; InData, OutData: TDFE);
   public
     { Public declarations }
     RecvTunnel: TZNet_Client_CrossSocket;
@@ -91,16 +91,17 @@ end;
 
 procedure TAuthDoubleTunnelClientForm.Timer1Timer(Sender: TObject);
 begin
+  CheckThread;
   client.Progress;
   TimeLabel.Caption := Format('sync time:%f', [client.CadencerEngine.UpdateCurrentTime]);
 end;
 
-procedure TAuthDoubleTunnelClientForm.cmd_ChangeCaption(Sender: TPeerClient; InData: TDataFrameEngine);
+procedure TAuthDoubleTunnelClientForm.cmd_ChangeCaption(Sender: TPeerClient; InData: TDFE);
 begin
   Caption := InData.Reader.ReadString;
 end;
 
-procedure TAuthDoubleTunnelClientForm.cmd_GetClientValue(Sender: TPeerClient; InData, OutData: TDataFrameEngine);
+procedure TAuthDoubleTunnelClientForm.cmd_GetClientValue(Sender: TPeerClient; InData, OutData: TDFE);
 begin
   OutData.WriteString('getclientvalue:abc');
 end;

@@ -1,8 +1,38 @@
+(*
+https://zpascal.net
+https://github.com/PassByYou888/ZNet
+https://github.com/PassByYou888/zRasterization
+https://github.com/PassByYou888/ZSnappy
+https://github.com/PassByYou888/Z-AI1.4
+https://github.com/PassByYou888/InfiniteIoT
+https://github.com/PassByYou888/zMonitor_3rd_Core
+https://github.com/PassByYou888/tcmalloc4p
+https://github.com/PassByYou888/jemalloc4p
+https://github.com/PassByYou888/zCloud
+https://github.com/PassByYou888/ZServer4D
+https://github.com/PassByYou888/zShell
+https://github.com/PassByYou888/ZDB2.0
+https://github.com/PassByYou888/zGameWare
+https://github.com/PassByYou888/CoreCipher
+https://github.com/PassByYou888/zChinese
+https://github.com/PassByYou888/zSound
+https://github.com/PassByYou888/zExpression
+https://github.com/PassByYou888/ZInstaller2.0
+https://github.com/PassByYou888/zAI
+https://github.com/PassByYou888/NetFileService
+https://github.com/PassByYou888/zAnalysis
+https://github.com/PassByYou888/PascalString
+https://github.com/PassByYou888/zInstaller
+https://github.com/PassByYou888/zTranslate
+https://github.com/PassByYou888/zVision
+https://github.com/PassByYou888/FFMPEG-Header
+*)
 { ****************************************************************************** }
 { * cloud 4.0 Unit Rewrite Tool                                                * }
 { ****************************************************************************** }
 unit Z.Net.C4_PascalRewrite_Service;
 
+{$DEFINE FPC_DELPHI_MODE}
 {$I Z.Define.inc}
 
 interface
@@ -16,12 +46,13 @@ uses Variants, SysUtils,
   Z.Parsing, Z.Pascal_Code_Tool, Z.Expression, Z.OpCode,
   Z.Json, Z.HashList.Templet,
   Z.Notify, Z.Cipher, Z.MemoryStream,
+  Z.FragmentBuffer, // solve for discontinuous space
   Z.Net, Z.Net.PhysicsIO, Z.Net.DoubleTunnelIO.NoAuth, Z.Net.C4,
   Z.ZDB2, Z.ZDB2.FileEncoder,
   Z.Pascal_Rewrite_Model_Data;
 
 type
-  TUnitRewriteService_IO_Define_ = class(TPeerClientUserDefineForRecvTunnel_NoAuth)
+  TUnitRewriteService_IO_Define_ = class(TService_RecvTunnel_UserDefine_NoAuth)
   public
     UnitRewriteProcessor: TSource_Processor_Data_Pool;
     SymbolRewriteProcessor: TSource_Processor_Data_Pool;
@@ -168,7 +199,7 @@ var
   procedure fpc_rewrite_status(const Fmt: SystemString; const Args: array of const);
   begin
     Current_Status.Add(TimeToStr(Now) + ' ' + PFormat(Fmt, Args));
-    with DTNoAuth.PostProgress.PostExecuteM(False, 0, @Do_Sync_Rewrite_Status) do
+    with DTNoAuth.PostProgress.PostExecuteM(False, 0, Do_Sync_Rewrite_Status) do
       begin
         Data3 := ThSender.id;
         Data4 := PFormat(Fmt, Args);
@@ -181,7 +212,7 @@ var
 begin
   IO_Def := nil;
 {$IFDEF FPC}
-  TCompute.Sync(@Do_Sync_IO_Def);
+  TCompute.Sync(Do_Sync_IO_Def);
 {$ELSE FPC}
   TCompute.Sync(procedure
     begin
@@ -204,7 +235,7 @@ begin
         fn := ThInData.R.ReadString;
         ThInData.R.ReadStrings(Code);
 {$IFDEF FPC}
-        RewritePascal_Process_Code(Code, uHash, symHash, '', @fpc_rewrite_status);
+        RewritePascal_Process_Code(Code, uHash, symHash, '', fpc_rewrite_status);
 {$ELSE FPC}
         RewritePascal_Process_Code(Code, uHash, symHash, '', procedure(const Fmt: SystemString; const Args: array of const)
           begin
@@ -218,7 +249,7 @@ begin
           end);
 {$ENDIF FPC}
         Current_Status.Add(TimeToStr(Now) + ' ' + PFormat('%s rewrite done.', [umlGetFileName(fn).Text]));
-        with DTNoAuth.PostProgress.PostExecuteM(False, 0, {$IFDEF FPC}@{$ENDIF FPC}Do_Sync_Rewrite_Status) do
+        with DTNoAuth.PostProgress.PostExecuteM(False, 0, Do_Sync_Rewrite_Status) do
           begin
             Data3 := ThSender.id;
             Data4 := PFormat('%s rewrite done.', [umlGetFileName(fn).Text]);
@@ -239,16 +270,16 @@ end;
 
 procedure TC40_Pascal_Rewrite_Service.cmd_RewritePascal(Sender: TPeerIO; InData, OutData: TDFE);
 begin
-  RunHPC_StreamM(Sender, nil, nil, InData, OutData, {$IFDEF FPC}@{$ENDIF FPC}Do_RewritePascal_HPC);
+  RunHPC_StreamM(Sender, nil, nil, InData, OutData, Do_RewritePascal_HPC);
 end;
 
 constructor TC40_Pascal_Rewrite_Service.Create(PhysicsService_: TC40_PhysicsService; ServiceTyp, Param_: U_String);
 begin
   inherited Create(PhysicsService_, ServiceTyp, Param_);
   DTNoAuth.RecvTunnel.PeerClientUserDefineClass := TUnitRewriteService_IO_Define_;
-  DTNoAuthService.RecvTunnel.RegisterDirectStream('SetDefaultModel').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_SetDefaultModel;
-  DTNoAuthService.RecvTunnel.RegisterDirectStream('UpdateModel').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_UpdateModel;
-  DTNoAuthService.RecvTunnel.RegisterStream('RewritePascal').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_RewritePascal;
+  DTNoAuthService.RecvTunnel.RegisterDirectStream('SetDefaultModel').OnExecute := cmd_SetDefaultModel;
+  DTNoAuthService.RecvTunnel.RegisterDirectStream('UpdateModel').OnExecute := cmd_UpdateModel;
+  DTNoAuthService.RecvTunnel.RegisterStream('RewritePascal').OnExecute := cmd_RewritePascal;
   ServiceInfo.OnlyInstance := False;
   UpdateToGlobalDispatch;
 end;
@@ -281,3 +312,4 @@ initialization
 RegisterC40('Pascal_Rewrite', TC40_Pascal_Rewrite_Service, nil);
 
 end.
+ 

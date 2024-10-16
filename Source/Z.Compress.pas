@@ -1,8 +1,38 @@
+(*
+https://zpascal.net
+https://github.com/PassByYou888/ZNet
+https://github.com/PassByYou888/zRasterization
+https://github.com/PassByYou888/ZSnappy
+https://github.com/PassByYou888/Z-AI1.4
+https://github.com/PassByYou888/InfiniteIoT
+https://github.com/PassByYou888/zMonitor_3rd_Core
+https://github.com/PassByYou888/tcmalloc4p
+https://github.com/PassByYou888/jemalloc4p
+https://github.com/PassByYou888/zCloud
+https://github.com/PassByYou888/ZServer4D
+https://github.com/PassByYou888/zShell
+https://github.com/PassByYou888/ZDB2.0
+https://github.com/PassByYou888/zGameWare
+https://github.com/PassByYou888/CoreCipher
+https://github.com/PassByYou888/zChinese
+https://github.com/PassByYou888/zSound
+https://github.com/PassByYou888/zExpression
+https://github.com/PassByYou888/ZInstaller2.0
+https://github.com/PassByYou888/zAI
+https://github.com/PassByYou888/NetFileService
+https://github.com/PassByYou888/zAnalysis
+https://github.com/PassByYou888/PascalString
+https://github.com/PassByYou888/zInstaller
+https://github.com/PassByYou888/zTranslate
+https://github.com/PassByYou888/zVision
+https://github.com/PassByYou888/FFMPEG-Header
+*)
 { ****************************************************************************** }
 { * Compressor                                                                 * }
 { ****************************************************************************** }
 unit Z.Compress;
 
+{$DEFINE FPC_DELPHI_MODE}
 {$I Z.Define.inc}
 
 interface
@@ -73,7 +103,7 @@ type
       True: (Value: TCCUInt64;);
   end;
 
-  TCompressor = class(TCore_Object)
+  TCompressor = class(TCore_Object_Intermediate)
   private const
     ChunkHeadSize = $3000;
     ChunkSize = $FFFF - ChunkHeadSize;
@@ -456,8 +486,8 @@ begin
       sour.read(siz, 8);
       cSiz := 0;
 
-      buff := GetMemory(PrepareBuffSize);
-      decryptBuff := GetMemory(PrepareBuffSize);
+      buff := System.GetMemory(PrepareBuffSize);
+      decryptBuff := System.GetMemory(PrepareBuffSize);
       while cSiz < siz do
         begin
           if sour.read(bufSiz, 2) <> 2 then
@@ -469,8 +499,8 @@ begin
           DecompressTo.write(decryptBuff^, deBufSiz);
           inc(cSiz, deBufSiz);
         end;
-      FreeMemory(buff);
-      FreeMemory(decryptBuff);
+      System.FreeMemory(buff);
+      System.FreeMemory(decryptBuff);
     end;
 end;
 
@@ -1386,3 +1416,4 @@ end;
 
 
 end.
+ 

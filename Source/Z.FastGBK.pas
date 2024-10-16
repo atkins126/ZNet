@@ -1,8 +1,38 @@
+(*
+https://zpascal.net
+https://github.com/PassByYou888/ZNet
+https://github.com/PassByYou888/zRasterization
+https://github.com/PassByYou888/ZSnappy
+https://github.com/PassByYou888/Z-AI1.4
+https://github.com/PassByYou888/InfiniteIoT
+https://github.com/PassByYou888/zMonitor_3rd_Core
+https://github.com/PassByYou888/tcmalloc4p
+https://github.com/PassByYou888/jemalloc4p
+https://github.com/PassByYou888/zCloud
+https://github.com/PassByYou888/ZServer4D
+https://github.com/PassByYou888/zShell
+https://github.com/PassByYou888/ZDB2.0
+https://github.com/PassByYou888/zGameWare
+https://github.com/PassByYou888/CoreCipher
+https://github.com/PassByYou888/zChinese
+https://github.com/PassByYou888/zSound
+https://github.com/PassByYou888/zExpression
+https://github.com/PassByYou888/ZInstaller2.0
+https://github.com/PassByYou888/zAI
+https://github.com/PassByYou888/NetFileService
+https://github.com/PassByYou888/zAnalysis
+https://github.com/PassByYou888/PascalString
+https://github.com/PassByYou888/zInstaller
+https://github.com/PassByYou888/zTranslate
+https://github.com/PassByYou888/zVision
+https://github.com/PassByYou888/FFMPEG-Header
+*)
 { ****************************************************************************** }
 { * Fast GBK                                                                   * }
 { ****************************************************************************** }
 unit Z.FastGBK;
 
+{$DEFINE FPC_DELPHI_MODE}
 {$I Z.Define.inc}
 
 interface
@@ -555,13 +585,13 @@ end;
 procedure WaitFastGBKInit;
 begin
   while not GBKCache_Inited.V do
-      Z.Core.CheckThreadSynchronize(1);
+      TCompute.Sleep(1);
 end;
 
 initialization
 
 GBKCache_Inited := TAtomBool.Create(False);
-TCompute.RunC({$IFDEF FPC}@{$ENDIF FPC}InitFastGBKThread);
+TCompute.RunC(InitFastGBKThread);
 
 Chinese_Number := #65296#65297#65298#65299#65300#65301#65302#65303#65304#65305;
 Chinese_Letter :=
@@ -587,3 +617,4 @@ FreeFastGBK;
 DisposeObjectAndNil(GBKCache_Inited);
 
 end.
+ 

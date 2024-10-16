@@ -1,3 +1,32 @@
+(*
+https://zpascal.net
+https://github.com/PassByYou888/ZNet
+https://github.com/PassByYou888/zRasterization
+https://github.com/PassByYou888/ZSnappy
+https://github.com/PassByYou888/Z-AI1.4
+https://github.com/PassByYou888/InfiniteIoT
+https://github.com/PassByYou888/zMonitor_3rd_Core
+https://github.com/PassByYou888/tcmalloc4p
+https://github.com/PassByYou888/jemalloc4p
+https://github.com/PassByYou888/zCloud
+https://github.com/PassByYou888/ZServer4D
+https://github.com/PassByYou888/zShell
+https://github.com/PassByYou888/ZDB2.0
+https://github.com/PassByYou888/zGameWare
+https://github.com/PassByYou888/CoreCipher
+https://github.com/PassByYou888/zChinese
+https://github.com/PassByYou888/zSound
+https://github.com/PassByYou888/zExpression
+https://github.com/PassByYou888/ZInstaller2.0
+https://github.com/PassByYou888/zAI
+https://github.com/PassByYou888/NetFileService
+https://github.com/PassByYou888/zAnalysis
+https://github.com/PassByYou888/PascalString
+https://github.com/PassByYou888/zInstaller
+https://github.com/PassByYou888/zTranslate
+https://github.com/PassByYou888/zVision
+https://github.com/PassByYou888/FFMPEG-Header
+*)
 { ****************************************************************************** }
 { * Fast md5 imp                                                               * }
 { ****************************************************************************** }
@@ -105,15 +134,12 @@ var
   ChunkIndex: Byte;
   ChunkBuff: array [0 .. 63] of Byte;
 begin
-  Lo := 0;
-  Hi := 0;
   PCardinal(@Digest[0])^ := $67452301;
   PCardinal(@Digest[4])^ := $EFCDAB89;
   PCardinal(@Digest[8])^ := $98BADCFE;
   PCardinal(@Digest[12])^ := $10325476;
-
-  inc(Lo, bufSiz shl 3);
-  inc(Hi, bufSiz shr 29);
+  Lo := bufSiz shl 3;
+  Hi := bufSiz shr 29;
 
   p := buffPtr;
 
@@ -157,7 +183,7 @@ var
   ChunkBuff: array [0 .. 63] of Byte;
 begin
   if StartPos > EndPos then
-      Swap(StartPos, EndPos);
+      TSwap<Int64>.Do_(StartPos, EndPos);
   StartPos := umlClamp(StartPos, 0, stream.Size);
   EndPos := umlClamp(EndPos, 0, stream.Size);
   if EndPos - StartPos <= 0 then
@@ -177,9 +203,6 @@ begin
       exit;
     end;
 {$ENDIF}
-  //
-  Lo := 0;
-  Hi := 0;
   PCardinal(@Digest[0])^ := $67452301;
   PCardinal(@Digest[4])^ := $EFCDAB89;
   PCardinal(@Digest[8])^ := $98BADCFE;
@@ -187,9 +210,8 @@ begin
 
   bufSiz := EndPos - StartPos;
   Rest := 0;
-
-  inc(Lo, bufSiz shl 3);
-  inc(Hi, bufSiz shr 29);
+  Lo := bufSiz shl 3;
+  Hi := bufSiz shr 29;
 
   DeltaBuf := GetMemory(deltaSize);
   stream.Position := StartPos;
@@ -255,3 +277,4 @@ end;
 {$ENDIF Defined(MSWINDOWS) and Defined(Delphi)}
 
 end.
+ 

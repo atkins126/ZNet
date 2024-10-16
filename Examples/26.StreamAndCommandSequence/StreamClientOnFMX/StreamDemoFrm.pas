@@ -7,7 +7,8 @@ uses
   FMX.Types, FMX.Controls, FMX.Forms, FMX.Graphics, FMX.Dialogs, FMX.StdCtrls, FMX.Edit,
   FMX.Layouts, FMX.Controls.Presentation, FMX.ScrollBox, FMX.Memo,
   Z.Core, Z.PascalStrings, Z.UnicodeMixedLib, Z.MemoryStream, Z.DFE, Z.Notify,
-  Z.Net, Z.Net.XNAT.Physics, Z.Status, Z.Cipher, Z.Net.DoubleTunnelIO.NoAuth;
+  Z.Net, Z.Net.XNAT.Physics, Z.Status, Z.Cipher, Z.Net.DoubleTunnelIO.NoAuth,
+  FMX.Memo.Types;
 
 type
   TForm1 = class(TForm)
@@ -59,7 +60,7 @@ type
     procedure MyCompleteBuffer;
 
     procedure MyBatchStream;
-    procedure MyBatchStreamOver(Sender: TPeerIO; InData: TDataFrameEngine);
+    procedure MyBatchStreamOver(Sender: TPeerIO; InData: TDFE);
   end;
 
 var
@@ -174,6 +175,7 @@ end;
 
 procedure TForm1.Timer1Timer(Sender: TObject);
 begin
+  CheckThread;
   SingleTunnelClient.Progress;
   DoubleTunnelClient.Progress;
 
@@ -193,7 +195,7 @@ end;
 
 procedure TForm1.cmd1;
 begin
-  SingleTunnelClient.SendStreamCmdP('1', nil, procedure(Sender: TPeerIO; ResultData: TDataFrameEngine)
+  SingleTunnelClient.SendStreamCmdP('1', nil, procedure(Sender: TPeerIO; ResultData: TDFE)
     begin
       DoStatus('cmd Response 1');
     end);
@@ -201,7 +203,7 @@ end;
 
 procedure TForm1.cmd2;
 begin
-  SingleTunnelClient.SendStreamCmdP('2', nil, procedure(Sender: TPeerIO; ResultData: TDataFrameEngine)
+  SingleTunnelClient.SendStreamCmdP('2', nil, procedure(Sender: TPeerIO; ResultData: TDFE)
     begin
       DoStatus('cmd Response 2');
     end);
@@ -209,7 +211,7 @@ end;
 
 procedure TForm1.cmd3;
 begin
-  SingleTunnelClient.SendStreamCmdP('3', nil, procedure(Sender: TPeerIO; ResultData: TDataFrameEngine)
+  SingleTunnelClient.SendStreamCmdP('3', nil, procedure(Sender: TPeerIO; ResultData: TDFE)
     begin
       DoStatus('cmd Response 3');
     end);
@@ -226,16 +228,16 @@ begin
   TComputeThread.RunP(nil, nil,
     procedure(Sender: TComputeThread)
     var
-      de: TDataFrameEngine;
+      de: TDFE;
     begin
-      de := TDataFrameEngine.Create;
+      de := TDFE.Create;
       de.write(Prepared_Stream.Memory^, Prepared_Stream.Size);
       de.EncodeTo(m, True);
       disposeObject(de);
     end,
     procedure(Sender: TComputeThread)
     begin
-      SingleTunnelClient.SendStreamCmdP('MyDataframe', m, procedure(Sender: TPeerIO; ResultData: TDataFrameEngine)
+      SingleTunnelClient.SendStreamCmdP('MyDataframe', m, procedure(Sender: TPeerIO; ResultData: TDFE)
         begin
           Sender.Print('complete,time:%d', [GetTimeTick - d]);
         end, True);
@@ -244,11 +246,11 @@ end;
 
 procedure TForm1.MyDataframe_Direct;
 var
-  de: TDataFrameEngine;
+  de: TDFE;
   d: TTimeTick;
 begin
   SingleTunnelClient.SyncOnResult := True;
-  de := TDataFrameEngine.Create;
+  de := TDFE.Create;
   de.WriteStream(Prepared_Stream);
   d := GetTimeTick;
   SingleTunnelClient.SendDirectStreamCmd('MyDataframe_Direct', de);
@@ -304,7 +306,7 @@ begin
   DoubleTunnelClient.ClearBatchStream;
 end;
 
-procedure TForm1.MyBatchStreamOver(Sender: TPeerIO; InData: TDataFrameEngine);
+procedure TForm1.MyBatchStreamOver(Sender: TPeerIO; InData: TDFE);
 var
   i: Integer;
   m: TMemoryStream64;

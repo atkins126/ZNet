@@ -20,13 +20,13 @@ type
   public
     procedure p2pVMTunnelAuth(Sender: TPeerIO; const Token: SystemString; var Accept: Boolean); override;
     // vm 隧道刚被创建时
-    procedure p2pVMTunnelOpenBefore(Sender: TPeerClient; p2pVMTunnel: TZNet_WithP2PVM); override;
+    procedure p2pVMTunnelOpenBefore(Sender: TPeerClient; p2pVMTunnel: TZNet_P2PVM); override;
     // 隧道已经握手成功
-    procedure p2pVMTunnelOpen(Sender: TPeerClient; p2pVMTunnel: TZNet_WithP2PVM); override;
+    procedure p2pVMTunnelOpen(Sender: TPeerClient; p2pVMTunnel: TZNet_P2PVM); override;
     // 隧道握手成功后延迟一秒所触发
-    procedure p2pVMTunnelOpenAfter(Sender: TPeerClient; p2pVMTunnel: TZNet_WithP2PVM); override;
+    procedure p2pVMTunnelOpenAfter(Sender: TPeerClient; p2pVMTunnel: TZNet_P2PVM); override;
     // 隧道关闭，该事件是在发生远程请求，或则断线时触发
-    procedure p2pVMTunnelClose(Sender: TPeerClient; p2pVMTunnel: TZNet_WithP2PVM); override;
+    procedure p2pVMTunnelClose(Sender: TPeerClient; p2pVMTunnel: TZNet_P2PVM); override;
   end;
 
   TMyService = class(TZNet_DoubleTunnelService)
@@ -34,13 +34,13 @@ type
     f: TAuthDoubleServerForm;
   protected
     procedure UserRegistedSuccess(UserID: string); override;
-    procedure UserLinkSuccess(UserDefineIO: TPeerClientUserDefineForRecvTunnel); override;
-    procedure UserOut(UserDefineIO: TPeerClientUserDefineForRecvTunnel); override;
+    procedure UserLinkSuccess(UserDefineIO: TService_RecvTunnel_UserDefine); override;
+    procedure UserOut(UserDefineIO: TService_RecvTunnel_UserDefine); override;
   protected
     // reg cmd
     procedure cmd_helloWorld_Console(Sender: TPeerClient; InData: string);
-    procedure cmd_helloWorld_Stream(Sender: TPeerClient; InData: TDataFrameEngine);
-    procedure cmd_helloWorld_Stream_Result(Sender: TPeerClient; InData, OutData: TDataFrameEngine);
+    procedure cmd_helloWorld_Stream(Sender: TPeerClient; InData: TDFE);
+    procedure cmd_helloWorld_Stream_Result(Sender: TPeerClient; InData, OutData: TDFE);
   public
     procedure RegisterCommand; override;
     procedure UnRegisterCommand; override;
@@ -88,7 +88,7 @@ begin
   Accept := True;
 end;
 
-procedure TMyVM_Tunnel.p2pVMTunnelClose(Sender: TPeerClient; p2pVMTunnel: TZNet_WithP2PVM);
+procedure TMyVM_Tunnel.p2pVMTunnelClose(Sender: TPeerClient; p2pVMTunnel: TZNet_P2PVM);
 begin
   // 触发该事件时，vm隧道已经解除
 
@@ -98,7 +98,7 @@ begin
   inherited p2pVMTunnelClose(Sender, p2pVMTunnel);
 end;
 
-procedure TMyVM_Tunnel.p2pVMTunnelOpenBefore(Sender: TPeerClient; p2pVMTunnel: TZNet_WithP2PVM);
+procedure TMyVM_Tunnel.p2pVMTunnelOpenBefore(Sender: TPeerClient; p2pVMTunnel: TZNet_P2PVM);
 begin
   inherited;
   // 触发该事件时，vm隧道已经建立，但是未握手
@@ -116,25 +116,25 @@ begin
   Sender.p2pVM.InstallLogicFramework(AuthDoubleServerForm.SendTunnel);
 end;
 
-procedure TMyVM_Tunnel.p2pVMTunnelOpen(Sender: TPeerClient; p2pVMTunnel: TZNet_WithP2PVM);
+procedure TMyVM_Tunnel.p2pVMTunnelOpen(Sender: TPeerClient; p2pVMTunnel: TZNet_P2PVM);
 begin
   inherited;
   // 触发该事件时，vm已成功过握手
 end;
 
-procedure TMyVM_Tunnel.p2pVMTunnelOpenAfter(Sender: TPeerClient; p2pVMTunnel: TZNet_WithP2PVM);
+procedure TMyVM_Tunnel.p2pVMTunnelOpenAfter(Sender: TPeerClient; p2pVMTunnel: TZNet_P2PVM);
 begin
   inherited;
   // 触发该事件时，vm已成功过握手，并且经过了1秒
 end;
 
-procedure TMyService.UserLinkSuccess(UserDefineIO: TPeerClientUserDefineForRecvTunnel);
+procedure TMyService.UserLinkSuccess(UserDefineIO: TService_RecvTunnel_UserDefine);
 begin
   inherited UserLinkSuccess(UserDefineIO);
   DoStatus('user link success!');
 end;
 
-procedure TMyService.UserOut(UserDefineIO: TPeerClientUserDefineForRecvTunnel);
+procedure TMyService.UserOut(UserDefineIO: TService_RecvTunnel_UserDefine);
 begin
   inherited UserOut(UserDefineIO);
   DoStatus('user out!');
@@ -147,7 +147,7 @@ end;
 
 procedure TMyService.cmd_helloWorld_Console(Sender: TPeerClient; InData: string);
 var
-  UserIO: TPeerClientUserDefineForRecvTunnel;
+  UserIO: TService_RecvTunnel_UserDefine;
 begin
   UserIO := GetUserDefineRecvTunnel(Sender);
 
@@ -161,9 +161,9 @@ begin
   DoStatus('client: %s', [InData]);
 end;
 
-procedure TMyService.cmd_helloWorld_Stream(Sender: TPeerClient; InData: TDataFrameEngine);
+procedure TMyService.cmd_helloWorld_Stream(Sender: TPeerClient; InData: TDFE);
 var
-  UserIO: TPeerClientUserDefineForRecvTunnel;
+  UserIO: TService_RecvTunnel_UserDefine;
 begin
   UserIO := GetUserDefineRecvTunnel(Sender);
 
@@ -177,9 +177,9 @@ begin
   DoStatus('client: %s', [InData.Reader.ReadString]);
 end;
 
-procedure TMyService.cmd_helloWorld_Stream_Result(Sender: TPeerClient; InData, OutData: TDataFrameEngine);
+procedure TMyService.cmd_helloWorld_Stream_Result(Sender: TPeerClient; InData, OutData: TDFE);
 var
-  UserIO: TPeerClientUserDefineForRecvTunnel;
+  UserIO: TService_RecvTunnel_UserDefine;
 begin
   UserIO := GetUserDefineRecvTunnel(Sender);
 
@@ -211,9 +211,9 @@ end;
 
 procedure TAuthDoubleServerForm.ChangeCaptionButtonClick(Sender: TObject);
 var
-  de: TDataFrameEngine;
+  de: TDFE;
 begin
-  de := TDataFrameEngine.Create;
+  de := TDFE.Create;
   de.WriteString('change caption as hello World,from server!');
   // 广播方法不会区分客户端是否有登录，是否建立成功了双通道
   SendTunnel.BroadcastDirectStreamCmd('ChangeCaption', de);
@@ -263,20 +263,20 @@ begin
   SendTunnel.ProgressPeerIOP(procedure(PeerClient: TPeerClient)
     var
       c: TPeerClient;
-      de: TDataFrameEngine;
+      de: TDFE;
     begin
       c := PeerClient;
       // 如果客户端没有登录成功
-      if TPeerClientUserDefineForSendTunnel(c.UserDefine).RecvTunnel = nil then
+      if TService_SendTunnel_UserDefine(c.UserDefine).RecvTunnel = nil then
           exit;
       // 和上列一样，如果客户端没有登录
-      if not TPeerClientUserDefineForSendTunnel(c.UserDefine).RecvTunnel.LinkOK then
+      if not TService_SendTunnel_UserDefine(c.UserDefine).RecvTunnel.LinkOK then
           exit;
 
-      de := TDataFrameEngine.Create;
+      de := TDFE.Create;
       de.WriteString('change caption as hello World,from server!');
       c.SendStreamCmdP('GetClientValue', de,
-        procedure(Sender: TPeerClient; ResultData: TDataFrameEngine)
+        procedure(Sender: TPeerClient; ResultData: TDFE)
         begin
           if ResultData.Count > 0 then
               DoStatus('getClientValue [%s] response:%s', [c.GetPeerIP, ResultData.Reader.ReadString]);
@@ -313,6 +313,7 @@ end;
 
 procedure TAuthDoubleServerForm.Timer1Timer(Sender: TObject);
 begin
+  CheckThread;
   VMTunnel.Progress;
   Service.Progress;
   TimeLabel.Caption := Format('sync time:%f', [Service.CadencerEngine.UpdateCurrentTime]);

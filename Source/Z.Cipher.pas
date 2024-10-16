@@ -1,9 +1,39 @@
+(*
+https://zpascal.net
+https://github.com/PassByYou888/ZNet
+https://github.com/PassByYou888/zRasterization
+https://github.com/PassByYou888/ZSnappy
+https://github.com/PassByYou888/Z-AI1.4
+https://github.com/PassByYou888/InfiniteIoT
+https://github.com/PassByYou888/zMonitor_3rd_Core
+https://github.com/PassByYou888/tcmalloc4p
+https://github.com/PassByYou888/jemalloc4p
+https://github.com/PassByYou888/zCloud
+https://github.com/PassByYou888/ZServer4D
+https://github.com/PassByYou888/zShell
+https://github.com/PassByYou888/ZDB2.0
+https://github.com/PassByYou888/zGameWare
+https://github.com/PassByYou888/CoreCipher
+https://github.com/PassByYou888/zChinese
+https://github.com/PassByYou888/zSound
+https://github.com/PassByYou888/zExpression
+https://github.com/PassByYou888/ZInstaller2.0
+https://github.com/PassByYou888/zAI
+https://github.com/PassByYou888/NetFileService
+https://github.com/PassByYou888/zAnalysis
+https://github.com/PassByYou888/PascalString
+https://github.com/PassByYou888/zInstaller
+https://github.com/PassByYou888/zTranslate
+https://github.com/PassByYou888/zVision
+https://github.com/PassByYou888/FFMPEG-Header
+*)
 { ****************************************************************************** }
 { * cipher                                                                     * }
 { ****************************************************************************** }
 
 unit Z.Cipher;
 
+{$DEFINE FPC_DELPHI_MODE}
 {$I Z.Define.inc}
 {$O+} // compiler optimization
 
@@ -231,7 +261,8 @@ type
 
 type
   { key style and auto Encrypt }
-  TCipherSecurity = (csNone,
+  TCipherSecurity = (
+    csNone,
     csDES64, csDES128, csDES192,
     csBlowfish, csLBC, csLQC, csRNG32, csRNG64, csLSC,
     // mini cipher
@@ -257,7 +288,7 @@ type
 
   THashSecuritys = set of THashSecurity;
 
-  TCipher = class(TCore_Object)
+  TCipher = class(TCore_Object_Intermediate)
   public const
     CAllHash: THashSecuritys = [
       hsNone,
@@ -272,7 +303,8 @@ type
       '256', '128', '64', '32', '16', 'ELF', 'ELF64', 'Mix128', 'CRC16', 'CRC32');
 
     CCipherSecurityName: array [TCipherSecurity] of SystemString =
-      ('None',
+      (
+      'None',
       'DES64', 'DES128', 'DES192',
       'Blowfish', 'LBC', 'LQC', 'RNG32', 'RNG64', 'LSC',
       'XXTea512',
@@ -280,7 +312,7 @@ type
       'AES128', 'AES192', 'AES256'
       );
 
-    cCipherKeyStyle: array [TCipherSecurity] of TCipherKeyStyle =
+    CCipherKeyStyle: array [TCipherSecurity] of TCipherKeyStyle =
       (
       cksNone, // csNone
       cksKey64, // csDES64
@@ -301,6 +333,29 @@ type
       ckyDynamicKey, // csAES128
       ckyDynamicKey, // csAES192
       ckyDynamicKey // csAES256
+      );
+
+    CCipher_Data_Length: array [TCipherSecurity] of Integer =
+      (
+      1, // csNone
+      8, // csDES64
+      8, // csDES128
+      8, // csDES192
+      8, // csBlowfish
+      16, // csLBC
+      8, // csLQC
+      4, // csRNG32
+      8, // csRNG64
+      1, // csLSC
+      64, // csXXTea512
+      16, // csRC6
+      16, // csSerpent
+      16, // csMars
+      16, // csRijndael
+      16, // csTwoFish
+      16, // csAES128
+      16, // csAES192
+      16 // csAES256
       );
   public
     class function AllCipher: TCipherSecurityArray;
@@ -435,7 +490,7 @@ type
     Encrypt: Boolean;
   end;
 
-  TParallelCipher = class(TCore_Object)
+  TParallelCipher = class(TCore_Object_Intermediate)
   private
     procedure DES64_Parallel(Job, buff, key: Pointer; Size: NativeInt);
     procedure DES128_Parallel(Job, buff, key: Pointer; Size: NativeInt);
@@ -571,14 +626,14 @@ function QuantumDecrypt(input, output: TCore_Stream; key: TCipherKeyBuffer): Boo
 
 type
   { Blowfish Cipher }
-  TBlowfish = class(TCore_Object)
+  TBlowfish = class(TCore_Object_Intermediate)
   public
     class procedure EncryptBF(const Context: TBFContext; var Block: TBFBlock; Encrypt: Boolean);
     class procedure InitEncryptBF(key: TKey128; var Context: TBFContext);
   end;
 
   { DES Cipher }
-  TDES = class(TCore_Object)
+  TDES = class(TCore_Object_Intermediate)
   strict private
     class procedure JoinBlock(const L, R: DWORD; var Block: TDESBlock);
     class procedure SplitBlock(const Block: TDESBlock; var L, R: DWORD);
@@ -594,7 +649,7 @@ type
   end;
 
   { SHA1 }
-  TSHA1 = class(TCore_Object)
+  TSHA1 = class(TCore_Object_Intermediate)
   strict private
     class procedure SHA1Clear(var Context: TSHA1Context);
     class procedure SHA1Hash(var Context: TSHA1Context);
@@ -609,7 +664,7 @@ type
   end;
 
   { SHA-2-SHA256 }
-  TSHA256 = class(TCore_Object)
+  TSHA256 = class(TCore_Object_Intermediate)
   private
     class procedure SwapDWORD(var a: DWORD);
     class procedure Compute(var Digest: TSHA256Digest; const buff: Pointer);
@@ -618,7 +673,7 @@ type
   end;
 
   { SHA-2-SHA512 }
-  TSHA512 = class(TCore_Object)
+  TSHA512 = class(TCore_Object_Intermediate)
   private
     class procedure SwapQWORD(var a: UInt64);
     class procedure Compute(var Digest: TSHA512Digest; const buff: Pointer);
@@ -627,7 +682,7 @@ type
   end;
 
   { SHA-3:SHA224,SHA256,SHA384,SHA512,SHAKE128,SHAKE256 }
-  TSHA3 = class(TCore_Object)
+  TSHA3 = class(TCore_Object_Intermediate)
   private type
     TSHA3Context = record
       HashLength: DWORD;
@@ -667,7 +722,7 @@ type
   end;
 
   { LBC Cipher }
-  TLBC = class(TCore_Object)
+  TLBC = class(TCore_Object_Intermediate)
   public
     class procedure EncryptLBC(const Context: TLBCContext; var Block: TLBCBlock);
     class procedure EncryptLQC(const key: TKey128; var Block: TLQCBlock; Encrypt: Boolean);
@@ -675,7 +730,7 @@ type
   end;
 
   { MD5 }
-  THashMD5 = class(TCore_Object)
+  THashMD5 = class(TCore_Object_Intermediate)
   public
     class procedure GenerateMD5Key(var key: TKey128; const Bytes_: TBytes);
     class procedure HashMD5(var Digest: TMD5Digest; const Buf; BufSize: NativeInt);
@@ -686,7 +741,7 @@ type
   end;
 
   { message digest }
-  THashMD = class(TCore_Object)
+  THashMD = class(TCore_Object_Intermediate)
   public
     class procedure GenerateLMDKey(var key; KeySize: Integer; const Bytes_: TBytes);
     class procedure HashLMD(var Digest; DigestSize: Integer; const Buf; BufSize: NativeInt);
@@ -697,7 +752,7 @@ type
   end;
 
   { Random Number Cipher }
-  TRNG = class(TCore_Object)
+  TRNG = class(TCore_Object_Intermediate)
   public
     class procedure EncryptRNG32(var Context: TRNG32Context; var Buf; BufSize: Integer);
     class procedure EncryptRNG64(var Context: TRNG64Context; var Buf; BufSize: Integer);
@@ -706,7 +761,7 @@ type
   end;
 
   { LSC Stream Cipher }
-  TLSC = class(TCore_Object)
+  TLSC = class(TCore_Object_Intermediate)
   public
     class procedure EncryptLSC(var Context: TLSCContext; var Buf; BufSize: Integer);
     class procedure InitEncryptLSC(const key; KeySize: Integer; var Context: TLSCContext);
@@ -714,7 +769,7 @@ type
 
   { Miscellaneous algorithms }
   { Misc public utilities }
-  TMISC = class(TCore_Object)
+  TMISC = class(TCore_Object_Intermediate)
   public
     class procedure Mix128(var x: T128Bit); static;
     class function Ran0Prim(var Seed: Integer; IA, IQ, IR: Integer): Integer; static;
@@ -750,7 +805,7 @@ type
   PRC6Block = ^TRC6Block;
   TRC6Block = array [0 .. 15] of Byte;
 
-  TRC6 = class(TCore_Object)
+  TRC6 = class(TCore_Object_Intermediate)
   public
     class function LRot32(x, c: DWORD): DWORD;
     class function RRot32(x, c: DWORD): DWORD;
@@ -766,7 +821,7 @@ type
   PSerpentBlock = ^TSerpentBlock;
   TSerpentBlock = array [0 .. 15] of Byte;
 
-  TSerpent = class(TCore_Object)
+  TSerpent = class(TCore_Object_Intermediate)
   public
     class procedure InitKey(buff: Pointer; Size: Integer; var KeyContext: TSerpentkey);
     class procedure Encrypt(var KeyContext: TSerpentkey; var Data: TSerpentBlock);
@@ -780,7 +835,7 @@ type
   PMarsBlock = ^TMarsBlock;
   TMarsBlock = array [0 .. 15] of Byte;
 
-  TMars = class(TCore_Object)
+  TMars = class(TCore_Object_Intermediate)
   public
     class procedure gen_mask(var x, m: DWORD);
     class procedure InitKey(buff: Pointer; Size: Integer; var KeyContext: TMarskey);
@@ -800,7 +855,7 @@ type
   PRijndaelBlock = ^TRijndaelBlock;
   TRijndaelBlock = array [0 .. 15] of Byte;
 
-  TRijndael = class(TCore_Object)
+  TRijndael = class(TCore_Object_Intermediate)
   private const
 {$REGION 'RijndaelDefine'}
     T1: array [0 .. 255, 0 .. 3] of Byte = (
@@ -1629,7 +1684,7 @@ type
   PTwofishBlock = ^TTwofishBlock;
   TTwofishBlock = array [0 .. 15] of Byte;
 
-  TTwofish = class(TCore_Object)
+  TTwofish = class(TCore_Object_Intermediate)
   private const
 {$REGION 'TwofishDefine'}
     P8x8: array [0 .. 1, 0 .. 255] of Byte =
@@ -1754,7 +1809,7 @@ type
 
 
 type
-  TCipher_Base = class(TCore_Object)
+  TCipher_Base = class(TCore_Object_Intermediate)
   protected
     FCipherSecurity: TCipherSecurity;
     FLastGenerateKey: TCipherKeyBuffer;
@@ -1772,6 +1827,8 @@ type
     procedure Encrypt(sour: Pointer; Size: NativeInt); virtual;
     procedure Decrypt(sour: Pointer; Size: NativeInt); virtual;
     procedure Process(sour: Pointer; Size: NativeInt; Level_: Integer; Encrypt_, ProcessTail_, CBC_: Boolean);
+    function Text_Encrypt(Data_: U_String): U_String;
+    function Text_Decrypt(Data_: U_String): U_String;
     procedure Test; virtual;
   end;
 
@@ -2477,7 +2534,7 @@ end;
 
 class function TCipher.Random_Select_Cipher(const arry: TCipherSecurityArray): TCipherSecurity;
 begin
-  Result := arry[umlRandomRange(Low(arry), High(arry))];
+  Result := arry[umlRR(Low(arry), High(arry))];
 end;
 
 class function TCipher.NameToHashSecurity(n: SystemString; var hash: THashSecurity): Boolean;
@@ -3043,7 +3100,7 @@ end;
 
 class procedure TCipher.GenerateKey(cs: TCipherSecurity; buffPtr: Pointer; Size: NativeInt; var output: TCipherKeyBuffer);
 begin
-  case cCipherKeyStyle[cs] of
+  case CCipherKeyStyle[cs] of
     cksNone: GenerateNoneKey(output);
     cksKey64: GenerateKey64(buffPtr, Size, output);
     cks3Key64: Generate3Key64(buffPtr, Size, output);
@@ -4163,7 +4220,7 @@ begin
       inc(StepTotal);
 
 {$IFDEF FPC}
-  FPCParallelFor(@Nested_ParallelFor, 0, StepTotal - 1);
+  FPCParallelFor(Nested_ParallelFor, 0, StepTotal - 1);
 {$ELSE FPC}
   DelphiParallelFor(0, StepTotal - 1, procedure(pass: Int64)
     var
@@ -4206,7 +4263,7 @@ begin
           Exit;
 
       TDES.InitEncryptDES(k, Context, Encrypt);
-      JobData.cipherFunc := {$IFDEF FPC}@{$ENDIF FPC}DES64_Parallel;
+      JobData.cipherFunc := DES64_Parallel;
       JobData.KeyBuffer := @Context;
       JobData.OriginBuffer := sour;
       JobData.L := 8;
@@ -4245,7 +4302,7 @@ begin
           Exit;
 
       TDES.InitEncryptTripleDES(k, Context, Encrypt);
-      JobData.cipherFunc := {$IFDEF FPC}@{$ENDIF FPC}DES128_Parallel;
+      JobData.cipherFunc := DES128_Parallel;
       JobData.KeyBuffer := @Context;
       JobData.OriginBuffer := sour;
       JobData.L := 8;
@@ -4284,7 +4341,7 @@ begin
           Exit;
 
       TDES.InitEncryptTripleDES3Key(k1, k2, k3, Context, Encrypt);
-      JobData.cipherFunc := {$IFDEF FPC}@{$ENDIF FPC}DES192_Parallel;
+      JobData.cipherFunc := DES192_Parallel;
       JobData.KeyBuffer := @Context;
       JobData.OriginBuffer := sour;
       JobData.L := 8;
@@ -4323,7 +4380,7 @@ begin
           Exit;
 
       TBlowfish.InitEncryptBF(k, Context);
-      JobData.cipherFunc := {$IFDEF FPC}@{$ENDIF FPC}Blowfish_Parallel;
+      JobData.cipherFunc := Blowfish_Parallel;
       JobData.KeyBuffer := @Context;
       JobData.OriginBuffer := sour;
       JobData.L := 8;
@@ -4362,7 +4419,7 @@ begin
           Exit;
 
       TLBC.InitEncryptLBC(k, Context, 16, Encrypt);
-      JobData.cipherFunc := {$IFDEF FPC}@{$ENDIF FPC}LBC_Parallel;
+      JobData.cipherFunc := LBC_Parallel;
       JobData.KeyBuffer := @Context;
       JobData.OriginBuffer := sour;
       JobData.L := 16;
@@ -4399,7 +4456,7 @@ begin
       if not TCipher.GetKey(KeyBuff, k) then
           Exit;
 
-      JobData.cipherFunc := {$IFDEF FPC}@{$ENDIF FPC}LQC_Parallel;
+      JobData.cipherFunc := LQC_Parallel;
       JobData.KeyBuffer := @k;
       JobData.OriginBuffer := sour;
       JobData.L := 8;
@@ -4436,7 +4493,7 @@ begin
       if not TCipher.GetKey(KeyBuff, k) then
           Exit;
 
-      JobData.cipherFunc := {$IFDEF FPC}@{$ENDIF FPC}XXTea512_Parallel;
+      JobData.cipherFunc := XXTea512_Parallel;
       JobData.KeyBuffer := @k;
       JobData.OriginBuffer := sour;
       JobData.L := 64;
@@ -4478,7 +4535,7 @@ begin
       THashMD.GenerateLMDKey((@k256[0])^, 32, k);
 
       TRC6.InitKey(@k256[0], 32, Context);
-      JobData.cipherFunc := {$IFDEF FPC}@{$ENDIF FPC}RC6_Parallel;
+      JobData.cipherFunc := RC6_Parallel;
       JobData.KeyBuffer := @Context;
       JobData.OriginBuffer := sour;
       JobData.L := 16;
@@ -4521,7 +4578,7 @@ begin
 
       TSerpent.InitKey(@k256[0], 32, Context);
 
-      JobData.cipherFunc := {$IFDEF FPC}@{$ENDIF FPC}Serpent_Parallel;
+      JobData.cipherFunc := Serpent_Parallel;
       JobData.KeyBuffer := @Context;
       JobData.OriginBuffer := sour;
       JobData.L := 16;
@@ -4564,7 +4621,7 @@ begin
 
       TMars.InitKey(@k256[0], 32, Context);
 
-      JobData.cipherFunc := {$IFDEF FPC}@{$ENDIF FPC}Mars_Parallel;
+      JobData.cipherFunc := Mars_Parallel;
       JobData.KeyBuffer := @Context;
       JobData.OriginBuffer := sour;
       JobData.L := 16;
@@ -4607,7 +4664,7 @@ begin
 
       TRijndael.InitKey(@k256[0], 32, Context);
 
-      JobData.cipherFunc := {$IFDEF FPC}@{$ENDIF FPC}Rijndael_Parallel;
+      JobData.cipherFunc := Rijndael_Parallel;
       JobData.KeyBuffer := @Context;
       JobData.OriginBuffer := sour;
       JobData.L := 16;
@@ -4649,7 +4706,7 @@ begin
       THashMD.GenerateLMDKey((@k256[0])^, 32, k);
 
       TTwofish.InitKey(@k256[0], 32, Context);
-      JobData.cipherFunc := {$IFDEF FPC}@{$ENDIF FPC}TwoFish_Parallel;
+      JobData.cipherFunc := TwoFish_Parallel;
       JobData.KeyBuffer := @Context;
       JobData.OriginBuffer := sour;
       JobData.L := 16;
@@ -4695,7 +4752,7 @@ begin
       else
           ExpandAESKeyForDecryption(k128, Context);
 
-      JobData.cipherFunc := {$IFDEF FPC}@{$ENDIF FPC}AES128_Parallel;
+      JobData.cipherFunc := AES128_Parallel;
       JobData.KeyBuffer := @Context;
       JobData.OriginBuffer := sour;
       JobData.L := 16;
@@ -4741,7 +4798,7 @@ begin
       else
           ExpandAESKeyForDecryption(k192, Context);
 
-      JobData.cipherFunc := {$IFDEF FPC}@{$ENDIF FPC}AES192_Parallel;
+      JobData.cipherFunc := AES192_Parallel;
       JobData.KeyBuffer := @Context;
       JobData.OriginBuffer := sour;
       JobData.L := 16;
@@ -4787,7 +4844,7 @@ begin
       else
           ExpandAESKeyForDecryption(k256, Context);
 
-      JobData.cipherFunc := {$IFDEF FPC}@{$ENDIF FPC}AES256_Parallel;
+      JobData.cipherFunc := AES256_Parallel;
       JobData.KeyBuffer := @Context;
       JobData.OriginBuffer := sour;
       JobData.L := 16;
@@ -4825,7 +4882,7 @@ begin
       Exit;
     end;
 
-  JobData.cipherFunc := {$IFDEF FPC}@{$ENDIF FPC}BlockCBC_Parallel;
+  JobData.cipherFunc := BlockCBC_Parallel;
   JobData.KeyBuffer := boxBuff;
   JobData.OriginBuffer := sour;
   JobData.L := boxSiz;
@@ -7585,7 +7642,8 @@ begin
   i := Context.index;
   a := Context.Accumulator;
 
-  for L := 0 to BufSize - 1 do begin
+  for L := 0 to BufSize - 1 do
+    begin
       i := i + 1;
 
       x := Context.SBox[Byte(i)];
@@ -10537,6 +10595,26 @@ begin
       Decrypt(sour, Size);
 end;
 
+function TCipher_Base.Text_Encrypt(Data_: U_String): U_String;
+var
+  buff: TBytes;
+begin
+  buff := Data_.Bytes;
+  Encrypt(buff, length(buff));
+  umlBase64EncodeBytes(buff, Result);
+  SetLength(buff, 0);
+end;
+
+function TCipher_Base.Text_Decrypt(Data_: U_String): U_String;
+var
+  buff: TBytes;
+begin
+  umlBase64DecodeBytes(Data_, buff);
+  Decrypt(buff, length(buff));
+  Result.Bytes := buff;
+  SetLength(buff, 0);
+end;
+
 procedure TCipher_Base.Test;
 var
   m64: TMS64;
@@ -11831,3 +11909,4 @@ finalization
 SetLength(SystemCBC, 0);
 
 end.
+ 

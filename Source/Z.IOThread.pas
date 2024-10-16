@@ -1,8 +1,38 @@
+(*
+https://zpascal.net
+https://github.com/PassByYou888/ZNet
+https://github.com/PassByYou888/zRasterization
+https://github.com/PassByYou888/ZSnappy
+https://github.com/PassByYou888/Z-AI1.4
+https://github.com/PassByYou888/InfiniteIoT
+https://github.com/PassByYou888/zMonitor_3rd_Core
+https://github.com/PassByYou888/tcmalloc4p
+https://github.com/PassByYou888/jemalloc4p
+https://github.com/PassByYou888/zCloud
+https://github.com/PassByYou888/ZServer4D
+https://github.com/PassByYou888/zShell
+https://github.com/PassByYou888/ZDB2.0
+https://github.com/PassByYou888/zGameWare
+https://github.com/PassByYou888/CoreCipher
+https://github.com/PassByYou888/zChinese
+https://github.com/PassByYou888/zSound
+https://github.com/PassByYou888/zExpression
+https://github.com/PassByYou888/ZInstaller2.0
+https://github.com/PassByYou888/zAI
+https://github.com/PassByYou888/NetFileService
+https://github.com/PassByYou888/zAnalysis
+https://github.com/PassByYou888/PascalString
+https://github.com/PassByYou888/zInstaller
+https://github.com/PassByYou888/zTranslate
+https://github.com/PassByYou888/zVision
+https://github.com/PassByYou888/FFMPEG-Header
+*)
 { ****************************************************************************** }
 { * IO-queue-Thread                                                            * }
 { ****************************************************************************** }
 unit Z.IOThread;
 
+{$DEFINE FPC_DELPHI_MODE}
 {$I Z.Define.inc}
 
 interface
@@ -25,7 +55,7 @@ type
   TIO_Thread_On_P = reference to procedure(Sender: TIO_Thread_Data);
 {$ENDIF FPC}
 
-  TIO_Thread_Data = class
+  TIO_Thread_Data = class(TCore_Object_Intermediate)
   private
     FState: TIO_Thread_Data_State;
     FOn_C: TIO_Thread_On_C;
@@ -41,9 +71,9 @@ type
     property On_P: TIO_Thread_On_P read FOn_P write FOn_P;
   end;
 
-  TIO_Thread_Queue = {$IFDEF FPC}specialize {$ENDIF FPC} TOrderStruct<TIO_Thread_Data>;
+  TIO_Thread_Queue = TOrderStruct<TIO_Thread_Data>;
 
-  TIO_Thread_Base = class
+  TIO_Thread_Base = class(TCore_Object_Intermediate)
   public
     function Count(): Integer; virtual; abstract;
     procedure Enqueue(IOData: TIO_Thread_Data); virtual; abstract;
@@ -104,7 +134,7 @@ type
 
   TThread_Event_Pool__ = class;
 
-  TThread_Pool_Decl = {$IFDEF FPC}specialize {$ENDIF FPC} TBigList<TThread_Event_Pool__>;
+  TThread_Pool_Decl = TBigList<TThread_Event_Pool__>;
 
   TThread_Pool = class(TThread_Pool_Decl)
   private
@@ -123,13 +153,12 @@ type
 
     function Next_Thread: TThread_Event_Pool__;
     function MinLoad_Thread: TThread_Event_Pool__;
-    function IDLE_Thread: TThread_Event_Pool__;
 
     procedure DoTest_C();
     class procedure Test();
   end;
 
-  TThread_Event_Pool__ = class
+  TThread_Event_Pool__ = class(TCore_Object_Intermediate)
   private
     FOwner: TThread_Pool;
     FBindTh: TCompute;
@@ -200,10 +229,10 @@ procedure TIO_Thread_Data.Process;
 begin
   try
     if Assigned(FOn_C) then
-        FOn_C(Self);
-    if Assigned(FOn_M) then
-        FOn_M(Self);
-    if Assigned(FOn_P) then
+        FOn_C(Self)
+    else if Assigned(FOn_M) then
+        FOn_M(Self)
+    else if Assigned(FOn_P) then
         FOn_P(Self);
   except
   end;
@@ -256,6 +285,8 @@ begin
           FCritical.UnLock;
           L := GetTimeTick() - LTK;
           if L > 100 then
+              TCompute.Sleep(10)
+          else
               TCompute.Sleep(1);
         end;
     end;
@@ -276,7 +307,7 @@ begin
   n := if_(ThNum_ < 2, 1, ThNum_);
 
   for i := 0 to n - 1 do
-      TCompute.RunM({$IFDEF FPC}@{$ENDIF FPC}ThRun);
+      TCompute.RunM(ThRun);
   while FThNum < n do
       TCompute.Sleep(1);
 end;
@@ -299,7 +330,7 @@ begin
   ThEnd();
   FThNum := 0;
   for i := 0 to n - 1 do
-      TCompute.RunM({$IFDEF FPC}@{$ENDIF FPC}ThRun);
+      TCompute.RunM(ThRun);
   while FThNum < n do
       TCompute.Sleep(1);
 end;
@@ -393,7 +424,7 @@ begin
   with TIO_Thread.Create(Get_Parallel_Granularity) do
     begin
       for i := 1 to 1000000 do
-          Enqueue_C(TIO_Thread_Data.Create, Pointer(i), {$IFDEF FPC}@{$ENDIF FPC}Test_IOData__C);
+          Enqueue_C(TIO_Thread_Data.Create, Pointer(i), Test_IOData__C);
 
       j := 1;
       while Count > 0 do
@@ -504,7 +535,7 @@ begin
   with TIO_Direct.Create do
     begin
       for i := 1 to 1000000 do
-          Enqueue_C(TIO_Thread_Data.Create, nil, {$IFDEF FPC}@{$ENDIF FPC}Test_IOData__C);
+          Enqueue_C(TIO_Thread_Data.Create, nil, Test_IOData__C);
       while Count > 0 do
         begin
           d := Dequeue;
@@ -534,6 +565,8 @@ destructor TThread_Pool.Destroy;
 var
   __Repeat__: TThread_Pool_Decl.TRepeat___;
 begin
+  Wait();
+
   if Num > 0 then
     begin
       FCritical.Lock;
@@ -560,7 +593,7 @@ end;
 
 function TThread_Pool.TaskNum: NativeInt;
 var
-  R_: Int64;
+  R_: NativeInt;
 begin
   R_ := 0;
   FCritical.Lock;
@@ -591,107 +624,49 @@ end;
 function TThread_Pool.Next_Thread: TThread_Event_Pool__;
 begin
   Result := nil;
-  if Num = 0 then
-      exit;
-  FCritical.Acquire;
-  try
-    Result := First^.Data;
-    MoveToLast(First);
-  finally
-      FCritical.Release;
-  end;
+  if Num > 0 then
+    begin
+      FCritical.Acquire;
+      try
+        Result := First^.Data;
+        MoveToLast(First);
+      finally
+          FCritical.Release;
+      end;
+    end;
 end;
 
 function TThread_Pool.MinLoad_Thread: TThread_Event_Pool__;
 var
   Eng_: PQueueStruct;
-{$IFDEF FPC}
-  procedure do_fpc_Progress(Index_: NativeInt; p: PQueueStruct; var Aborted: Boolean);
-  begin
-    if Eng_ = nil then
-        Eng_ := p
-    else if p^.Data.FPost.Count < Eng_^.Data.FPost.Count then
-        Eng_ := p;
-  end;
-{$ENDIF FPC}
-
-
 begin
   Result := nil;
-  if Num = 0 then
-      exit;
-  FCritical.Acquire;
-  Eng_ := nil;
-  try
-{$IFDEF FPC}
-    For_P(@do_fpc_Progress);
-{$ELSE FPC}
-    For_P(procedure(Index_: NativeInt; p: PQueueStruct; var Aborted: Boolean)
-      begin
-        if Eng_ = nil then
-            Eng_ := p
-        else if p^.Data.FPost.Count < Eng_^.Data.FPost.Count then
-            Eng_ := p;
-      end);
-{$ENDIF FPC}
-    if Eng_ <> nil then
-      begin
-        Result := Eng_^.Data;
-        if FQueueOptimized then
-            MoveToLast(Eng_);
-      end;
-  finally
-      FCritical.Release;
-  end;
-end;
-
-function TThread_Pool.IDLE_Thread: TThread_Event_Pool__;
-var
-  Eng_: PQueueStruct;
-{$IFDEF FPC}
-  procedure do_fpc_Progress(Index_: NativeInt; p: PQueueStruct; var Aborted: Boolean);
-  begin
-    if not p^.Data.FPost.Busy then
-      begin
-        Eng_ := p;
-        Aborted := True;
-      end;
-  end;
-{$ENDIF FPC}
-
-
-begin
-  Result := nil;
-  if Num = 0 then
-      exit;
-  FCritical.Acquire;
-  Eng_ := nil;
-  try
-{$IFDEF FPC}
-    For_P(@do_fpc_Progress);
-{$ELSE FPC}
-    For_P(procedure(Index_: NativeInt; p: PQueueStruct; var Aborted: Boolean)
-      begin
-        if not p^.Data.FPost.Busy then
+  if Num > 0 then
+    begin
+      FCritical.Acquire;
+      try
+        Eng_ := nil;
+        with Repeat_ do
+          repeat
+            if Eng_ = nil then
+                Eng_ := Queue
+            else if Queue^.Data.FPost.Num < Eng_^.Data.FPost.Num then
+                Eng_ := Queue;
+          until not Next;
+        if Eng_ <> nil then
           begin
-            Eng_ := p;
-            Aborted := True;
+            Result := Eng_^.Data;
+            MoveToLast(First);
           end;
-      end);
-{$ENDIF FPC}
-    if Eng_ <> nil then
-      begin
-        Result := Eng_^.Data;
-        if FQueueOptimized then
-            MoveToLast(Eng_);
+      finally
+          FCritical.Release;
       end;
-  finally
-      FCritical.Release;
-  end;
+    end;
 end;
 
 procedure TThread_Pool.DoTest_C;
 begin
+  TCompute.Sleep(16);
 end;
 
 class procedure TThread_Pool.Test;
@@ -701,10 +676,10 @@ var
 begin
   pool := TThread_Pool.Create(2);
   for i := 0 to 9 do
-      pool.Next_Thread.PostM1({$IFDEF FPC}@{$ENDIF FPC}pool.DoTest_C);
+      pool.Next_Thread.PostM1(pool.DoTest_C);
   pool.Wait;
   for i := 0 to 9 do
-      pool.MinLoad_Thread.PostM1({$IFDEF FPC}@{$ENDIF FPC}pool.DoTest_C);
+      pool.MinLoad_Thread.PostM1(pool.DoTest_C);
   pool.Wait;
   DisposeObject(pool);
 end;
@@ -735,6 +710,8 @@ begin
         begin
           IDLE_TK := GetTimeTick() - Last_TK;
           if IDLE_TK > 1000 then
+              TCompute.Sleep(100)
+          else
               TCompute.Sleep(1);
         end;
     end;
@@ -756,7 +733,7 @@ begin
   FBindTh := nil;
   FPost := nil;
   FActivted := nil;
-  TCompute.RunM(nil, Self, {$IFDEF FPC}@{$ENDIF FPC}ThRun);
+  TCompute.RunM(nil, Self, ThRun);
 end;
 
 destructor TThread_Event_Pool__.Destroy;
@@ -885,3 +862,4 @@ begin
 end;
 
 end.
+ 

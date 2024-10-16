@@ -1,3 +1,32 @@
+(*
+https://zpascal.net
+https://github.com/PassByYou888/ZNet
+https://github.com/PassByYou888/zRasterization
+https://github.com/PassByYou888/ZSnappy
+https://github.com/PassByYou888/Z-AI1.4
+https://github.com/PassByYou888/InfiniteIoT
+https://github.com/PassByYou888/zMonitor_3rd_Core
+https://github.com/PassByYou888/tcmalloc4p
+https://github.com/PassByYou888/jemalloc4p
+https://github.com/PassByYou888/zCloud
+https://github.com/PassByYou888/ZServer4D
+https://github.com/PassByYou888/zShell
+https://github.com/PassByYou888/ZDB2.0
+https://github.com/PassByYou888/zGameWare
+https://github.com/PassByYou888/CoreCipher
+https://github.com/PassByYou888/zChinese
+https://github.com/PassByYou888/zSound
+https://github.com/PassByYou888/zExpression
+https://github.com/PassByYou888/ZInstaller2.0
+https://github.com/PassByYou888/zAI
+https://github.com/PassByYou888/NetFileService
+https://github.com/PassByYou888/zAnalysis
+https://github.com/PassByYou888/PascalString
+https://github.com/PassByYou888/zInstaller
+https://github.com/PassByYou888/zTranslate
+https://github.com/PassByYou888/zVision
+https://github.com/PassByYou888/FFMPEG-Header
+*)
 { ****************************************************************************** }
 { * IndyInterface                                                              * }
 { ****************************************************************************** }
@@ -10,6 +39,7 @@ unit Z.Net.Server.Indy;
   update history
 *)
 
+{$DEFINE FPC_DELPHI_MODE}
 {$I ..\Z.Define.inc}
 
 interface
@@ -98,7 +128,7 @@ end;
 procedure TIDServer_PeerIO.CreateAfter;
 begin
   inherited CreateAfter;
-  RealSendBuff := TMS64.Create;
+  RealSendBuff := TMS64.CustomCreate(1024 * 1024);
 end;
 
 destructor TIDServer_PeerIO.Destroy;
@@ -118,7 +148,7 @@ var
 begin
   new(buff);
   SetLength(buff^, 0);
-  TCore_Thread.Synchronize(TCore_Thread.CurrentThread, procedure
+  TCompute.Sync(procedure
     begin
       if RealSendBuff.Size > 0 then
         begin
@@ -228,7 +258,7 @@ begin
   FDriver.OnException := Indy_Exception;
   FDriver.OnExecute := Indy_Execute;
 
-  name:='INDY-Server';
+  name := 'INDY-Server';
 end;
 
 destructor TZNet_Server_Indy.Destroy;
@@ -244,7 +274,7 @@ begin
   try
     while Count > 0 do
       begin
-        CheckThreadSynchronize(1);
+        Check_Soft_Thread_Synchronize(1, False);
       end;
   except
   end;
@@ -268,12 +298,11 @@ procedure TZNet_Server_Indy.StopService;
 begin
   if FDriver.Active then
     begin
+      Check_Soft_Thread_Synchronize(100, False);
       try
           FDriver.Active := False;
       except
       end;
-
-      CheckThreadSynchronize;
     end;
 end;
 
@@ -306,8 +335,7 @@ end;
 
 procedure TZNet_Server_Indy.Indy_Connect(AContext: TIdContext);
 begin
-  TCore_Thread.Synchronize(TIdYarnOfThread(AContext.Yarn).Thread,
-    procedure
+  TCompute.Sync(procedure
     var
       c: TCommunicationFramework_Server_Context;
     begin
@@ -326,8 +354,7 @@ end;
 
 procedure TZNet_Server_Indy.Indy_Disconnect(AContext: TIdContext);
 begin
-  TCore_Thread.Synchronize(TIdYarnOfThread(AContext.Yarn).Thread,
-    procedure
+  TCompute.Sync(procedure
     var
       c: TCommunicationFramework_Server_Context;
     begin
@@ -342,8 +369,7 @@ end;
 
 procedure TZNet_Server_Indy.Indy_Exception(AContext: TIdContext; AException: Exception);
 begin
-  TCore_Thread.Synchronize(TIdYarnOfThread(AContext.Yarn).Thread,
-    procedure
+  TCompute.Sync(procedure
     var
       c: TCommunicationFramework_Server_Context;
     begin
@@ -370,8 +396,7 @@ begin
   c.ClientIntf.ProcesRealSendBuff;
 
   try
-    TCore_Thread.Synchronize(TIdYarnOfThread(AContext.Yarn).Thread,
-      procedure
+    TCompute.Sync(procedure
       begin
         c.ClientIntf.Process_Send_Buffer;
       end);
@@ -379,7 +404,10 @@ begin
     t := GetTimeTick + 5000;
     while (c.ClientIntf <> nil) and (c.Connection.Connected) and (c.ClientIntf.WaitOnResult) do
       begin
-        c.ClientIntf.ProcesRealSendBuff;
+        TCompute.Sync(procedure
+          begin
+            c.ClientIntf.Process_Send_Buffer;
+          end);
 
         c.Connection.IOHandler.CheckForDataOnSource(10);
         if c.Connection.IOHandler.InputBuffer.Size > 0 then
@@ -388,9 +416,7 @@ begin
             c.LastTimeTick := GetTimeTick;
             c.Connection.IOHandler.InputBuffer.ExtractToBytes(iBuf);
             c.Connection.IOHandler.InputBuffer.Clear;
-
-            TCore_Thread.Synchronize(TIdYarnOfThread(AContext.Yarn).Thread,
-              procedure
+            TCompute.Sync(procedure
               begin
                 c.ClientIntf.Write_Physics_Fragment(@iBuf[0], length(iBuf));
               end);
@@ -425,8 +451,7 @@ begin
         c.Connection.IOHandler.InputBuffer.ExtractToBytes(iBuf);
         c.Connection.IOHandler.InputBuffer.Clear;
         try
-          TCore_Thread.Synchronize(TIdYarnOfThread(AContext.Yarn).Thread,
-            procedure
+          TCompute.Sync(procedure
             begin
               c.ClientIntf.Write_Physics_Fragment(@iBuf[0], length(iBuf));
             end);
@@ -466,3 +491,4 @@ begin
 end;
 
 end.
+ 

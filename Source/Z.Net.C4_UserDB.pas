@@ -1,8 +1,38 @@
+(*
+https://zpascal.net
+https://github.com/PassByYou888/ZNet
+https://github.com/PassByYou888/zRasterization
+https://github.com/PassByYou888/ZSnappy
+https://github.com/PassByYou888/Z-AI1.4
+https://github.com/PassByYou888/InfiniteIoT
+https://github.com/PassByYou888/zMonitor_3rd_Core
+https://github.com/PassByYou888/tcmalloc4p
+https://github.com/PassByYou888/jemalloc4p
+https://github.com/PassByYou888/zCloud
+https://github.com/PassByYou888/ZServer4D
+https://github.com/PassByYou888/zShell
+https://github.com/PassByYou888/ZDB2.0
+https://github.com/PassByYou888/zGameWare
+https://github.com/PassByYou888/CoreCipher
+https://github.com/PassByYou888/zChinese
+https://github.com/PassByYou888/zSound
+https://github.com/PassByYou888/zExpression
+https://github.com/PassByYou888/ZInstaller2.0
+https://github.com/PassByYou888/zAI
+https://github.com/PassByYou888/NetFileService
+https://github.com/PassByYou888/zAnalysis
+https://github.com/PassByYou888/PascalString
+https://github.com/PassByYou888/zInstaller
+https://github.com/PassByYou888/zTranslate
+https://github.com/PassByYou888/zVision
+https://github.com/PassByYou888/FFMPEG-Header
+*)
 { ****************************************************************************** }
 { * cloud 4.0 User Database                                                    * }
 { ****************************************************************************** }
 unit Z.Net.C4_UserDB;
 
+{$DEFINE FPC_DELPHI_MODE}
 {$I Z.Define.inc}
 
 interface
@@ -15,20 +45,21 @@ uses
   Z.Geometry2D, Z.DFE, Z.Expression, Z.OpCode, Z.ListEngine,
   Z.Json, Z.HashList.Templet, Z.ZDB2, Z.ZDB2.Json, Z.Cipher,
   Z.Notify, Z.MemoryStream,
+  Z.FragmentBuffer, // solve for discontinuous space
   Z.Net, Z.Net.PhysicsIO, Z.Net.DoubleTunnelIO.NoAuth, Z.Net.C4;
 
 type
   TC40_UserDB_Service = class;
 
-  TC40_UserDB_Json_Hash_Pool = {$IFDEF FPC}specialize {$ENDIF FPC}TGeneric_String_Object_Hash<TZDB2_Json>;
+  TC40_UserDB_Json_Hash_Pool = TGeneric_String_Object_Hash<TZDB2_Json>;
 
-  TC40_UserDB_Service_SendTunnel_NoAuth = class(TPeerClientUserDefineForSendTunnel_NoAuth)
+  TC40_UserDB_Service_SendTunnel_NoAuth = class(TService_SendTunnel_UserDefine_NoAuth)
   public
     constructor Create(Owner_: TPeerIO); override;
     destructor Destroy; override;
   end;
 
-  TC40_UserDB_Service_RecvTunnel_NoAuth = class(TPeerClientUserDefineForRecvTunnel_NoAuth)
+  TC40_UserDB_Service_RecvTunnel_NoAuth = class(TService_RecvTunnel_UserDefine_NoAuth)
   public
     OpenUserIdentifier: TC40_UserDB_Json_Hash_Pool;
     constructor Create(Owner_: TPeerIO); override;
@@ -40,7 +71,7 @@ type
     procedure SendUser_Kick(UserName_: U_String);
   end;
 
-  TC40_UserDB_Service_RecvTunnel_NoAuth_List = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<TC40_UserDB_Service_RecvTunnel_NoAuth>;
+  TC40_UserDB_Service_RecvTunnel_NoAuth_List = TGenericsList<TC40_UserDB_Service_RecvTunnel_NoAuth>;
 
   TC40_UserDB_Service = class(TC40_Base_NoAuth_Service)
   protected
@@ -114,7 +145,7 @@ type
   TC40_UserDB_On_IsOpenP = reference to procedure(Sender: TC40_UserDB_Client; State_: TArrayBool);
 {$ENDIF FPC}
 
-  TC40_UserDB_On_IsOpen = class(TOnResultBridge)
+  TC40_UserDB_On_IsOpen = class(TOnResult_Bridge)
   public
     Client: TC40_UserDB_Client;
     OnResultC: TC40_UserDB_On_IsOpenC;
@@ -133,7 +164,7 @@ type
   TC40_UserDB_On_GetFriendsP = reference to procedure(Sender: TC40_UserDB_Client; FriendArry: U_StringArray);
 {$ENDIF FPC}
 
-  TC40_UserDB_On_GetFriends = class(TOnResultBridge)
+  TC40_UserDB_On_GetFriends = class(TOnResult_Bridge)
   public
     Client: TC40_UserDB_Client;
     OnResultC: TC40_UserDB_On_GetFriendsC;
@@ -152,7 +183,7 @@ type
   TC40_UserDB_On_OnlineNumP = reference to procedure(Sender: TC40_UserDB_Client; Online_Num, User_Num: Integer);
 {$ENDIF FPC}
 
-  TC40_UserDB_On_OnlineNum = class(TOnResultBridge)
+  TC40_UserDB_On_OnlineNum = class(TOnResult_Bridge)
   public
     Client: TC40_UserDB_Client;
     OnResultC: TC40_UserDB_On_OnlineNumC;
@@ -171,7 +202,7 @@ type
   TC40_UserDB_On_OnlineListP = reference to procedure(Sender: TC40_UserDB_Client; arry: U_StringArray);
 {$ENDIF FPC}
 
-  TC40_UserDB_On_OnlineList = class(TOnResultBridge)
+  TC40_UserDB_On_OnlineList = class(TOnResult_Bridge)
   public
     Client: TC40_UserDB_Client;
     OnResultC: TC40_UserDB_On_OnlineListC;
@@ -190,7 +221,7 @@ type
   TC40_UserDB_On_RegP = reference to procedure(Sender: TC40_UserDB_Client; State_: Boolean; info_: SystemString);
 {$ENDIF FPC}
 
-  TC40_UserDB_On_Reg = class(TOnResultBridge)
+  TC40_UserDB_On_Reg = class(TOnResult_Bridge)
   public
     Client: TC40_UserDB_Client;
     OnResultC: TC40_UserDB_On_RegC;
@@ -209,7 +240,7 @@ type
   TC40_UserDB_On_ExistsP = reference to procedure(Sender: TC40_UserDB_Client; State_: Boolean);
 {$ENDIF FPC}
 
-  TC40_UserDB_On_Exists = class(TOnResultBridge)
+  TC40_UserDB_On_Exists = class(TOnResult_Bridge)
   public
     Client: TC40_UserDB_Client;
     OnResultC: TC40_UserDB_On_ExistsC;
@@ -228,7 +259,7 @@ type
   TC40_UserDB_On_AuthP = reference to procedure(Sender: TC40_UserDB_Client; State_: Boolean; info_: SystemString);
 {$ENDIF FPC}
 
-  TC40_UserDB_On_Auth = class(TOnResultBridge)
+  TC40_UserDB_On_Auth = class(TOnResult_Bridge)
   public
     Client: TC40_UserDB_Client;
     OnResultC: TC40_UserDB_On_AuthC;
@@ -247,7 +278,7 @@ type
   TC40_UserDB_On_ChangePasswordP = reference to procedure(Sender: TC40_UserDB_Client; State_: Boolean; info_: SystemString);
 {$ENDIF FPC}
 
-  TC40_UserDB_On_ChangePassword = class(TOnResultBridge)
+  TC40_UserDB_On_ChangePassword = class(TOnResult_Bridge)
   public
     Client: TC40_UserDB_Client;
     OnResultC: TC40_UserDB_On_ChangePasswordC;
@@ -266,7 +297,7 @@ type
   TC40_UserDB_On_NewIdentifierP = reference to procedure(Sender: TC40_UserDB_Client; State_: Boolean; info_: SystemString);
 {$ENDIF FPC}
 
-  TC40_UserDB_On_NewIdentifier = class(TOnResultBridge)
+  TC40_UserDB_On_NewIdentifier = class(TOnResult_Bridge)
   public
     Client: TC40_UserDB_Client;
     OnResultC: TC40_UserDB_On_NewIdentifierC;
@@ -285,7 +316,7 @@ type
   TC40_UserDB_On_GetP = reference to procedure(Sender: TC40_UserDB_Client; State_: Boolean; info_: SystemString; Json_: TZJ);
 {$ENDIF FPC}
 
-  TC40_UserDB_On_Get = class(TOnResultBridge)
+  TC40_UserDB_On_Get = class(TOnResult_Bridge)
   public
     Client: TC40_UserDB_Client;
     OnResultC: TC40_UserDB_On_GetC;
@@ -304,7 +335,7 @@ type
   TC40_UserDB_On_GetPrimaryIdentifierP = reference to procedure(Sender: TC40_UserDB_Client; State_: Boolean; info_, PrimaryIdentifier_: SystemString);
 {$ENDIF FPC}
 
-  TC40_UserDB_On_GetPrimaryIdentifier = class(TOnResultBridge)
+  TC40_UserDB_On_GetPrimaryIdentifier = class(TOnResult_Bridge)
   public
     Client: TC40_UserDB_Client;
     OnResultC: TC40_UserDB_On_GetPrimaryIdentifierC;
@@ -419,7 +450,7 @@ type
     procedure Usr_Remove(L_: TPascalStringList); overload;
   end;
 
-  TC40_UserDB_Client_List = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<TC40_UserDB_Client>;
+  TC40_UserDB_Client_List = TGenericsList<TC40_UserDB_Client>;
 
 implementation
 
@@ -931,7 +962,7 @@ begin
           if OutData.Count < Max_Num then
             begin
 {$IFDEF FPC}
-              Recv_IO_Def.OpenUserIdentifier.ProgressP(@do_fpc_progress);
+              Recv_IO_Def.OpenUserIdentifier.ProgressP(do_fpc_progress);
 {$ELSE FPC}
               Recv_IO_Def.OpenUserIdentifier.ProgressP(procedure(const Name_: PSystemString; Obj_: TZDB2_Json)
                 begin
@@ -1398,7 +1429,7 @@ end;
 
 constructor TC40_UserDB_Service.Create(PhysicsService_: TC40_PhysicsService; ServiceTyp, Param_: U_String);
 var
-  FS: TCore_FileStream;
+  FS: TCore_Stream;
   i, j: Integer;
   Json: TZDB2_Json;
   identifier_arry: TZJArry;
@@ -1406,31 +1437,31 @@ begin
   inherited Create(PhysicsService_, ServiceTyp, Param_);
   DTNoAuthService.RecvTunnel.UserDefineClass := TC40_UserDB_Service_RecvTunnel_NoAuth;
   DTNoAuthService.SendTunnel.UserDefineClass := TC40_UserDB_Service_SendTunnel_NoAuth;
-  DTNoAuthService.RecvTunnel.RegisterDirectStream('Usr_Open').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_Usr_Open;
-  DTNoAuthService.RecvTunnel.RegisterDirectStream('Usr_Close').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_Usr_Close;
-  DTNoAuthService.RecvTunnel.RegisterStream('Usr_IsOpen').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_Usr_IsOpen;
-  DTNoAuthService.RecvTunnel.RegisterDirectStream('Usr_Msg').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_Usr_Msg;
-  DTNoAuthService.RecvTunnel.RegisterStream('Usr_GetFriends').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_Usr_GetFriends;
-  DTNoAuthService.RecvTunnel.RegisterDirectStream('Usr_RemoveFriend').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_Usr_RemoveFriend;
-  DTNoAuthService.RecvTunnel.RegisterDirectStream('Usr_RequestAddFriend').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_Usr_RequestAddFriend;
-  DTNoAuthService.RecvTunnel.RegisterDirectStream('Usr_ReponseAddFriend').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_Usr_ReponseAddFriend;
-  DTNoAuthService.RecvTunnel.RegisterStream('Usr_OnlineNum').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_Usr_OnlineNum;
-  DTNoAuthService.RecvTunnel.RegisterStream('Usr_OnlineList').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_Usr_OnlineList;
-  DTNoAuthService.RecvTunnel.RegisterDirectStream('Usr_Kick').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_Usr_Kick;
-  DTNoAuthService.RecvTunnel.RegisterDirectStream('Usr_Enabled').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_Usr_Enabled;
-  DTNoAuthService.RecvTunnel.RegisterDirectStream('Usr_Disable').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_Usr_Disable;
-  DTNoAuthService.RecvTunnel.RegisterStream('Usr_Reg').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_Usr_Reg;
-  DTNoAuthService.RecvTunnel.RegisterStream('Usr_Exists').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_Usr_Exists;
-  DTNoAuthService.RecvTunnel.RegisterStream('Usr_Auth').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_Usr_Auth;
-  DTNoAuthService.RecvTunnel.RegisterStream('Usr_ChangePassword').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_Usr_ChangePassword;
-  DTNoAuthService.RecvTunnel.RegisterDirectStream('Usr_ResetPassword').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_Usr_ResetPassword;
-  DTNoAuthService.RecvTunnel.RegisterStream('Usr_NewIdentifier').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_Usr_NewIdentifier;
-  DTNoAuthService.RecvTunnel.RegisterStream('Usr_GetPrimaryIdentifier').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_Usr_GetPrimaryIdentifier;
-  DTNoAuthService.RecvTunnel.RegisterStream('Usr_Get').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_Usr_Get;
-  DTNoAuthService.RecvTunnel.RegisterDirectStream('Usr_Set').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_Usr_Set;
-  DTNoAuthService.RecvTunnel.RegisterStream('Usr_Search').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_Usr_Search;
-  DTNoAuthService.RecvTunnel.RegisterDirectStream('Usr_Upload').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_Usr_Upload;
-  DTNoAuthService.RecvTunnel.RegisterDirectStream('Usr_Remove').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_Usr_Remove;
+  DTNoAuthService.RecvTunnel.RegisterDirectStream('Usr_Open').OnExecute := cmd_Usr_Open;
+  DTNoAuthService.RecvTunnel.RegisterDirectStream('Usr_Close').OnExecute := cmd_Usr_Close;
+  DTNoAuthService.RecvTunnel.RegisterStream('Usr_IsOpen').OnExecute := cmd_Usr_IsOpen;
+  DTNoAuthService.RecvTunnel.RegisterDirectStream('Usr_Msg').OnExecute := cmd_Usr_Msg;
+  DTNoAuthService.RecvTunnel.RegisterStream('Usr_GetFriends').OnExecute := cmd_Usr_GetFriends;
+  DTNoAuthService.RecvTunnel.RegisterDirectStream('Usr_RemoveFriend').OnExecute := cmd_Usr_RemoveFriend;
+  DTNoAuthService.RecvTunnel.RegisterDirectStream('Usr_RequestAddFriend').OnExecute := cmd_Usr_RequestAddFriend;
+  DTNoAuthService.RecvTunnel.RegisterDirectStream('Usr_ReponseAddFriend').OnExecute := cmd_Usr_ReponseAddFriend;
+  DTNoAuthService.RecvTunnel.RegisterStream('Usr_OnlineNum').OnExecute := cmd_Usr_OnlineNum;
+  DTNoAuthService.RecvTunnel.RegisterStream('Usr_OnlineList').OnExecute := cmd_Usr_OnlineList;
+  DTNoAuthService.RecvTunnel.RegisterDirectStream('Usr_Kick').OnExecute := cmd_Usr_Kick;
+  DTNoAuthService.RecvTunnel.RegisterDirectStream('Usr_Enabled').OnExecute := cmd_Usr_Enabled;
+  DTNoAuthService.RecvTunnel.RegisterDirectStream('Usr_Disable').OnExecute := cmd_Usr_Disable;
+  DTNoAuthService.RecvTunnel.RegisterStream('Usr_Reg').OnExecute := cmd_Usr_Reg;
+  DTNoAuthService.RecvTunnel.RegisterStream('Usr_Exists').OnExecute := cmd_Usr_Exists;
+  DTNoAuthService.RecvTunnel.RegisterStream('Usr_Auth').OnExecute := cmd_Usr_Auth;
+  DTNoAuthService.RecvTunnel.RegisterStream('Usr_ChangePassword').OnExecute := cmd_Usr_ChangePassword;
+  DTNoAuthService.RecvTunnel.RegisterDirectStream('Usr_ResetPassword').OnExecute := cmd_Usr_ResetPassword;
+  DTNoAuthService.RecvTunnel.RegisterStream('Usr_NewIdentifier').OnExecute := cmd_Usr_NewIdentifier;
+  DTNoAuthService.RecvTunnel.RegisterStream('Usr_GetPrimaryIdentifier').OnExecute := cmd_Usr_GetPrimaryIdentifier;
+  DTNoAuthService.RecvTunnel.RegisterStream('Usr_Get').OnExecute := cmd_Usr_Get;
+  DTNoAuthService.RecvTunnel.RegisterDirectStream('Usr_Set').OnExecute := cmd_Usr_Set;
+  DTNoAuthService.RecvTunnel.RegisterStream('Usr_Search').OnExecute := cmd_Usr_Search;
+  DTNoAuthService.RecvTunnel.RegisterDirectStream('Usr_Upload').OnExecute := cmd_Usr_Upload;
+  DTNoAuthService.RecvTunnel.RegisterDirectStream('Usr_Remove').OnExecute := cmd_Usr_Remove;
   // is only instance
   ServiceInfo.OnlyInstance := True;
   UpdateToGlobalDispatch;
@@ -1446,9 +1477,21 @@ begin
   UserIdentifierHash.IgnoreCase := True;
 
   if EStrToBool(ParamList.GetDefaultValue('ForeverSave', 'True'), True) and umlFileExists(C40_UserDB_FileName) then
-      FS := TCore_FileStream.Create(C40_UserDB_FileName, fmOpenReadWrite)
+    begin
+{$IFDEF C4_Safe_Flush}
+      FS := TSafe_Flush_Stream.Create(C40_UserDB_FileName, False, True);
+{$ELSE C4_Safe_Flush}
+      FS := TCore_FileStream.Create(C40_UserDB_FileName, fmOpenReadWrite);
+{$ENDIF C4_Safe_Flush}
+    end
   else
+    begin
+{$IFDEF C4_Safe_Flush}
+      FS := TSafe_Flush_Stream.Create(C40_UserDB_FileName, True, True);
+{$ELSE C4_Safe_Flush}
       FS := TCore_FileStream.Create(C40_UserDB_FileName, fmCreate);
+{$ENDIF C4_Safe_Flush}
+    end;
 
   ZDB2RecycleMemoryTimeOut := EStrToInt64(ParamList.GetDefaultValue('RecycleMemory', '60*1000'), 60 * 1000);
   ZDB2DeltaSpace := EStrToInt64(ParamList.GetDefaultValue('DeltaSpace', '16*1024*1024'), 16 * 1024 * 1024);
@@ -1490,7 +1533,7 @@ begin
   if not C40_QuietMode then
       DoStatus('extract user Database done.');
 
-  Register_ConsoleCommand('Compress_And_Reload', 'Compress and reload.').OnEvent_M := {$IFDEF FPC}@{$ENDIF FPC}CC_Compress_And_Reload;
+  Register_ConsoleCommand('Compress_And_Reload', 'Compress and reload.').OnEvent_M := CC_Compress_And_Reload;
 end;
 
 destructor TC40_UserDB_Service.Destroy;
@@ -1575,10 +1618,10 @@ begin
 
   try
     if Assigned(OnResultC) then
-        OnResultC(Client, State_);
-    if Assigned(OnResultM) then
-        OnResultM(Client, State_);
-    if Assigned(OnResultP) then
+        OnResultC(Client, State_)
+    else if Assigned(OnResultM) then
+        OnResultM(Client, State_)
+    else if Assigned(OnResultP) then
         OnResultP(Client, State_);
   except
   end;
@@ -1596,10 +1639,10 @@ begin
 
   try
     if Assigned(OnResultC) then
-        OnResultC(Client, State_);
-    if Assigned(OnResultM) then
-        OnResultM(Client, State_);
-    if Assigned(OnResultP) then
+        OnResultC(Client, State_)
+    else if Assigned(OnResultM) then
+        OnResultM(Client, State_)
+    else if Assigned(OnResultP) then
         OnResultP(Client, State_);
   except
   end;
@@ -1626,10 +1669,10 @@ begin
 
   try
     if Assigned(OnResultC) then
-        OnResultC(Client, FriendArry);
-    if Assigned(OnResultM) then
-        OnResultM(Client, FriendArry);
-    if Assigned(OnResultP) then
+        OnResultC(Client, FriendArry)
+    else if Assigned(OnResultM) then
+        OnResultM(Client, FriendArry)
+    else if Assigned(OnResultP) then
         OnResultP(Client, FriendArry);
   except
   end;
@@ -1645,10 +1688,10 @@ begin
 
   try
     if Assigned(OnResultC) then
-        OnResultC(Client, FriendArry);
-    if Assigned(OnResultM) then
-        OnResultM(Client, FriendArry);
-    if Assigned(OnResultP) then
+        OnResultC(Client, FriendArry)
+    else if Assigned(OnResultM) then
+        OnResultM(Client, FriendArry)
+    else if Assigned(OnResultP) then
         OnResultP(Client, FriendArry);
   except
   end;
@@ -1674,10 +1717,10 @@ begin
 
   try
     if Assigned(OnResultC) then
-        OnResultC(Client, Online_Num, User_Num);
-    if Assigned(OnResultM) then
-        OnResultM(Client, Online_Num, User_Num);
-    if Assigned(OnResultP) then
+        OnResultC(Client, Online_Num, User_Num)
+    else if Assigned(OnResultM) then
+        OnResultM(Client, Online_Num, User_Num)
+    else if Assigned(OnResultP) then
         OnResultP(Client, Online_Num, User_Num);
   except
   end;
@@ -1694,10 +1737,10 @@ begin
 
   try
     if Assigned(OnResultC) then
-        OnResultC(Client, Online_Num, User_Num);
-    if Assigned(OnResultM) then
-        OnResultM(Client, Online_Num, User_Num);
-    if Assigned(OnResultP) then
+        OnResultC(Client, Online_Num, User_Num)
+    else if Assigned(OnResultM) then
+        OnResultM(Client, Online_Num, User_Num)
+    else if Assigned(OnResultP) then
         OnResultP(Client, Online_Num, User_Num);
   except
   end;
@@ -1724,10 +1767,10 @@ begin
 
   try
     if Assigned(OnResultC) then
-        OnResultC(Client, arry);
-    if Assigned(OnResultM) then
-        OnResultM(Client, arry);
-    if Assigned(OnResultP) then
+        OnResultC(Client, arry)
+    else if Assigned(OnResultM) then
+        OnResultM(Client, arry)
+    else if Assigned(OnResultP) then
         OnResultP(Client, arry);
   except
   end;
@@ -1743,10 +1786,10 @@ begin
 
   try
     if Assigned(OnResultC) then
-        OnResultC(Client, arry);
-    if Assigned(OnResultM) then
-        OnResultM(Client, arry);
-    if Assigned(OnResultP) then
+        OnResultC(Client, arry)
+    else if Assigned(OnResultM) then
+        OnResultM(Client, arry)
+    else if Assigned(OnResultP) then
         OnResultP(Client, arry);
   except
   end;
@@ -1777,10 +1820,10 @@ begin
 
   try
     if Assigned(OnResultC) then
-        OnResultC(Client, State_, info_);
-    if Assigned(OnResultM) then
-        OnResultM(Client, State_, info_);
-    if Assigned(OnResultP) then
+        OnResultC(Client, State_, info_)
+    else if Assigned(OnResultM) then
+        OnResultM(Client, State_, info_)
+    else if Assigned(OnResultP) then
         OnResultP(Client, State_, info_);
   except
   end;
@@ -1797,10 +1840,10 @@ begin
 
   try
     if Assigned(OnResultC) then
-        OnResultC(Client, State_, info_);
-    if Assigned(OnResultM) then
-        OnResultM(Client, State_, info_);
-    if Assigned(OnResultP) then
+        OnResultC(Client, State_, info_)
+    else if Assigned(OnResultM) then
+        OnResultM(Client, State_, info_)
+    else if Assigned(OnResultP) then
         OnResultP(Client, State_, info_);
   except
   end;
@@ -1828,10 +1871,10 @@ begin
 
   try
     if Assigned(OnResultC) then
-        OnResultC(Client, State_);
-    if Assigned(OnResultM) then
-        OnResultM(Client, State_);
-    if Assigned(OnResultP) then
+        OnResultC(Client, State_)
+    else if Assigned(OnResultM) then
+        OnResultM(Client, State_)
+    else if Assigned(OnResultP) then
         OnResultP(Client, State_);
   except
   end;
@@ -1846,10 +1889,10 @@ begin
 
   try
     if Assigned(OnResultC) then
-        OnResultC(Client, State_);
-    if Assigned(OnResultM) then
-        OnResultM(Client, State_);
-    if Assigned(OnResultP) then
+        OnResultC(Client, State_)
+    else if Assigned(OnResultM) then
+        OnResultM(Client, State_)
+    else if Assigned(OnResultP) then
         OnResultP(Client, State_);
   except
   end;
@@ -1880,10 +1923,10 @@ begin
 
   try
     if Assigned(OnResultC) then
-        OnResultC(Client, State_, info_);
-    if Assigned(OnResultM) then
-        OnResultM(Client, State_, info_);
-    if Assigned(OnResultP) then
+        OnResultC(Client, State_, info_)
+    else if Assigned(OnResultM) then
+        OnResultM(Client, State_, info_)
+    else if Assigned(OnResultP) then
         OnResultP(Client, State_, info_);
   except
   end;
@@ -1900,10 +1943,10 @@ begin
 
   try
     if Assigned(OnResultC) then
-        OnResultC(Client, State_, info_);
-    if Assigned(OnResultM) then
-        OnResultM(Client, State_, info_);
-    if Assigned(OnResultP) then
+        OnResultC(Client, State_, info_)
+    else if Assigned(OnResultM) then
+        OnResultM(Client, State_, info_)
+    else if Assigned(OnResultP) then
         OnResultP(Client, State_, info_);
   except
   end;
@@ -1934,10 +1977,10 @@ begin
 
   try
     if Assigned(OnResultC) then
-        OnResultC(Client, State_, info_);
-    if Assigned(OnResultM) then
-        OnResultM(Client, State_, info_);
-    if Assigned(OnResultP) then
+        OnResultC(Client, State_, info_)
+    else if Assigned(OnResultM) then
+        OnResultM(Client, State_, info_)
+    else if Assigned(OnResultP) then
         OnResultP(Client, State_, info_);
   except
   end;
@@ -1954,10 +1997,10 @@ begin
 
   try
     if Assigned(OnResultC) then
-        OnResultC(Client, State_, info_);
-    if Assigned(OnResultM) then
-        OnResultM(Client, State_, info_);
-    if Assigned(OnResultP) then
+        OnResultC(Client, State_, info_)
+    else if Assigned(OnResultM) then
+        OnResultM(Client, State_, info_)
+    else if Assigned(OnResultP) then
         OnResultP(Client, State_, info_);
   except
   end;
@@ -1988,10 +2031,10 @@ begin
 
   try
     if Assigned(OnResultC) then
-        OnResultC(Client, State_, info_);
-    if Assigned(OnResultM) then
-        OnResultM(Client, State_, info_);
-    if Assigned(OnResultP) then
+        OnResultC(Client, State_, info_)
+    else if Assigned(OnResultM) then
+        OnResultM(Client, State_, info_)
+    else if Assigned(OnResultP) then
         OnResultP(Client, State_, info_);
   except
   end;
@@ -2008,10 +2051,10 @@ begin
 
   try
     if Assigned(OnResultC) then
-        OnResultC(Client, State_, info_);
-    if Assigned(OnResultM) then
-        OnResultM(Client, State_, info_);
-    if Assigned(OnResultP) then
+        OnResultC(Client, State_, info_)
+    else if Assigned(OnResultM) then
+        OnResultM(Client, State_, info_)
+    else if Assigned(OnResultP) then
         OnResultP(Client, State_, info_);
   except
   end;
@@ -2046,10 +2089,10 @@ begin
 
   try
     if Assigned(OnResultC) then
-        OnResultC(Client, State_, info_, Json);
-    if Assigned(OnResultM) then
-        OnResultM(Client, State_, info_, Json);
-    if Assigned(OnResultP) then
+        OnResultC(Client, State_, info_, Json)
+    else if Assigned(OnResultM) then
+        OnResultM(Client, State_, info_, Json)
+    else if Assigned(OnResultP) then
         OnResultP(Client, State_, info_, Json);
   except
   end;
@@ -2068,10 +2111,10 @@ begin
 
   try
     if Assigned(OnResultC) then
-        OnResultC(Client, State_, info_, Json);
-    if Assigned(OnResultM) then
-        OnResultM(Client, State_, info_, Json);
-    if Assigned(OnResultP) then
+        OnResultC(Client, State_, info_, Json)
+    else if Assigned(OnResultM) then
+        OnResultM(Client, State_, info_, Json)
+    else if Assigned(OnResultP) then
         OnResultP(Client, State_, info_, Json);
   except
   end;
@@ -2105,10 +2148,10 @@ begin
 
   try
     if Assigned(OnResultC) then
-        OnResultC(Client, State_, info_, PrimaryIdentifier_);
-    if Assigned(OnResultM) then
-        OnResultM(Client, State_, info_, PrimaryIdentifier_);
-    if Assigned(OnResultP) then
+        OnResultC(Client, State_, info_, PrimaryIdentifier_)
+    else if Assigned(OnResultM) then
+        OnResultM(Client, State_, info_, PrimaryIdentifier_)
+    else if Assigned(OnResultP) then
         OnResultP(Client, State_, info_, PrimaryIdentifier_);
   except
   end;
@@ -2126,10 +2169,10 @@ begin
 
   try
     if Assigned(OnResultC) then
-        OnResultC(Client, State_, info_, PrimaryIdentifier_);
-    if Assigned(OnResultM) then
-        OnResultM(Client, State_, info_, PrimaryIdentifier_);
-    if Assigned(OnResultP) then
+        OnResultC(Client, State_, info_, PrimaryIdentifier_)
+    else if Assigned(OnResultM) then
+        OnResultM(Client, State_, info_, PrimaryIdentifier_)
+    else if Assigned(OnResultP) then
         OnResultP(Client, State_, info_, PrimaryIdentifier_);
   except
   end;
@@ -2205,11 +2248,11 @@ end;
 constructor TC40_UserDB_Client.Create(PhysicsTunnel_: TC40_PhysicsTunnel; source_: TC40_Info; Param_: U_String);
 begin
   inherited Create(PhysicsTunnel_, source_, Param_);
-  DTNoAuthClient.RecvTunnel.RegisterDirectStream('Usr_Msg').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_Usr_Msg;
-  DTNoAuthClient.RecvTunnel.RegisterDirectStream('Usr_Open').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_Usr_Open;
-  DTNoAuthClient.RecvTunnel.RegisterDirectStream('Usr_Close').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_Usr_Close;
-  DTNoAuthClient.RecvTunnel.RegisterDirectStream('Usr_Request_Friend').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_Usr_Request_Friend;
-  DTNoAuthClient.RecvTunnel.RegisterDirectStream('Usr_Kick').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_Usr_Kick;
+  DTNoAuthClient.RecvTunnel.RegisterDirectStream('Usr_Msg').OnExecute := cmd_Usr_Msg;
+  DTNoAuthClient.RecvTunnel.RegisterDirectStream('Usr_Open').OnExecute := cmd_Usr_Open;
+  DTNoAuthClient.RecvTunnel.RegisterDirectStream('Usr_Close').OnExecute := cmd_Usr_Close;
+  DTNoAuthClient.RecvTunnel.RegisterDirectStream('Usr_Request_Friend').OnExecute := cmd_Usr_Request_Friend;
+  DTNoAuthClient.RecvTunnel.RegisterDirectStream('Usr_Kick').OnExecute := cmd_Usr_Kick;
   ON_C40_UserDB_Client_Notify := nil;
 end;
 
@@ -2245,7 +2288,7 @@ var
 begin
   D := TDFE.Create;
   D.WriteString(UserName_);
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_IsOpen', D, {$IFDEF FPC}@{$ENDIF FPC}TStreamEventBridge.Create(Bridge_IO_).DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_IsOpen', D, TStream_Event_Bridge.Create(Bridge_IO_).DoStreamEvent);
   DisposeObject(D);
 end;
 
@@ -2261,7 +2304,7 @@ begin
   D := TDFE.Create;
   D.WriteString(UserName_);
   DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_IsOpen', D, nil, nil,
-{$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamParamEvent, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamFailedEvent);
+    tmp.DoStreamParamEvent, tmp.DoStreamFailedEvent);
   DisposeObject(D);
 end;
 
@@ -2277,7 +2320,7 @@ begin
   D := TDFE.Create;
   D.WriteString(UserName_);
   DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_IsOpen', D, nil, nil,
-{$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamParamEvent, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamFailedEvent);
+    tmp.DoStreamParamEvent, tmp.DoStreamFailedEvent);
   DisposeObject(D);
 end;
 
@@ -2293,7 +2336,7 @@ begin
   D := TDFE.Create;
   D.WriteString(UserName_);
   DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_IsOpen', D, nil, nil,
-{$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamParamEvent, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamFailedEvent);
+    tmp.DoStreamParamEvent, tmp.DoStreamFailedEvent);
   DisposeObject(D);
 end;
 
@@ -2305,7 +2348,7 @@ begin
   D := TDFE.Create;
   for i := 0 to length(UserName_) - 1 do
       D.WriteString(UserName_[i]);
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_IsOpen', D, {$IFDEF FPC}@{$ENDIF FPC}TStreamEventBridge.Create(Bridge_IO_).DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_IsOpen', D, TStream_Event_Bridge.Create(Bridge_IO_).DoStreamEvent);
   DisposeObject(D);
 end;
 
@@ -2323,7 +2366,7 @@ begin
   for i := 0 to length(UserName_) - 1 do
       D.WriteString(UserName_[i]);
   DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_IsOpen', D, nil, nil,
-{$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamParamEvent, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamFailedEvent);
+    tmp.DoStreamParamEvent, tmp.DoStreamFailedEvent);
   DisposeObject(D);
 end;
 
@@ -2341,7 +2384,7 @@ begin
   for i := 0 to length(UserName_) - 1 do
       D.WriteString(UserName_[i]);
   DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_IsOpen', D, nil, nil,
-{$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamParamEvent, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamFailedEvent);
+    tmp.DoStreamParamEvent, tmp.DoStreamFailedEvent);
   DisposeObject(D);
 end;
 
@@ -2359,7 +2402,7 @@ begin
   for i := 0 to length(UserName_) - 1 do
       D.WriteString(UserName_[i]);
   DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_IsOpen', D, nil, nil,
-{$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamParamEvent, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamFailedEvent);
+    tmp.DoStreamParamEvent, tmp.DoStreamFailedEvent);
   DisposeObject(D);
 end;
 
@@ -2381,7 +2424,7 @@ var
 begin
   D := TDFE.Create;
   D.WriteString(UserName_);
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_GetFriends', D, {$IFDEF FPC}@{$ENDIF FPC}TStreamEventBridge.Create(Bridge_IO_).DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_GetFriends', D, TStream_Event_Bridge.Create(Bridge_IO_).DoStreamEvent);
   DisposeObject(D);
 end;
 
@@ -2397,7 +2440,7 @@ begin
   D := TDFE.Create;
   D.WriteString(UserName_);
   DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_GetFriends', D, nil, nil,
-{$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamParamEvent, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamFailedEvent);
+    tmp.DoStreamParamEvent, tmp.DoStreamFailedEvent);
   DisposeObject(D);
 end;
 
@@ -2413,7 +2456,7 @@ begin
   D := TDFE.Create;
   D.WriteString(UserName_);
   DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_GetFriends', D, nil, nil,
-{$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamParamEvent, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamFailedEvent);
+    tmp.DoStreamParamEvent, tmp.DoStreamFailedEvent);
   DisposeObject(D);
 end;
 
@@ -2429,7 +2472,7 @@ begin
   D := TDFE.Create;
   D.WriteString(UserName_);
   DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_GetFriends', D, nil, nil,
-{$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamParamEvent, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamFailedEvent);
+    tmp.DoStreamParamEvent, tmp.DoStreamFailedEvent);
   DisposeObject(D);
 end;
 
@@ -2474,7 +2517,7 @@ var
   D: TDFE;
 begin
   D := TDFE.Create;
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_OnlineNum', D, {$IFDEF FPC}@{$ENDIF FPC}TStreamEventBridge.Create(Bridge_IO_).DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_OnlineNum', D, TStream_Event_Bridge.Create(Bridge_IO_).DoStreamEvent);
   DisposeObject(D);
 end;
 
@@ -2489,7 +2532,7 @@ begin
 
   D := TDFE.Create;
   DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_OnlineNum', D, nil, nil,
-{$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamParamEvent, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamFailedEvent);
+    tmp.DoStreamParamEvent, tmp.DoStreamFailedEvent);
   DisposeObject(D);
 end;
 
@@ -2504,7 +2547,7 @@ begin
 
   D := TDFE.Create;
   DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_OnlineNum', D, nil, nil,
-{$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamParamEvent, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamFailedEvent);
+    tmp.DoStreamParamEvent, tmp.DoStreamFailedEvent);
   DisposeObject(D);
 end;
 
@@ -2519,7 +2562,7 @@ begin
 
   D := TDFE.Create;
   DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_OnlineNum', D, nil, nil,
-{$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamParamEvent, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamFailedEvent);
+    tmp.DoStreamParamEvent, tmp.DoStreamFailedEvent);
   DisposeObject(D);
 end;
 
@@ -2529,7 +2572,7 @@ var
 begin
   D := TDFE.Create;
   D.WriteInteger(Max_Num);
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_OnlineList', D, {$IFDEF FPC}@{$ENDIF FPC}TStreamEventBridge.Create(Bridge_IO_).DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_OnlineList', D, TStream_Event_Bridge.Create(Bridge_IO_).DoStreamEvent);
   DisposeObject(D);
 end;
 
@@ -2545,7 +2588,7 @@ begin
   D := TDFE.Create;
   D.WriteInteger(Max_Num);
   DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_OnlineList', D, nil, nil,
-{$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamParamEvent, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamFailedEvent);
+    tmp.DoStreamParamEvent, tmp.DoStreamFailedEvent);
   DisposeObject(D);
 end;
 
@@ -2561,7 +2604,7 @@ begin
   D := TDFE.Create;
   D.WriteInteger(Max_Num);
   DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_OnlineList', D, nil, nil,
-{$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamParamEvent, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamFailedEvent);
+    tmp.DoStreamParamEvent, tmp.DoStreamFailedEvent);
   DisposeObject(D);
 end;
 
@@ -2577,7 +2620,7 @@ begin
   D := TDFE.Create;
   D.WriteInteger(Max_Num);
   DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_OnlineList', D, nil, nil,
-{$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamParamEvent, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamFailedEvent);
+    tmp.DoStreamParamEvent, tmp.DoStreamFailedEvent);
   DisposeObject(D);
 end;
 
@@ -2618,7 +2661,7 @@ begin
   D := TDFE.Create;
   D.WriteString(UserName_);
   D.WriteString(passwd_);
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_Reg', D, {$IFDEF FPC}@{$ENDIF FPC}TStreamEventBridge.Create(Bridge_IO_).DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_Reg', D, TStream_Event_Bridge.Create(Bridge_IO_).DoStreamEvent);
   DisposeObject(D);
 end;
 
@@ -2635,7 +2678,7 @@ begin
   D.WriteString(UserName_);
   D.WriteString(passwd_);
   DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_Reg', D, nil, nil,
-{$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamParamEvent, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamFailedEvent);
+    tmp.DoStreamParamEvent, tmp.DoStreamFailedEvent);
   DisposeObject(D);
 end;
 
@@ -2652,7 +2695,7 @@ begin
   D.WriteString(UserName_);
   D.WriteString(passwd_);
   DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_Reg', D, nil, nil,
-{$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamParamEvent, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamFailedEvent);
+    tmp.DoStreamParamEvent, tmp.DoStreamFailedEvent);
   DisposeObject(D);
 end;
 
@@ -2669,7 +2712,7 @@ begin
   D.WriteString(UserName_);
   D.WriteString(passwd_);
   DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_Reg', D, nil, nil,
-{$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamParamEvent, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamFailedEvent);
+    tmp.DoStreamParamEvent, tmp.DoStreamFailedEvent);
   DisposeObject(D);
 end;
 
@@ -2679,7 +2722,7 @@ var
 begin
   D := TDFE.Create;
   D.WriteString(UserName_);
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_Exists', D, {$IFDEF FPC}@{$ENDIF FPC}TStreamEventBridge.Create(Bridge_IO_).DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_Exists', D, TStream_Event_Bridge.Create(Bridge_IO_).DoStreamEvent);
   DisposeObject(D);
 end;
 
@@ -2695,7 +2738,7 @@ begin
   D := TDFE.Create;
   D.WriteString(UserName_);
   DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_Exists', D, nil, nil,
-{$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamParamEvent, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamFailedEvent);
+    tmp.DoStreamParamEvent, tmp.DoStreamFailedEvent);
   DisposeObject(D);
 end;
 
@@ -2711,7 +2754,7 @@ begin
   D := TDFE.Create;
   D.WriteString(UserName_);
   DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_Exists', D, nil, nil,
-{$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamParamEvent, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamFailedEvent);
+    tmp.DoStreamParamEvent, tmp.DoStreamFailedEvent);
   DisposeObject(D);
 end;
 
@@ -2727,7 +2770,7 @@ begin
   D := TDFE.Create;
   D.WriteString(UserName_);
   DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_Exists', D, nil, nil,
-{$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamParamEvent, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamFailedEvent);
+    tmp.DoStreamParamEvent, tmp.DoStreamFailedEvent);
   DisposeObject(D);
 end;
 
@@ -2738,7 +2781,7 @@ begin
   D := TDFE.Create;
   D.WriteString(UserName_);
   D.WriteString(passwd_);
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_Auth', D, {$IFDEF FPC}@{$ENDIF FPC}TStreamEventBridge.Create(Bridge_IO_).DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_Auth', D, TStream_Event_Bridge.Create(Bridge_IO_).DoStreamEvent);
   DisposeObject(D);
 end;
 
@@ -2755,7 +2798,7 @@ begin
   D.WriteString(UserName_);
   D.WriteString(passwd_);
   DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_Auth', D, nil, nil,
-{$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamParamEvent, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamFailedEvent);
+    tmp.DoStreamParamEvent, tmp.DoStreamFailedEvent);
   DisposeObject(D);
 end;
 
@@ -2772,7 +2815,7 @@ begin
   D.WriteString(UserName_);
   D.WriteString(passwd_);
   DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_Auth', D, nil, nil,
-{$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamParamEvent, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamFailedEvent);
+    tmp.DoStreamParamEvent, tmp.DoStreamFailedEvent);
   DisposeObject(D);
 end;
 
@@ -2789,7 +2832,7 @@ begin
   D.WriteString(UserName_);
   D.WriteString(passwd_);
   DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_Auth', D, nil, nil,
-{$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamParamEvent, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamFailedEvent);
+    tmp.DoStreamParamEvent, tmp.DoStreamFailedEvent);
   DisposeObject(D);
 end;
 
@@ -2801,7 +2844,7 @@ begin
   D.WriteString(UserName_);
   D.WriteString(passwd_);
   D.WriteString(NewPasswd_);
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_ChangePassword', D, {$IFDEF FPC}@{$ENDIF FPC}TStreamEventBridge.Create(Bridge_IO_).DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_ChangePassword', D, TStream_Event_Bridge.Create(Bridge_IO_).DoStreamEvent);
   DisposeObject(D);
 end;
 
@@ -2819,7 +2862,7 @@ begin
   D.WriteString(passwd_);
   D.WriteString(NewPasswd_);
   DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_ChangePassword', D, nil, nil,
-{$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamParamEvent, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamFailedEvent);
+    tmp.DoStreamParamEvent, tmp.DoStreamFailedEvent);
   DisposeObject(D);
 end;
 
@@ -2837,7 +2880,7 @@ begin
   D.WriteString(passwd_);
   D.WriteString(NewPasswd_);
   DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_ChangePassword', D, nil, nil,
-{$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamParamEvent, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamFailedEvent);
+    tmp.DoStreamParamEvent, tmp.DoStreamFailedEvent);
   DisposeObject(D);
 end;
 
@@ -2855,7 +2898,7 @@ begin
   D.WriteString(passwd_);
   D.WriteString(NewPasswd_);
   DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_ChangePassword', D, nil, nil,
-{$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamParamEvent, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamFailedEvent);
+    tmp.DoStreamParamEvent, tmp.DoStreamFailedEvent);
   DisposeObject(D);
 end;
 
@@ -2877,7 +2920,7 @@ begin
   D := TDFE.Create;
   D.WriteString(UserName_);
   D.WriteString(NewIdentifier_);
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_NewIdentifier', D, {$IFDEF FPC}@{$ENDIF FPC}TStreamEventBridge.Create(Bridge_IO_).DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_NewIdentifier', D, TStream_Event_Bridge.Create(Bridge_IO_).DoStreamEvent);
   DisposeObject(D);
 end;
 
@@ -2894,7 +2937,7 @@ begin
   D.WriteString(UserName_);
   D.WriteString(NewIdentifier_);
   DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_NewIdentifier', D, nil, nil,
-{$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamParamEvent, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamFailedEvent);
+    tmp.DoStreamParamEvent, tmp.DoStreamFailedEvent);
   DisposeObject(D);
 end;
 
@@ -2911,7 +2954,7 @@ begin
   D.WriteString(UserName_);
   D.WriteString(NewIdentifier_);
   DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_NewIdentifier', D, nil, nil,
-{$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamParamEvent, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamFailedEvent);
+    tmp.DoStreamParamEvent, tmp.DoStreamFailedEvent);
   DisposeObject(D);
 end;
 
@@ -2928,7 +2971,7 @@ begin
   D.WriteString(UserName_);
   D.WriteString(NewIdentifier_);
   DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_NewIdentifier', D, nil, nil,
-{$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamParamEvent, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamFailedEvent);
+    tmp.DoStreamParamEvent, tmp.DoStreamFailedEvent);
   DisposeObject(D);
 end;
 
@@ -2938,7 +2981,7 @@ var
 begin
   D := TDFE.Create;
   D.WriteString(UserName_);
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_GetPrimaryIdentifier', D, {$IFDEF FPC}@{$ENDIF FPC}TStreamEventBridge.Create(Bridge_IO_).DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_GetPrimaryIdentifier', D, TStream_Event_Bridge.Create(Bridge_IO_).DoStreamEvent);
   DisposeObject(D);
 end;
 
@@ -2954,7 +2997,7 @@ begin
   D := TDFE.Create;
   D.WriteString(UserName_);
   DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_GetPrimaryIdentifier', D, nil, nil,
-{$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamParamEvent, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamFailedEvent);
+    tmp.DoStreamParamEvent, tmp.DoStreamFailedEvent);
   DisposeObject(D);
 end;
 
@@ -2970,7 +3013,7 @@ begin
   D := TDFE.Create;
   D.WriteString(UserName_);
   DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_GetPrimaryIdentifier', D, nil, nil,
-{$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamParamEvent, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamFailedEvent);
+    tmp.DoStreamParamEvent, tmp.DoStreamFailedEvent);
   DisposeObject(D);
 end;
 
@@ -2986,7 +3029,7 @@ begin
   D := TDFE.Create;
   D.WriteString(UserName_);
   DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_GetPrimaryIdentifier', D, nil, nil,
-{$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamParamEvent, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamFailedEvent);
+    tmp.DoStreamParamEvent, tmp.DoStreamFailedEvent);
   DisposeObject(D);
 end;
 
@@ -2997,7 +3040,7 @@ begin
   D := TDFE.Create;
   D.WriteString(UserName_);
   D.WriteString(ObjName_);
-  DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_Get', D, {$IFDEF FPC}@{$ENDIF FPC}TStreamEventBridge.Create(Bridge_IO_).DoStreamEvent);
+  DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_Get', D, TStream_Event_Bridge.Create(Bridge_IO_).DoStreamEvent);
   DisposeObject(D);
 end;
 
@@ -3014,7 +3057,7 @@ begin
   D.WriteString(UserName_);
   D.WriteString(ObjName_);
   DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_Get', D, nil, nil,
-{$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamParamEvent, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamFailedEvent);
+    tmp.DoStreamParamEvent, tmp.DoStreamFailedEvent);
   DisposeObject(D);
 end;
 
@@ -3031,7 +3074,7 @@ begin
   D.WriteString(UserName_);
   D.WriteString(ObjName_);
   DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_Get', D, nil, nil,
-{$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamParamEvent, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamFailedEvent);
+    tmp.DoStreamParamEvent, tmp.DoStreamFailedEvent);
   DisposeObject(D);
 end;
 
@@ -3048,7 +3091,7 @@ begin
   D.WriteString(UserName_);
   D.WriteString(ObjName_);
   DTNoAuthClient.SendTunnel.SendStreamCmdM('Usr_Get', D, nil, nil,
-{$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamParamEvent, {$IFDEF FPC}@{$ENDIF FPC}tmp.DoStreamFailedEvent);
+    tmp.DoStreamParamEvent, tmp.DoStreamFailedEvent);
   DisposeObject(D);
 end;
 
@@ -3135,3 +3178,4 @@ initialization
 RegisterC40('UserDB', TC40_UserDB_Service, TC40_UserDB_Client);
 
 end.
+ 

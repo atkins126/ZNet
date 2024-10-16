@@ -1,8 +1,38 @@
+(*
+https://zpascal.net
+https://github.com/PassByYou888/ZNet
+https://github.com/PassByYou888/zRasterization
+https://github.com/PassByYou888/ZSnappy
+https://github.com/PassByYou888/Z-AI1.4
+https://github.com/PassByYou888/InfiniteIoT
+https://github.com/PassByYou888/zMonitor_3rd_Core
+https://github.com/PassByYou888/tcmalloc4p
+https://github.com/PassByYou888/jemalloc4p
+https://github.com/PassByYou888/zCloud
+https://github.com/PassByYou888/ZServer4D
+https://github.com/PassByYou888/zShell
+https://github.com/PassByYou888/ZDB2.0
+https://github.com/PassByYou888/zGameWare
+https://github.com/PassByYou888/CoreCipher
+https://github.com/PassByYou888/zChinese
+https://github.com/PassByYou888/zSound
+https://github.com/PassByYou888/zExpression
+https://github.com/PassByYou888/ZInstaller2.0
+https://github.com/PassByYou888/zAI
+https://github.com/PassByYou888/NetFileService
+https://github.com/PassByYou888/zAnalysis
+https://github.com/PassByYou888/PascalString
+https://github.com/PassByYou888/zInstaller
+https://github.com/PassByYou888/zTranslate
+https://github.com/PassByYou888/zVision
+https://github.com/PassByYou888/FFMPEG-Header
+*)
 { ****************************************************************************** }
 { * ini imp                                                                    * }
 { ****************************************************************************** }
 unit Z.TextDataEngine;
 
+{$DEFINE FPC_DELPHI_MODE}
 {$I Z.Define.inc}
 
 interface
@@ -15,10 +45,11 @@ uses SysUtils, Variants,
   Z.UnicodeMixedLib,
   Z.PascalStrings,
   Z.ListEngine,
-  Z.MemoryStream;
+  Z.MemoryStream,
+  Z.Int128;
 
 type
-  THashTextEngine = class(TCore_Object)
+  THashTextEngine = class(TCore_Object_Intermediate)
   private
     FComment: TCore_Strings;
     FSectionList, FSectionHashVariantList, FSectionHashStringList: THashObjectList;
@@ -61,6 +92,8 @@ type
     procedure SetDefaultText_I32(const SectionName, KeyName: SystemString; const Value: Integer);
     function GetDefaultText_I64(const SectionName, KeyName: SystemString; const DefaultValue: Int64): Int64;
     procedure SetDefaultText_I64(const SectionName, KeyName: SystemString; const Value: Int64);
+    function GetDefaultText_I128(const SectionName, KeyName: SystemString; const DefaultValue: Int128): Int128;
+    procedure SetDefaultText_I128(const SectionName, KeyName: SystemString; const Value: Int128);
     function GetDefaultText_Float(const SectionName, KeyName: SystemString; const DefaultValue: Double): Double;
     procedure SetDefaultText_Float(const SectionName, KeyName: SystemString; const Value: Double);
     function GetDefaultText_Bool(const SectionName, KeyName: SystemString; const DefaultValue: Boolean): Boolean;
@@ -127,11 +160,7 @@ type
 
   TTextDataEngine = THashTextEngine;
   TSectionTextData = THashTextEngine;
-
-  THashTextEngineList_Decl = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<THashTextEngine>;
-
-  THashTextEngineList = class(THashTextEngineList_Decl)
-  end;
+  THashTextEngineList = TGenericsList<THashTextEngine>;
 
 implementation
 
@@ -503,6 +532,16 @@ begin
 end;
 
 procedure THashTextEngine.SetDefaultText_I64(const SectionName, KeyName: SystemString; const Value: Int64);
+begin
+  HitString[SectionName, KeyName] := umlIntToStr(Value);
+end;
+
+function THashTextEngine.GetDefaultText_I128(const SectionName, KeyName: SystemString; const DefaultValue: Int128): Int128;
+begin
+  Result := umlStrToInt128(HStringList[SectionName].GetDefaultValue(KeyName, umlIntToStr(DefaultValue)), DefaultValue);
+end;
+
+procedure THashTextEngine.SetDefaultText_I128(const SectionName, KeyName: SystemString; const Value: Int128);
 begin
   HitString[SectionName, KeyName] := umlIntToStr(Value);
 end;
@@ -976,3 +1015,4 @@ begin
 end;
 
 end.
+ 
